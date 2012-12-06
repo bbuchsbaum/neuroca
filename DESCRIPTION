@@ -13,5 +13,9 @@ Version: 0.0.1
 Date: 2012-12-01
 Depends:
     R (>= 2.15.0),
-    methods
+    methods,
+    irlba,
+    corpcor,
+    plyr,
+    FactoMineR
     
