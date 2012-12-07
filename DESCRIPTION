@@ -17,5 +17,6 @@ Depends:
     irlba,
     corpcor,
     plyr,
-    FactoMineR
+    FactoMineR,
+    parallel
     

@@ -2,6 +2,6 @@
 #' @export
 setClass("plsfit", 
          representation(d="numeric",brainSaliences="matrix",designSaliences="matrix",brainScores="matrix", designScores="matrix", nsigcomp="integer",
-                        ZDesign="matrix", ZBrain="matrix")
-         prototype(d=numeric(), brainSaliences = matrix(), designSaliences=matrix(), brainScores=matrix(), designScores=matrix(), nsigcomp=NA, ZBrain=matrix(), ZDesign=matrix())
+                        ZBootDesign="matrix", ZBootBrain="matrix", strata="factor"),
+         prototype(d=numeric(), brainSaliences = matrix(), designSaliences=matrix(), brainScores=matrix(), designScores=matrix(), nsigcomp=as.integer(0), ZBootBrain=matrix(), ZBootDesign=matrix(), strata=factor())
 )

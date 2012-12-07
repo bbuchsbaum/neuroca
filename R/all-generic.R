@@ -8,7 +8,7 @@ setGeneric("brainSaliences", function(object) {
 #' @rdname designSaliences
 #' @export
 setGeneric("designSaliences", function(object) {
-  standardGeneric("brainSaliences")
+  standardGeneric("designSaliences")
 })
 
 #' @rdname brainScores
@@ -21,4 +21,10 @@ setGeneric("brainScores", function(object) {
 #' @export
 setGeneric("designScores", function(object) {
   standardGeneric("designScores")
+})
+
+#' @rdname contributions
+#' @export
+setGeneric("contributions", function(object, ...) {
+  standardGeneric("contributions")
 })
