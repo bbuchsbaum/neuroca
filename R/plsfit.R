@@ -280,9 +280,7 @@ setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
               ypred <- predict(pfit, newdata=Xtest[,keep.idx], ncomp=ncomp)
         
             })
-            
-            browser()
-            
+           
             R <- do.call(rbind, lapply(res, function(M) {
               do.call(cbind, lapply(M, function(m) m$class))
             }))
@@ -299,11 +297,11 @@ setMethod("predict", signature(object="plsfit", newdata="matrix", ncomp="numeric
             
             ## remove global mean
             R <- sweep(newdata, 2, object@GlobalCentroid)
-            browser()
+            
             Fscores <- project.rows(R, object@svd)
             Forig <- object@svd$v %*% diag(object@d)
             
-            res <- lapply(1:ncomp, function(nc) {
+            res <- lapply(ncomp, function(nc) {
               D <- rdist(Fscores[,1:nc], Forig[,1:nc])
               D2 <- D^2
               min.d <- apply(D2, 1, which.min)
@@ -312,7 +310,7 @@ setMethod("predict", signature(object="plsfit", newdata="matrix", ncomp="numeric
               list(class=classPred, dsquared=D2)
             })
                         
-            names(res) <- paste0("Components", 1:ncomp)
+            names(res) <- paste0("Components", ncomp)
             res
             
             
