@@ -28,3 +28,12 @@ setGeneric("designScores", function(object) {
 setGeneric("contributions", function(object, ...) {
   standardGeneric("contributions")
 })
+
+setGeneric("predict", function(object, newdata, ncomp, ...) {
+  standardGeneric("predict")
+})
+
+setGeneric("cv", function(object, nfolds, ncomp, ...) {
+  standardGeneric("cv")
+})
+

@@ -15,11 +15,13 @@ mean_center <- function(Y, X) {
   list(Rcent=Rcent, Ymat=G, centroid=centroid)
 }
 
-svd.pls <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla")) {
+svd.pls <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla", "SPC", "PMD"), sumabsu=sqrt(nrow(XC)/4), sumabsv=sqrt(ncol(XC)/4)) {
   res <- switch(method[1],
                 base=svd(XC),
                 fast=corpcor:::fast.svd(XC),
-                irlba=irlba:::irlba(XC, nu=min(ncomp, min(dim(XC)) -3), nv=min(ncomp, min(dim(XC)) -3)))
+                irlba=irlba:::irlba(XC, nu=min(ncomp, min(dim(XC)) -3), nv=min(ncomp, min(dim(XC)) -3)),
+                SPC=as.list(unclass(SPC(XC, sumabsv, K=ncomp))),
+                PMD=as.list(unclass(PMD(XC, sumabsv=sumabsv, sumabsu=sumabsu, K=ncomp))))
   
   k <- which(res$d > .Machine$double.eps)
   k <- min(ncomp, length(k))
@@ -32,9 +34,9 @@ svd.pls <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla")) {
 
 project.rows <- function(xr, svd.fit, centroid=NULL) {
   if (!is.null(centroid)) {
-    sweep(xr, 2, centroid) %*% svd.fit$u  
+    sweep(xr, 2, centroid) %*% svd.fit$u 
   } else {
-    xr %*% svd.fit$u
+    xr %*% svd.fit$u 
   }
 }
 
@@ -114,6 +116,7 @@ mcen.pls.boot <- function(X, Y, svd.fit, ncomp=svd.fit$ncomp, boot.iter=100, str
 
 
 
+
 mcen.pls.cv <- function(X, Y, svd.fit, cv.iter=200) {
   cv.res <- do.call(rbind, mclapply(1:cv.iter, function(i) {
     print(i)
@@ -159,7 +162,7 @@ mcen.pls.cv <- function(X, Y, svd.fit, cv.iter=200) {
   list(cv=cv.res, nsig=nsig) 
 }
                 
-mcen.pls <- function(Y, X, ncomp=5, strata=NULL, cv=TRUE, cv.iter=200, boot=TRUE, boot.iter=200, svd.method="fast") {
+pls.meancen <- function(Y, X, ncomp=5, strata=NULL, cv=TRUE, cv.iter=200, boot=TRUE, boot.iter=200, svd.method="fast") {
   if (!is.factor(Y)) {
     warning("converting Y to factor")
     Y <- as.factor(Y)
@@ -172,6 +175,8 @@ mcen.pls <- function(Y, X, ncomp=5, strata=NULL, cv=TRUE, cv.iter=200, boot=TRUE
   if (is.null(strata)) {
     strata <- factor(rep(1, length(Y)))
   }
+  
+  
   
   bary <- mean_center(Y,X)
   svd.fit <- svd.pls(bary$Rcent, ncomp, method=svd.method)
@@ -205,16 +210,20 @@ mcen.pls <- function(Y, X, ncomp=5, strata=NULL, cv=TRUE, cv.iter=200, boot=TRUE
   #               ZBootDesign="matrix", ZBootBrain="matrix", strata="factor"),
   
   new("plsfit",
+      Y=Y,
+      X=X,
       d=svd.fit$d,
       brainSaliences=svd.fit$u,
       designSaliences=svd.fit$v,
       brainScores=brainScores,
       designScores=svd.fit$v,
       nsigcomp=nsigcomp,
+      Centroids=bary$Rcent,
+      GlobalCentroid=bary$centroid,
+      svd=svd.fit,
       ZBootDesign=boot.res$boot.ratio.R,
       ZBootBrain=boot.res$boot.ratio.C,
       strata=strata)
-
 }
 
 setMethod("brainSaliences", "plsfit", function(object) {
@@ -246,6 +255,68 @@ setMethod("contributions", "plsfit", function(object, by=NULL) {
 })
 
 
+
+
+
+
+
+setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
+          function(object, nfolds, ncomp, svd.method="fast", featSel=NULL) {
+            foldList <- createFolds(object@Y, nfolds)
+            res <- lapply(foldList, function(idx) {
+              Xtrain <- object@X[-idx,]
+              Xtest <- object@X[idx,]
+              Ytrain <- object@Y[-idx]
+              Ytest <- object@Y[idx]
+              if (!is.null(featSel)) {
+                
+                keep.idx <- which(featSel(Ytrain, Xtrain))
+                print(length(keep.idx))
+              } else {
+                keep.idx <- 1:ncol(Xtrain)
+              }
+              
+              pfit <- pls.meancen(Ytrain, Xtrain[,keep.idx], ncomp=ncomp, cv=FALSE, boot=FALSE)            
+              ypred <- predict(pfit, newdata=Xtest[,keep.idx], ncomp=ncomp)
+        
+            })
+            
+            browser()
+            
+            R <- do.call(rbind, lapply(res, function(M) {
+              do.call(cbind, lapply(M, function(m) m$class))
+            }))
+                       
+            R[order(unlist(foldList)),]
+            
+          })
+
+setMethod("predict", signature(object="plsfit", newdata="matrix", ncomp="numeric"),
+          function(object, newdata, ncomp) {
+            if (ncol(newdata) != nrow(object@Centroids)) {
+              stop(paste("newdata must have ", nrow(object@Centroids), "columns"))
+            }
+            
+            ## remove global mean
+            R <- sweep(newdata, 2, object@GlobalCentroid)
+            browser()
+            Fscores <- project.rows(R, object@svd)
+            Forig <- object@svd$v %*% diag(object@d)
+            
+            res <- lapply(1:ncomp, function(nc) {
+              D <- rdist(Fscores[,1:nc], Forig[,1:nc])
+              D2 <- D^2
+              min.d <- apply(D2, 1, which.min)
+              classPred <- levels(object@Y)[min.d]
+            
+              list(class=classPred, dsquared=D2)
+            })
+                        
+            names(res) <- paste0("Components", 1:ncomp)
+            res
+            
+            
+          })
 
 
 

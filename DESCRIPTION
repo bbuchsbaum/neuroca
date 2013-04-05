@@ -18,5 +18,13 @@ Depends:
     corpcor,
     plyr,
     FactoMineR,
-    parallel
+    parallel,
+    caret,
+    fields,
+    sda
+Collate:
+    'all-classes.R'
+    'all-generic.R'
+    'plsfit.R'
+    'featureSel.R'
     
