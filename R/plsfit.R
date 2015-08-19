@@ -169,7 +169,7 @@ pls.meancen <- function(Y, X, ncomp=5, strata=NULL, cv=TRUE, cv.iter=200, boot=T
   }
   
   if (length(Y) != nrow(X)) {
-    stop("length of Y must equal number of rows in X")
+    stop(paste("length of Y: ", length(Y), " must equal number of rows in X: ", nrow(X)))
   }
   
   if (is.null(strata)) {
@@ -256,12 +256,8 @@ setMethod("contributions", "plsfit", function(object, by=NULL) {
 
 
 
-
-
-
-
 setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
-          function(object, nfolds, ncomp, svd.method="fast", featSel=NULL) {
+          function(object, nfolds, ncomp, svd.method="fast", featSel=NULL, metric="accuracy") {
             foldList <- createFolds(object@Y, nfolds)
             res <- lapply(foldList, function(idx) {
               Xtrain <- object@X[-idx,]
@@ -278,7 +274,16 @@ setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
               
               pfit <- pls.meancen(Ytrain, Xtrain[,keep.idx], ncomp=ncomp, cv=FALSE, boot=FALSE)            
               ypred <- predict(pfit, newdata=Xtest[,keep.idx], ncomp=ncomp)
-        
+              
+              #c10 <- ypred[[1]]
+              #proj <- c10$projection
+              #ylevs <- levels(object@Y)
+              #Fscores <- pfit@svd$v %*% diag(pfit@d)
+              #SSTot <- apply(proj, 1, function(vals) sum(vals ^2))
+              #SSWithin <- sapply(1:nrow(proj), function(i) {
+              #  sum((proj[i,] - Fscores[which(Ytest[i] == ylevs),])^2)
+              #})
+                     
             })
            
             R <- do.call(rbind, lapply(res, function(M) {
@@ -302,12 +307,13 @@ setMethod("predict", signature(object="plsfit", newdata="matrix", ncomp="numeric
             Forig <- object@svd$v %*% diag(object@d)
             
             res <- lapply(ncomp, function(nc) {
+              
               D <- rdist(Fscores[,1:nc], Forig[,1:nc])
               D2 <- D^2
               min.d <- apply(D2, 1, which.min)
               classPred <- levels(object@Y)[min.d]
-            
-              list(class=classPred, dsquared=D2)
+              
+              list(class=classPred, dsquared=D2, projection=Fscores)
             })
                         
             names(res) <- paste0("Components", ncomp)
