@@ -255,7 +255,6 @@ setMethod("contributions", "plsfit", function(object, by=NULL) {
 })
 
 
-
 setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
           function(object, nfolds, ncomp, svd.method="fast", featSel=NULL, metric="accuracy") {
             foldList <- createFolds(object@Y, nfolds)
@@ -285,12 +284,26 @@ setMethod("cv", signature(object="plsfit", nfolds="numeric", ncomp="numeric"),
               #})
                      
             })
-           
-            R <- do.call(rbind, lapply(res, function(M) {
-              do.call(cbind, lapply(M, function(m) m$class))
-            }))
-                       
-            R[order(unlist(foldList)),]
+            
+            if (metric == "accuracy") {
+              R <- do.call(rbind, lapply(res, function(M) {
+                do.call(cbind, lapply(M, function(m) m$class))
+              }))                     
+              R[order(unlist(foldList)),]
+              
+            } else if (metric == "distanceRank") {
+              ylevs <- levels(object@Y)
+             
+              rankD <- do.call(rbind, lapply(1:length(foldList), function(i) {
+                idx <- foldList[[i]]
+                yidx <- sapply(object@Y[idx], function(y) which(y == ylevs))
+                M <- res[[i]]
+                D1 <- do.call(cbind, lapply(M, function(m) {
+                  m$distanceRank[cbind(yidx,1:ncol(m$distanceRank))]
+                }))
+              }))                   
+              rankD <- rankD[order(unlist(foldList)),]         
+            } 
             
           })
 
@@ -311,15 +324,14 @@ setMethod("predict", signature(object="plsfit", newdata="matrix", ncomp="numeric
               D <- rdist(Fscores[,1:nc], Forig[,1:nc])
               D2 <- D^2
               min.d <- apply(D2, 1, which.min)
+              rank.d <- apply(D2, 1, rank)
               classPred <- levels(object@Y)[min.d]
               
-              list(class=classPred, dsquared=D2, projection=Fscores)
+              list(class=classPred, dsquared=D2, projection=Fscores, distanceRank=rank.d)
             })
                         
             names(res) <- paste0("Components", ncomp)
-            res
-            
-            
+            res           
           })
 
 
