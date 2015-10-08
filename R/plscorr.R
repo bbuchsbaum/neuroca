@@ -37,6 +37,30 @@ loadings <- function(x) UseMethod("loadings")
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")
 
+#' @export
+bootstrap <- function(x, niter, ...) UseMethod("bootstrap")
+
+#' @export
+jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
+
+#' @export
+permutation <- function(x, ...) UseMethod("permutation")
+
+optimal_components <- function(x, ...) UseMethod("optimal_components")
+
+reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
+
+
+project.rows <- function(xr, u, ncomp) {
+  xr %*% u 
+}
+
+project.cols <- function(xc, v, ncomp) {
+  xc %*% v
+}
+
+
+reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
 svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla")) {
@@ -57,25 +81,27 @@ svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla"
 group_means <- function(Y, X) {
   Rs <- rowsum(X,Y)
   yt <- table(Y)
-  sweep(Rs, 1, yt, "/")
+  ret <- sweep(Rs, 1, yt, "/")
+  row.names(ret) <- names(yt)
+  ret
 }
 
 #' @export
 plscorr <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd") {
   if (is.factor(Y)) {
-    plscorr_f(Y, X, ncomp, svd.method)
+    plscorr_da(Y, X, ncomp, svd.method)
   }
 }
 
 #' @export
-scores.pls_result_f <- function(x) {
+scores.pls_result_da <- function(x) {
   x$scores
 }
 
 nested_cv <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
   res <- lapply(innerFolds, function(fidx) {
     exclude <- sort(c(fidx,heldout))
-    prescv <- plscorr_f(x$Y[-exclude], x$X[-exclude,,drop=FALSE], ncomp=x$ncomp, 
+    prescv <- plscorr_da(x$Y[-exclude], x$X[-exclude,,drop=FALSE], ncomp=x$ncomp, 
                       center=x$center, scale=x$scale, svd.method=x$svd.method)
     
     pscores <- lapply(seq(min.comp, x$ncomp), function(n) {
@@ -89,9 +115,46 @@ nested_cv <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
   }))
   
 }
-  
+
 #' @export
-cross_validate.plscorr_result_f <- function(x, folds) {
+reconstruct.plscorr_result_da <- function(x, ncomp=x$ncomp) {
+  t(x$u[,1:ncomp,drop=FALSE] %*% t(x$scores[,1:ncomp,drop=FALSE]))
+}
+
+
+reproducibility.pls_result_da <- function(x, folds, metric=c("norm-2", "norm-1", "avg_cor")) {
+  if (length(folds) == 1) {
+    folds <- caret::createFolds(1:length(x$Y), folds)
+  } else if (length(folds) == length(x$Y)) {
+    folds <- split(1:length(x$Y), folds)
+  }
+  
+  metric <- metric[1]
+  
+  preds <- lapply(seq_along(folds), function(fnum) {
+    message("plscorr_da: reproducibility iteration: ", fnum)
+    fidx <- folds[[fnum]]
+    pmod <- plscorr_da(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=x$ncomp, svd.method=x$svd.method)
+    
+    xb <- group_means(x$Y[fidx], x$X[fidx,,drop=FALSE])
+    xb <- x$pre_process(xb)
+    
+    res <- lapply(seq(1, x$ncomp), function(nc) {
+      xrecon <- reconstruct(x, ncomp=nc)
+      switch(metric,
+            "norm-2"=sqrt(sum((xb - xrecon)^2)),
+            "norm-1"=sum(abs(xb - xrecon)),
+            "avg_cor"=mean(diag(cor(t(xb), t(xrecon))))
+      )
+    })
+  })
+    
+           
+}
+
+
+#' @export
+cross_validate.plscorr_result_da <- function(x, folds, metric="AUC") {
   if (length(folds) == 1) {
     folds <- caret::createFolds(1:length(x$Y), folds)
   } else if (length(folds) == length(x$Y)) {
@@ -99,12 +162,15 @@ cross_validate.plscorr_result_f <- function(x, folds) {
   }
   
   preds <- lapply(seq_along(folds), function(fnum) {
-    print(fnum)
+    message("plscorr_da: cross validation iteration: ", fnum)
     res <- nested_cv(x, folds[-fnum], folds[[fnum]], min.comp=1)
-    nc <- which.max(res)
+    
+    perc_of_best <- res/max(res)
+    print(perc_of_best)
+    nc <- which(perc_of_best > .95)[1]
     
     fidx <- folds[[fnum]]
-    pmod <- plscorr_f(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=nc, svd.method=x$svd.method) 
+    pmod <- plscorr_da(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=nc, svd.method=x$svd.method) 
     pclass <- predict(pmod, x$X[folds[[fnum]],,drop=FALSE], ncomp=nc, type="class")
     prob <- predict(pmod, x$X[folds[[fnum]],,drop=FALSE], ncomp=nc, type="prob")
     list(class=pclass,prob=prob,K_perf=res, K_best=nc)
@@ -118,7 +184,7 @@ cross_validate.plscorr_result_f <- function(x, folds) {
 }
 
 #' @export
-predict.plscorr_result_f <- function(x, newdata, type=c("class", "prob", "scores", "crossprod"), ncomp=NULL) {
+predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "scores", "crossprod"), ncomp=NULL) {
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
     x <- matrix(newdata, nrow=1, ncol=ncol(x$condMeans))
   }
@@ -131,9 +197,11 @@ predict.plscorr_result_f <- function(x, newdata, type=c("class", "prob", "scores
     ncomp <- x$ncomp
   }
   
-
-  xc <- x$pre_process(newdata)
-  fscores <- xc %*% x$v[,1:ncomp,drop=FALSE]
+  xc <- x$pre_process(as.matrix(newdata))
+  
+  #fscores <- xc %*% x$v[,1:ncomp,drop=FALSE]
+  
+  fscores <- xc %*% x$u[,1:ncomp,drop=FALSE]
   
   if (type == "scores") {
     fscores
@@ -177,20 +245,122 @@ apply_scaling <- function(Xc) {
 
 
 #' @export
-plscorr_f <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
+plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.factor(Y))
-  Xc <- scale(X, center=center, scale=scale)
-  XB <- group_means(Y, Xc)
-  svdres <- svd.wrapper(XB, ncomp, svd.method)
-
-  scores <- svdres$u %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
+  
+  
+  #Xc <- scale(X, center=center, scale=scale)
+  XB <- group_means(Y, X)
+  XBc <- scale(XB, center=center, scale=scale)
+  #svdres <- svd.wrapper(XBc, ncomp, svd.method)
+  svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
+  
+  scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
   row.names(scores) <- levels(Y)
 
-  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XB, center=center, scale=scale, pre_process=apply_scaling(Xc), 
+  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=apply_scaling(XBc), 
               svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d)
   
-  class(ret) <- "plscorr_result_f"
+  class(ret) <- "plscorr_result_da"
   ret
   
 }
+
+#' @export
+scores.pls_result_da <- function(x) {
+  x$scores
+}
+
+optimal_components.pls_result_da <- function(x, method="smooth") {
+  FactoMineR::estim_ncp(t(x$condMeans),method=method)
+}
+
+
+
+permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  dstat <- x$d[1:x$ncomp]^2/sum(x$d[1:x$ncomp]^2)
+  dstat0 <- matrix(0, nperms, length(dstat))
+  
+  for (i in 1:nperms) {
+    print(i)
+    yperm <- x$Y[sample(1:length(x$Y))]
+    pres <- plscorr_da(yperm, x$X, x$ncomp, x$center, x$scale, svd.method=x$svd.method) 
+    dstat0[i, ] <- pres$d[1:length(dstat)]^2/sum(pres$d[1:length(dstat)]^2)
+  }
+  
+  p <- rep(0, x$ncomp)
+  for (i in 1:x$ncomp) {
+    p[i] <- mean(dstat0[, i] >= dstat[i])
+  }
+  for (i in 2:x$ncomp) {
+    p[i] <- max(p[(i - 1)], p[i])
+  }
+  r <- sum(p <= threshold)
+  return(list(r = r, p = p))
+  
+}
+
+
+bootstrap.plscorr_result_da <- function(x, niter, strata=NULL) {
+  do_boot <- function(indices) {
+    XBoot <- x$X[indices,]
+    YBoot <- x$Y[indices]
+    
+    #Xc <- x$pre_process(XBoot)
+    
+    ## barycenters of bootstrap samples
+    XB <- group_means(YBoot, XBoot)
+    
+    ## apply pre-processing from full model
+    XBc <- x$pre_process(XB) 
+    
+    br <- project.rows(XBc, x$u)
+    bc <- project.cols(t(XB), x$v)
+    
+    list(boot4R=br,
+         boot4C=bc)
+  }
+  
+  boot.ratio <- function(bootlist) {
+    boot.mean <- Reduce("+", bootlist)/length(bootlist)
+    boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
+    boot.mean/boot.sd	
+  }
+  
+  .resample <- function(x, ...)  { x[sample.int(length(x), ...)] }
+  
+  sample_indices <- function(Y, strata=NULL) {
+    if (is.null(strata)) {
+      sort(unlist(lapply(levels(x$Y), function(lev) {
+        sample(which(x$Y == lev), replace=TRUE)
+      })))
+    } else {
+      boot.strat <- sample(levels(strata), replace=TRUE)
+      indices <- lapply(boot.strat, function(stratum) {
+        unlist(lapply(levels(Y), function(lev) {
+          .resample(which(Y == lev & strata==stratum), replace=TRUE)					
+        }))
+      })
+    }
+  }
+  
+  boot.res <- 
+    lapply(1:niter, function(i) {
+      message("bootstrap iteration: ", i)
+      row_indices <- sample_indices(x$Y, strata)
+      do_boot(sort(unlist(row_indices)))
+    })
+ 
+  
+  ret <- list(boot.ratio.R=boot.ratio(lapply(boot.res, "[[", 1)),
+              boot.ratio.C=boot.ratio(lapply(boot.res, "[[", 2)),
+              boot.raw.R=lapply(boot.res, "[[", 1),
+              boot.raw.C=lapply(boot.res, "[[", 2))
+  
+  class(res) <- c("list", "bootstrap_result")
+  
+}
+
 
