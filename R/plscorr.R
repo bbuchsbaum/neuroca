@@ -46,24 +46,28 @@ jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
 #' @export
 permutation <- function(x, ...) UseMethod("permutation")
 
+#' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
 
+#' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 
-
+#' @export
 project.rows <- function(xr, u, ncomp) {
   xr %*% u 
 }
 
+#' @export
 project.cols <- function(xc, v, ncomp) {
   xc %*% v
 }
 
-
+#' @export
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
 svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla")) {
+  assert_that(method %in% c("base", "fast", "irbla"))
   res <- switch(method[1],
                 base=svd(XC),
                 fast.svd=corpcor:::fast.svd(XC),
@@ -125,7 +129,7 @@ reconstruct.plscorr_result_da <- function(x, ncomp=x$ncomp) {
   t(x$u[,1:ncomp,drop=FALSE] %*% t(x$scores[,1:ncomp,drop=FALSE]))
 }
 
-
+#' @export
 reproducibility.pls_result_da <- function(x, folds, metric=c("norm-2", "norm-1", "avg_cor")) {
   if (length(folds) == 1) {
     folds <- caret::createFolds(1:length(x$Y), folds)
@@ -227,7 +231,7 @@ predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "score
   
 }
 
-
+#' @export
 apply_scaling <- function(Xc) {
   force(Xc)
   function(M) {
@@ -252,11 +256,14 @@ apply_scaling <- function(Xc) {
 plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.factor(Y))
   
-  
-  ## compute barycenters
-  XB <- group_means(Y, X)
-  
-  XBc <- scale(XB, center=center, scale=scale)
+  if (any(table(Y) > 1)) {
+    ## compute barycenters
+    XB <- group_means(Y, X)
+    XBc <- scale(XB, center=center, scale=scale)
+  } else {
+    XB <- X
+    XBc <- scale(XB, center=center, scale=scale)
+  }
   
   #svdres <- svd.wrapper(XBc, ncomp, svd.method)
   svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
@@ -277,12 +284,13 @@ scores.pls_result_da <- function(x) {
   x$scores
 }
 
+#' @export
 optimal_components.pls_result_da <- function(x, method="smooth") {
   FactoMineR::estim_ncp(t(x$condMeans),method=method)
 }
 
 
-
+#' @export
 permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
   if (!is.null(seed)) set.seed(seed)
   
@@ -308,7 +316,7 @@ permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE
   
 }
 
-
+#' @export
 bootstrap.plscorr_result_da <- function(x, niter, strata=NULL) {
   do_boot <- function(indices) {
     XBoot <- x$X[indices,]

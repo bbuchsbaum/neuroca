@@ -18,8 +18,7 @@ PLS_Config <- function(
   block_ids=NULL,
   #stacking_dimension,
   model_name="Mean_Centered_PLS",
-  model_control=list(),
-) {
+  model_control=list()) {
   obj <- list(
     data_list=design_list,
     design=design,
@@ -57,12 +56,6 @@ configure_model.PLSConfig <- function(conf) {
   
   
       
-    
-    
-    
-  
-  
-  
 }
 
 
