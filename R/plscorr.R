@@ -90,6 +90,8 @@ group_means <- function(Y, X) {
 plscorr <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd") {
   if (is.factor(Y)) {
     plscorr_da(Y, X, ncomp, svd.method)
+  } else {
+    stop("Y variable must be factor")
   }
 }
 
@@ -97,6 +99,8 @@ plscorr <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.sv
 scores.pls_result_da <- function(x) {
   x$scores
 }
+
+
 
 nested_cv <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
   res <- lapply(innerFolds, function(fidx) {
@@ -249,9 +253,11 @@ plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base
   assert_that(is.factor(Y))
   
   
-  #Xc <- scale(X, center=center, scale=scale)
+  ## compute barycenters
   XB <- group_means(Y, X)
+  
   XBc <- scale(XB, center=center, scale=scale)
+  
   #svdres <- svd.wrapper(XBc, ncomp, svd.method)
   svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
   
@@ -317,13 +323,13 @@ bootstrap.plscorr_result_da <- function(x, niter, strata=NULL) {
     XBc <- x$pre_process(XB) 
     
     br <- project.rows(XBc, x$u)
-    bc <- project.cols(t(XB), x$v)
+    bc <- project.cols(t(XBc), x$v)
     
     list(boot4R=br,
          boot4C=bc)
   }
   
-  boot.ratio <- function(bootlist) {
+  boot_ratio <- function(bootlist) {
     boot.mean <- Reduce("+", bootlist)/length(bootlist)
     boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
     boot.mean/boot.sd	
@@ -354,8 +360,8 @@ bootstrap.plscorr_result_da <- function(x, niter, strata=NULL) {
     })
  
   
-  ret <- list(boot.ratio.R=boot.ratio(lapply(boot.res, "[[", 1)),
-              boot.ratio.C=boot.ratio(lapply(boot.res, "[[", 2)),
+  ret <- list(boot.ratio.R=boot_ratio(lapply(boot.res, "[[", 1)),
+              boot.ratio.C=boot_ratio(lapply(boot.res, "[[", 2)),
               boot.raw.R=lapply(boot.res, "[[", 1),
               boot.raw.C=lapply(boot.res, "[[", 2))
   
