@@ -1,5 +1,13 @@
 #' @importFrom assertthat assert_that 
 
+dual_musubada <- function(Xlist) {
+  blockVar <- factor(unlist(lapply(1:length(Xlist), function(i) rep(i, ncol(Xlist[[i]])))))
+  blockIndices <- lapply(1:length(Xlist), function(i) which(blockVar == i))
+  Xc <- do.call(cbind, Xlist)
+  
+}
+
+
 #' @export
 musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd", normalization="MFA") {
   assert_that(all(sapply(Xlist, is.matrix)))
@@ -21,7 +29,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   blockIndices <- lapply(1:length(Xlist), function(i) which(blockVar == i))
   
   ## compute scaling factor based on reciprocal of first squared singular value
-  alpha <- lapply(XBc, function(X) 1/svd.wrapper(X, ncomp=ncomp, method="irlba")$d[1]^2)
+  alpha <- lapply(XBc, function(X) 1/svd.wrapper(X, ncomp=ncomp, method="irlba")$d[1])
   
   ## scale each table by 'alpha'
   normXBc <- lapply(1:length(XBc), function(i) XBc[[i]] * alpha[[i]])
