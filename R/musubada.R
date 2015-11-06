@@ -1,13 +1,8 @@
 #' @importFrom assertthat assert_that 
 
-dual_musubada <- function(Xlist) {
-  blockVar <- factor(unlist(lapply(1:length(Xlist), function(i) rep(i, ncol(Xlist[[i]])))))
-  blockIndices <- lapply(1:length(Xlist), function(i) which(blockVar == i))
-  Xc <- do.call(cbind, Xlist)
-  
-}
 
 
+### implement soft-thresholding that spans datasets...? similar to spls?
 #' @export
 musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd", normalization="MFA") {
   assert_that(all(sapply(Xlist, is.matrix)))
@@ -37,16 +32,20 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   YB <- factor(row.names(normXBc[[1]]))
   pls_res <- plscorr_da(YB, do.call(cbind, normXBc), ncomp=ncomp, center=FALSE, scale=FALSE)
   
-  partial_fscores <- lapply(1:length(Xlist), function(i) {
-    ind <- blockIndices[[i]]
-    normXBc[[i]] %*% pls_res$u[ind,]
-  })
+  result <- list(
+    partial_fscores = 
+    lapply(1:length(Xlist), function(i) {
+      ind <- blockIndices[[i]]
+      length(Xlist) * normXBc[[i]] %*% pls_res$u[ind,]
+    }),
   
- table_contr <- do.call(cbind, lapply(1:ncomp, function(i) {
-   sapply(1:length(blockIndices), function(j) {
-     sum(pls_res$u[blockIndices[[j]],i]^2)
-   })
- }))
+    table_contr = do.call(cbind, lapply(1:ncomp, function(i) {
+      sapply(1:length(blockIndices), function(j) {
+        sum(pls_res$u[blockIndices[[j]],i]^2)
+      })
+    }))
+ 
+ 
      
   
   

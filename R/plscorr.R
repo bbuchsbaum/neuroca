@@ -66,8 +66,8 @@ project.cols <- function(xc, v, ncomp) {
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
-svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irbla")) {
-  assert_that(method %in% c("base", "fast", "irbla"))
+svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irlba")) {
+  assert_that(method %in% c("base", "fast", "irlba"))
   res <- switch(method[1],
                 base=svd(XC),
                 fast.svd=corpcor:::fast.svd(XC),
