@@ -2,13 +2,15 @@ Package: neuropls
 Imports:
     graphics,
     grid,
-    stats
+    stats,
+    assertthat
 License: GPL (>= 2)
 Maintainer: Bradley Buchsbaum <bbuchsbaum@rotman-baycrest.on.ca>
 Title: neuropls: partial least squares correlation for neuroimaging data
 Type: Package
 Author: Bradley Buchsbaum
-Description: neuropls is an implementation of partial least squares for neuroimaging data. 
+Description: neuropls is an implementation of partial least squares for
+    neuroimaging data.
 Version: 0.0.1
 Date: 2012-12-01
 Depends:
@@ -22,9 +24,4 @@ Depends:
     caret,
     fields,
     sda
-Collate:
-    'all-classes.R'
-    'all-generic.R'
-    'plsfit.R'
-    'featureSel.R'
-    
+RoxygenNote: 5.0.0
