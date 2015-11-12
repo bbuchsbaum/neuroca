@@ -63,6 +63,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     center=center,
     scale=scale,
     ncomp=ncomp,
+    alpha=sapply(normXBc, function(x) attr(x, "alpha"))
     pre_process=pre_process
   )
   
