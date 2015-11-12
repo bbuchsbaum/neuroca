@@ -20,8 +20,14 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   
   pre_process <- function(X) {
     Xc <- scale(X, center=center, scale=scale)
-    alpha <- 1/svd.wrapper(X, ncomp=1, method="irlba")$d[1]
-    Xc <- Xc * alpha
+    
+    if (normalization == "MFA") {
+      alpha <- 1/svd.wrapper(X, ncomp=1, method="irlba")$d[1]
+      Xc <- Xc * alpha
+    } else {
+      alpha <- 1
+    }
+    
     attr(Xc, "alpha") <- alpha
     Xc
   }
@@ -63,7 +69,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     center=center,
     scale=scale,
     ncomp=ncomp,
-    alpha=sapply(normXBc, function(x) attr(x, "alpha"))
+    alpha=sapply(normXBc, function(x) attr(x, "alpha")),
     pre_process=pre_process
   )
   
