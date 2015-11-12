@@ -7,7 +7,7 @@
 #' @export
 musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd", normalization="MFA") {
   assert_that(all(sapply(Xlist, is.matrix)))
-  assert_that(all(sapply(Xlist, nrow) == nrow(Xlist[[1]])))
+  #assert_that(all(sapply(Xlist, nrow) == nrow(Xlist[[1]])))
   
   assert_that(is.factor(Y))
   
