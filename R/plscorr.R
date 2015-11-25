@@ -191,6 +191,30 @@ cross_validate.plscorr_result_da <- function(x, folds, metric="AUC") {
   list(class=class, prob=probmat, ncomp=ncomp, ncomp_perf=perfmat)
 }
 
+
+#' @export
+scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "crossprod"), ncomp=2) {
+  if (type == "scores") {
+    fscores
+  } else if (type == "crossprod") {
+    tcrossprod(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+  }else if (type =="class") {
+    D <- rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+    D2 <- D^2
+    min.d <- apply(D2, 1, which.min)
+    row.names(scores)[min.d]
+  } else if (typ == "prob"){
+    ## type is 'prob'
+    probs <- tcrossprod(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+    maxid <- apply(probs,1,which.max)
+    maxp <- probs[cbind(1:nrow(probs), maxid)]
+    probs <- exp(probs - maxp)
+    probs <- zapsmall(probs/rowSums(probs))
+  } else {
+    stop(paste("illegal 'type' argument: ", type))
+  }
+}
+
 #' @export
 predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "scores", "crossprod"), ncomp=NULL) {
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
@@ -208,26 +232,8 @@ predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "score
   xc <- x$pre_process(as.matrix(newdata))
   
   #fscores <- xc %*% x$v[,1:ncomp,drop=FALSE]
-  
   fscores <- xc %*% x$u[,1:ncomp,drop=FALSE]
-  
-  if (type == "scores") {
-    fscores
-  } else if (type == "crossprod") {
-    tcrossprod(fscores[,1:ncomp,drop=FALSE], x$scores[,1:ncomp,drop=FALSE])
-  }else if (type =="class") {
-    D <- rdist(fscores[,1:ncomp,drop=FALSE], x$scores[,1:ncomp,drop=FALSE])
-    D2 <- D^2
-    min.d <- apply(D2, 1, which.min)
-    levels(x$Y)[min.d]
-  } else {
-    ## type is 'prob'
-    probs <- tcrossprod(fscores[,1:ncomp,drop=FALSE], x$scores[,1:ncomp,drop=FALSE])
-    maxid <- apply(probs,1,which.max)
-    maxp <- probs[cbind(1:nrow(probs), maxid)]
-    probs <- exp(probs - maxp)
-    probs <- zapsmall(probs/rowSums(probs))
-  }
+  scorepred(fscores, x$scores,ncomp)
   
 }
 
