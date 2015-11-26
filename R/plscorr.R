@@ -236,7 +236,7 @@ predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "score
   
   #fscores <- xc %*% x$v[,1:ncomp,drop=FALSE]
   fscores <- xc %*% x$u[,1:ncomp,drop=FALSE]
-  scorepred(fscores, x$scores,ncomp)
+  scorepred(fscores, x$scores,type, ncomp)
   
 }
 
