@@ -29,10 +29,10 @@ combinedAUC <- function(Pred, Obs) {
 
 
 #' @export
-scores <- function(x) UseMethod("scores")
+scores <- function(x,...) UseMethod("scores")
 
 #' @export
-loadings <- function(x) UseMethod("loadings")
+loadings <- function(x,...) UseMethod("loadings")
 
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")

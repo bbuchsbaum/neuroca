@@ -1,3 +1,6 @@
+#' @export
+supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
+
 
 coefficientRV <- function(X, Y) {
   if (dim(X)[[1]] != dim(Y)[[1]]) 
@@ -138,11 +141,14 @@ supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
   Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE])
 }
 
+
+#' @export
 loadings.musubada_result <- function(x, table_index) {
- x$plsfit$u[, x$blockIndices[[table_index]], drop=FALSE])
+ x$plsfit$u[x$blockIndices[[table_index]], ,drop=FALSE]
 }
 
 
+#' @export
 supplementary_predictor.musubada_result <- function(x, suptab, type=c("class", "prob", "scores", "crossprod"), ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
   Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE])
