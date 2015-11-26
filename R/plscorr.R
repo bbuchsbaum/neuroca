@@ -181,7 +181,7 @@ cross_validate.plscorr_result_da <- function(x, folds, metric="AUC") {
     nc <- which(perc_of_best > .95)[1]
     
     fidx <- folds[[fnum]]
-    pmod <- plscorr_da(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=nc, svd.method=x$svd.method) 
+    pmod <- x$refit(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=nc, svd.method=x$svd.method) 
     pclass <- predict(pmod, x$X[folds[[fnum]],,drop=FALSE], ncomp=nc, type="class")
     prob <- predict(pmod, x$X[folds[[fnum]],,drop=FALSE], ncomp=nc, type="prob")
     list(class=pclass,prob=prob,K_perf=res, K_best=nc)
