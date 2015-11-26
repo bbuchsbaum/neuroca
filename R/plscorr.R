@@ -206,7 +206,7 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "crossp
     D2 <- D^2
     min.d <- apply(D2, 1, which.min)
     row.names(scores)[min.d]
-  } else if (typ == "prob"){
+  } else if (type == "prob"){
     ## type is 'prob'
     probs <- tcrossprod(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
     maxid <- apply(probs,1,which.max)
