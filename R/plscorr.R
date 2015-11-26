@@ -38,6 +38,9 @@ loadings <- function(x) UseMethod("loadings")
 cross_validate <- function(x, ...) UseMethod("cross_validate")
 
 #' @export
+nested_cv <- function(x, ...) UseMethod("nested_cv")
+
+#' @export
 bootstrap <- function(x, niter, ...) UseMethod("bootstrap")
 
 #' @export
@@ -70,7 +73,7 @@ svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irlba"
   assert_that(method %in% c("base", "fast", "irlba"))
   res <- switch(method[1],
                 base=svd(XC),
-                fast.svd=corpcor:::fast.svd(XC),
+                fast=corpcor:::fast.svd(XC),
                 irlba=irlba:::irlba(XC, nu=min(ncomp, min(dim(XC)) -3), nv=min(ncomp, min(dim(XC)) -3)))
   
  
@@ -105,11 +108,11 @@ scores.pls_result_da <- function(x) {
 }
 
 
-
-nested_cv <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
+#' @export
+nested_cv.plscorr_result_da <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
   res <- lapply(innerFolds, function(fidx) {
     exclude <- sort(c(fidx,heldout))
-    prescv <- plscorr_da(x$Y[-exclude], x$X[-exclude,,drop=FALSE], ncomp=x$ncomp, 
+    prescv <- x$refit(x$Y[-exclude], x$X[-exclude,,drop=FALSE], ncomp=x$ncomp, 
                       center=x$center, scale=x$scale, svd.method=x$svd.method)
     
     pscores <- lapply(seq(min.comp, x$ncomp), function(n) {
@@ -259,6 +262,36 @@ apply_scaling <- function(Xc) {
 
 
 #' @export
+plscorr_sda <- function(Y, X, ncomp=2, center=FALSE, scale=FALSE, svd.method="base") {
+  assert_that(is.factor(Y))
+  
+  if (any(table(Y) > 1)) {
+    ## centroids
+    XB <- sda(X, Y, diagonal=TRUE)
+    XBc <- XB$beta
+  } else {
+    XB <- X
+    XBc <- scale(XB, center=center, scale=scale)
+  }
+  
+  #svdres <- svd.wrapper(XBc, ncomp, svd.method)
+  svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
+  
+  scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
+  row.names(scores) <- levels(Y)
+  
+  refit <- function(Y, X, ncomp, ...) { plscorr_sda(Y, X, ncomp,...) }
+  
+  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=FALSE, scale=FALSE, pre_process=apply_scaling(XBc), 
+              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
+  
+  class(ret) <- c("plscorr_result_da", "plscorr_result_sda")
+  ret
+  
+}
+
+
+#' @export
 plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.factor(Y))
   
@@ -277,8 +310,10 @@ plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base
   scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
   row.names(scores) <- levels(Y)
 
+  refit <- function(Y, X, ncomp, ...) { plscorr_da(Y, X, ncomp,...) }
+  
   ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=apply_scaling(XBc), 
-              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d)
+              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
   
   class(ret) <- "plscorr_result_da"
   ret
