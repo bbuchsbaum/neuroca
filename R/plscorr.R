@@ -262,16 +262,20 @@ apply_scaling <- function(Xc) {
 
 
 #' @export
-plscorr_sda <- function(Y, X, ncomp=2, center=FALSE, scale=FALSE, svd.method="base") {
+plscorr_sda <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.factor(Y))
   
   if (any(table(Y) > 1)) {
     ## centroids
     XB <- sda(X, Y, diagonal=TRUE)
     XBc <- XB$beta
+    global_mean <- colMeans(X)
   } else {
-    XB <- X
-    XBc <- scale(XB, center=center, scale=scale)
+    stop("must have more than one observation per category")
+  }
+  
+  do_scale <- function(X) {
+    sweep(X, 2, global_mean)
   }
   
   #svdres <- svd.wrapper(XBc, ncomp, svd.method)
@@ -282,7 +286,7 @@ plscorr_sda <- function(Y, X, ncomp=2, center=FALSE, scale=FALSE, svd.method="ba
   
   refit <- function(Y, X, ncomp, ...) { plscorr_sda(Y, X, ncomp,...) }
   
-  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=FALSE, scale=FALSE, pre_process=apply_scaling(XBc), 
+  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=do_scale, 
               svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
   
   class(ret) <- c("plscorr_result_da", "plscorr_result_sda")
