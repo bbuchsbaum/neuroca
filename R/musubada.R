@@ -77,7 +77,6 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   normXBc <- lapply(XB, pre_process)
   
   
-  
   ## compute scaling factor based on reciprocal of first squared singular value
   #alpha <- lapply(XBc, function(X) 1/svd.wrapper(X, ncomp=1, method="irlba")$d[1])
   

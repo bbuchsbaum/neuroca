@@ -96,7 +96,7 @@ group_means <- function(Y, X) {
 #' @export
 plscorr <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd") {
   if (is.factor(Y)) {
-    plscorr_da(Y, X, ncomp, svd.method)
+    plscorr_da(Y, X, ncomp, center=center, scale=scale, svd.method=svd.method)
   } else {
     stop("Y variable must be factor")
   }
@@ -260,36 +260,107 @@ apply_scaling <- function(Xc) {
   }
 }
 
+#' @export
+plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
+  tform <- terms(formula)
+  facs <- attr(tform, "factors")
+  
+  termorder <- apply(facs,2, sum)
+  orders <- seq(1, max(termorder))
+  
+  
+  
+  get_lower_form <- function(ord) {
+    tnames <- colnames(facs)[termorder < ord]
+    meat <- paste(tnames, collapse= " + ")
+    as.formula(paste("X ~ ", meat))
+  }
+  
+  res <- lapply(1:length(termorder), function(i) {
+    ord <- termorder[i]
+    if (ord == 1) {
+      form <- as.formula(paste("X ~ ", colnames(facs)[i], "-1"))
+      G <- model.matrix(form,data=design)
+      plsres <- plscorr_contrast(X, G, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      list(G=G, form=form, lower_form = ~ 1, plsres=plsres)
+    } else {
+      lower_form <- get_lower_form(ord)
+      print(paste("lower order:", lower_form))
+      Glower <- model.matrix(lower_form, data=design)
+      Xresid <- resid(lsfit(Glower, X, intercept=FALSE))
+      form <- as.formula(paste("Xresid ~ ", colnames(facs)[i], "-1"))
+      print(paste("higher order:", form))
+      G <- model.matrix(form, data=design)
+      plsres <- plscorr_contrast(Xresid, G, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      list(G=G, form=form, lower_form = lower_form, plsres=plsres)
+    }
+  })
+  
+  names(res) <- colnames(facs)
+  ret <- list(
+    results=res,
+    formula=formula,
+    design=design,
+    terms=colnames(facs)
+  )
+  
+  
+  class(ret) <- "plscorr_result_cpca"
+  ret
+  
+}
+
+
+# #' @export
+# plscorr_behav <- function(Y, X, groupdes, random=NULL, ncomp=2, svd.method="base") {
+#   if (is.vector(Y)) {
+#     Y <- as.matrix(Y)
+#   }
+#   
+#   if (is.null(colnames(Y))) {
+#     colnames(Y) <- paste0("V", 1:ncol(Y))
+#   }
+#   
+#   assert_that(nrow(Y) == nrow(X))
+#   assert_that(length(groupdes) == nrow(X))
+#   
+#   
+#   Xs <- split(tibble::as_data_frame(X), groupdes)
+#   Ys <- split(tibble::as_data_frame(Y), groupdes)
+#   
+#   Xs <- lapply(Xs, scale)
+#   Ys <- lapply(Ys, scale)
+#   
+#   R <- lapply(1:length(Xs), function(i) {
+#     t(cor(Xs[[i]], Ys[[i]]))
+#   })
+#   
+#   Rtot <- plyr::rbind.fill.matrix(R)
+#   Y1 <- rep(colnames(Y), length(levels(groupdes)))
+#   
+#   plscorr_da(Y1,  Rtot, ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
+# }
+
 
 #' @export
-plscorr_sda <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
-  assert_that(is.factor(Y))
+plscorr_contrast <- function(X, G, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
+  assert_that(is.matrix(G))
+  assert_that(nrow(G) == nrow(X))
   
-  if (any(table(Y) > 1)) {
-    ## centroids
-    XB <- sda(X, Y, diagonal=TRUE)
-    XBc <- XB$beta
-    global_mean <- colMeans(X)
-  } else {
-    stop("must have more than one observation per category")
-  }
+  X0 <- t(t(X) %*% G)
+  X0c <- scale(X0, center=center, scale=scale)
   
-  do_scale <- function(X) {
-    sweep(X, 2, global_mean)
-  }
-  
-  #svdres <- svd.wrapper(XBc, ncomp, svd.method)
-  svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
+  svdres <- svd.wrapper(t(X0c), ncomp, svd.method)
   
   scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
-  row.names(scores) <- levels(Y)
+  row.names(scores) <- colnames(G)
   
-  refit <- function(Y, X, ncomp, ...) { plscorr_sda(Y, X, ncomp,...) }
+  refit <- function(X, G, ncomp, ...) { plscorr_contrast(X, G, ncomp,...) }
   
-  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=do_scale, 
+  ret <- list(X=X, G=G, ncomp=svdres$ncomp, condMeans=X0c, center=center, scale=scale, pre_process=apply_scaling(X0c), 
               svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
   
-  class(ret) <- c("plscorr_result_da", "plscorr_result_sda")
+  class(ret) <- c("plscorr_result", "plscorr_result_contrast")
   ret
   
 }
@@ -319,7 +390,7 @@ plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base
   ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=apply_scaling(XBc), 
               svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
   
-  class(ret) <- "plscorr_result_da"
+  class(ret) <- c("plscorr_result", "plscorr_result_da")
   ret
   
 }
@@ -334,6 +405,36 @@ optimal_components.pls_result_da <- function(x, method="smooth") {
   FactoMineR::estim_ncp(t(x$condMeans),method=method)
 }
 
+#' @export
+optimal_components.pls_result_contrast <- function(x, method="smooth") {
+  FactoMineR::estim_ncp(t(x$condMeans),method=method)
+}
+
+#' @export
+permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  dstat <- x$d[1:x$ncomp]^2/sum(x$d[1:x$ncomp]^2)
+  dstat0 <- matrix(0, nperms, length(dstat))
+  
+  for (i in 1:nperms) {
+    print(i)
+    Gperm <- x$G[sample(1:nrow(x$G)),]
+    pres <- plscorr_contrast(x$X, Gperm, x$ncomp, x$center, x$scale, svd.method=x$svd.method) 
+    dstat0[i, ] <- pres$d[1:length(dstat)]^2/sum(pres$d[1:length(dstat)]^2)
+  }
+  
+  p <- rep(0, x$ncomp)
+  for (i in 1:x$ncomp) {
+    p[i] <- mean(dstat0[, i] >= dstat[i])
+  }
+  for (i in 2:x$ncomp) {
+    p[i] <- max(p[(i - 1)], p[i])
+  }
+  r <- sum(p <= threshold)
+  return(list(r = r, p = p))
+  
+}
 
 #' @export
 permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
