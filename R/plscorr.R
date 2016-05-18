@@ -128,7 +128,7 @@ nested_cv.plscorr_result_da <- function(x, innerFolds, heldout, metric="AUC", mi
 }
 
 #' @export
-reconstruct.plscorr_result_da <- function(x, ncomp=x$ncomp) {
+reconstruct.plscorr_result <- function(x, ncomp=x$ncomp) {
   t(x$u[,1:ncomp,drop=FALSE] %*% t(x$scores[,1:ncomp,drop=FALSE]))
 }
 
@@ -163,6 +163,40 @@ reproducibility.pls_result_da <- function(x, folds, metric=c("norm-2", "norm-1",
            
 }
 
+
+cross_validate.plscorr_result_contrast(x, strata=NULL, nrepeats=10, metric="Rv") {
+  if (is.null(strata)) {
+    strata <- x$strata
+  }
+  
+  lapply(levels(strata), function(lev) {
+    heldout <- which(strata == lev)
+    keep <- which(strata != lev)
+    Xt <- x$X[keep,]
+    X0 <- x$X[heldout,]
+    res <- x$refit(Xt, x$G[keep,], x$ncomp)
+   
+    Xt0 <- t(t(X0) %*% x$G[heldout,])
+    Xt0 <- scale(Xt0, center=x$center, scale=x$scale)
+    
+    err <- lapply(seq(1, x$ncomp), function(nc) {
+      xrecon <- reconstruct(x, ncomp=nc)
+      switch(metric,
+             "norm-2"=sqrt(sum((Xt0 - xrecon)^2)),
+             "norm-1"=sum(abs(Xt0 - xrecon)),
+             "avg_cor"=mean(diag(cor(t(Xt0), t(xrecon))))
+      )
+    })
+    
+  }
+  
+ 
+  
+  
+
+  
+  
+}
 
 #' @export
 cross_validate.plscorr_result_da <- function(x, folds, metric="AUC") {
@@ -260,20 +294,47 @@ apply_scaling <- function(Xc) {
   }
 }
 
-#' @export
-plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
+
+plscorr_lm <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
   tform <- terms(formula)
   facs <- attr(tform, "factors")
   
   termorder <- apply(facs,2, sum)
   orders <- seq(1, max(termorder))
   
+  strata <- if (!is.null(random)) {
+    design[[random]]
+  }
   
   
   get_lower_form <- function(ord) {
     tnames <- colnames(facs)[termorder < ord]
-    meat <- paste(tnames, collapse= " + ")
+    
+    meat <- if (!is.null(random)) {
+      paste0("(", paste(tnames, collapse= " + "), ")*", random)
+    } else {
+      paste(tnames, collapse= " + ")
+    }
+    
     as.formula(paste("X ~ ", meat))
+  }
+  
+  fit_betas <- function(X, G) {
+    if (!is.null(strata)) {
+      dummy_matrix <- turner::factor_to_dummy(as.factor(strata))
+      
+      Xblocks <- lapply(1:ncol(dummy_matrix), function(i) {
+        ind <- dummy_matrix[,i] == 1
+        Xs <- X[ind,]
+        lsfit(G[ind,], Xs, intercept=FALSE)$coefficients
+      })
+      
+      Reduce("+", Xblocks)/length(Xblocks)
+    
+    } else {
+      lsfit(G, X, intercept=FALSE)$coefficients
+    }
+    
   }
   
   res <- lapply(1:length(termorder), function(i) {
@@ -281,17 +342,18 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
     if (ord == 1) {
       form <- as.formula(paste("X ~ ", colnames(facs)[i], "-1"))
       G <- model.matrix(form,data=design)
-      plsres <- plscorr_contrast(X, G, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      betas <- fit_betas(X, G)
+      plsres <- plscorr_contrast(betas, turner::factor_to_dummy(factor(colnames(G))), strata=NULL, 
+                                 center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
       list(G=G, form=form, lower_form = ~ 1, plsres=plsres)
     } else {
       lower_form <- get_lower_form(ord)
-      print(paste("lower order:", lower_form))
       Glower <- model.matrix(lower_form, data=design)
       Xresid <- resid(lsfit(Glower, X, intercept=FALSE))
       form <- as.formula(paste("Xresid ~ ", colnames(facs)[i], "-1"))
-      print(paste("higher order:", form))
       G <- model.matrix(form, data=design)
-      plsres <- plscorr_contrast(Xresid, G, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      betas <- fit_betas(Xresid, G)
+      plsres <- plscorr_contrast(Xresid, turner::factor_to_dummy(factor(colnames(G))), center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
       list(G=G, form=form, lower_form = lower_form, plsres=plsres)
     }
   })
@@ -306,6 +368,75 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
   
   
   class(ret) <- "plscorr_result_cpca"
+  ret
+  
+}
+ 
+
+
+#' @export
+plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
+  tform <- terms(formula)
+  facs <- attr(tform, "factors")
+  
+  termorder <- apply(facs,2, sum)
+  orders <- seq(1, max(termorder))
+  
+  #if (!is.null(random)) {
+  #  random2 <- update.formula(random,  ~ . -1)
+  #  Grandom <- model.matrix(random, data=design)
+  #  random_list <- turner::dummy_to_list(Grandom)
+  #}
+  
+  strata <- if (!is.null(random)) {
+    design[[random]]
+  } else {
+    NULL
+  }
+  
+  
+  get_lower_form <- function(ord) {
+    tnames <- colnames(facs)[termorder < ord]
+    
+    meat <- if (!is.null(random)) {
+      paste0("(", paste(tnames, collapse= " + "), ")*", random)
+    } else {
+      paste(tnames, collapse= " + ")
+    }
+    
+    
+    as.formula(paste("X ~ ", meat))
+  }
+  
+  res <- lapply(1:length(termorder), function(i) {
+    ord <- termorder[i]
+    if (ord == 1) {
+      form <- as.formula(paste("X ~ ", colnames(facs)[i], "-1"))
+      G <- model.matrix(form,data=design)
+      plsres <- plscorr_contrast(X, G, strata, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      list(G=G, Glower=NULL, form=form, lower_form = ~ 1, plsres=plsres)
+    } else {
+      lower_form <- get_lower_form(ord)
+      Glower <- model.matrix(lower_form, data=design)
+      Xresid <- resid(lsfit(Glower, X, intercept=FALSE))
+      form <- as.formula(paste("Xresid ~ ", colnames(facs)[i], "-1"))
+      G <- model.matrix(form, data=design)
+      plsres <- plscorr_contrast(Xresid, G, strata=strata, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
+      list(G=G, Glower, form=form, lower_form = lower_form, plsres=plsres)
+    }
+  })
+  
+  names(res) <- colnames(facs)
+  ret <- list(
+    results=res,
+    formula=formula,
+    strata=strata,
+    design=design,
+    terms=colnames(facs)
+  )
+  
+  
+  class(ret) <- "plscorr_result_aov"
   ret
   
 }
@@ -343,12 +474,35 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
 
 
 #' @export
-plscorr_contrast <- function(X, G, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
+#' @import turner
+plscorr_contrast <- function(X, G, strata=NULL, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.matrix(G))
   assert_that(nrow(G) == nrow(X))
   
-  X0 <- t(t(X) %*% G)
-  X0c <- scale(X0, center=center, scale=scale)
+  if (!is.null(strata)) {
+    dummy_matrix <- turner::factor_to_dummy(as.factor(strata))
+    
+    Xblocks <- lapply(1:ncol(dummy_matrix), function(i) {
+      ind <- dummy_matrix[,i] == 1
+      scale(t(t(X[ind,]) %*% G[ind,]), center=center, scale=scale)
+    })
+    
+    X0c <- Reduce("+", Xblocks)/length(Xblocks)
+    
+    if (center) {
+      xc <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:center"))))
+      attr(X0c, "scaled:center") <- xc
+    }
+    if (scale) {
+      xs <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:scale"))))
+      attr(X0c, "scaled:scale") <- xs
+    }
+           
+  } else {
+    X0 <- t(t(X) %*% G)
+    X0c <- scale(X0, center=center, scale=scale)
+  }
+  
   
   svdres <- svd.wrapper(t(X0c), ncomp, svd.method)
   
@@ -358,7 +512,7 @@ plscorr_contrast <- function(X, G, ncomp=2, center=TRUE, scale=FALSE, svd.method
   refit <- function(X, G, ncomp, ...) { plscorr_contrast(X, G, ncomp,...) }
   
   ret <- list(X=X, G=G, ncomp=svdres$ncomp, condMeans=X0c, center=center, scale=scale, pre_process=apply_scaling(X0c), 
-              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
+              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit, strata=strata)
   
   class(ret) <- c("plscorr_result", "plscorr_result_contrast")
   ret
@@ -451,6 +605,7 @@ permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE
   }
   
   p <- rep(0, x$ncomp)
+  
   for (i in 1:x$ncomp) {
     p[i] <- mean(dstat0[, i] >= dstat[i])
   }
