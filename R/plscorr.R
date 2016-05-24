@@ -122,10 +122,37 @@ nested_cv.plscorr_result_da <- function(x, innerFolds, heldout, metric="AUC", mi
   
   unlist(lapply(seq(min.comp, x$ncomp), function(n) {
     Pmat <- do.call(rbind, lapply(res, "[[", n))
-    combinedAUC(Pmat, x$Y[-heldout])
+    combinedACC(Pmat, x$Y[-heldout])
   }))
-  
 }
+
+nested_cv.plscorr_result_contrast <- function(x, innerFolds, heldout, metric="AUC", min.comp=1) {
+  res <- lapply(innerFolds, function(fidx) {
+    print(fidx)
+    exclude <- sort(c(fidx,heldout))
+    prescv <- plscorr_contrast(x$X[-exclude,,drop=FALSE], x$G[-exclude,], x$strata[-exclude], ncomp=x$ncomp, 
+                      center=x$center, scale=x$scale, svd.method=x$svd.method)
+            
+    pscores <- lapply(seq(min.comp, x$ncomp), function(n) {
+      Xdat <- x$X[fidx,,drop=FALSE]
+      Xb <- t(t(Xdat) %*% x$G[fidx,])
+      list(pred=predict.plscorr_result_da(prescv, Xb, ncomp=n, type="prob"), obs=colnames(x$G))
+    })
+  })
+  
+  metric <- unlist(lapply(seq(min.comp, x$ncomp), function(n) {
+    Plist <- lapply(res, "[[", n)
+    obs <- unlist(lapply(Plist, "[[", "obs"))
+    obs <- factor(obs, levels=colnames(x$G))
+    pred <- do.call(rbind, lapply(Plist, "[[", "pred"))
+    if (metric == "AUC") {
+      combinedACC(pred, obs)
+    } else if (metric == "ACC") {
+      combinedAUC(pred, obs)
+    }
+  }))
+}
+
 
 #' @export
 reconstruct.plscorr_result <- function(x, ncomp=x$ncomp) {
@@ -164,37 +191,40 @@ reproducibility.pls_result_da <- function(x, folds, metric=c("norm-2", "norm-1",
 }
 
 
-cross_validate.plscorr_result_contrast(x, strata=NULL, nrepeats=10, metric="Rv") {
-  if (is.null(strata)) {
-    strata <- x$strata
-  }
+stratified_folds <- function(strata, nfolds=2) {
+  blocks <- split(1:length(strata), strata)
+  bfolds <- caret::createFolds(1:length(blocks), nfolds)
+  lapply(bfolds, function(f) unlist(blocks[f]))
+}
+
+cross_validate.plscorr_result_contrast <- function(x, nfolds=2, nrepeats=10, metric=c("ACC", "distance"), nested=FALSE, max.comp=2) {
   
-  lapply(levels(strata), function(lev) {
-    heldout <- which(strata == lev)
-    keep <- which(strata != lev)
-    Xt <- x$X[keep,]
-    X0 <- x$X[heldout,]
-    res <- x$refit(Xt, x$G[keep,], x$ncomp)
-   
-    Xt0 <- t(t(X0) %*% x$G[heldout,])
-    Xt0 <- scale(Xt0, center=x$center, scale=x$scale)
+  M <- list()
+  for (i in 1:nrepeats) {
+    message("cross-validation iteration:", i)
+    folds <- stratified_folds(x$strata, nfolds)
     
-    err <- lapply(seq(1, x$ncomp), function(nc) {
-      xrecon <- reconstruct(x, ncomp=nc)
-      switch(metric,
-             "norm-2"=sqrt(sum((Xt0 - xrecon)^2)),
-             "norm-1"=sum(abs(Xt0 - xrecon)),
-             "avg_cor"=mean(diag(cor(t(Xt0), t(xrecon))))
-      )
+    ret <- lapply(1:length(folds), function(j) {
+      exclude <- folds[[j]]
+      prescv <- plscorr_contrast(x$X[-exclude,,drop=FALSE], x$G[-exclude,], x$strata[-exclude], ncomp=x$ncomp, 
+                               center=x$center, scale=x$scale, svd.method=x$svd.method)
+    
+      pscores <- lapply(seq(1, max.comp), function(n) {
+        Xdat <- x$X[exclude,,drop=FALSE]
+        Xb <- blockwise_average(Xdat, x$G[exclude,], factor(strata[exclude]), center=FALSE, scale=FALSE)
+        #Xb <- t(t(Xdat) %*% x$G[exclude,])
+        list(pred=predict.plscorr_result_da(prescv, Xb, ncomp=n, type="class"), obs=colnames(x$G))
+      })
     })
     
+    M[[i]]  <- unlist(lapply(seq(1, max.comp), function(n) {
+      Plist <- lapply(ret, "[[", n)
+      obs <- unlist(lapply(Plist, "[[", "obs"))
+      obs <- factor(obs, levels=colnames(x$G))
+      pred <-unlist(lapply(Plist, "[[", "pred"))
+      sum(obs == pred)/length(obs)
+    }))
   }
-  
- 
-  
-  
-
-  
   
 }
 
@@ -230,12 +260,14 @@ cross_validate.plscorr_result_da <- function(x, folds, metric="AUC") {
 
 
 #' @export
-scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "crossprod"), ncomp=2) {
+scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "crossprod", "distance"), ncomp=2) {
   if (type == "scores") {
     fscores
   } else if (type == "crossprod") {
     tcrossprod(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
-  }else if (type =="class") {
+  } else if (type == "distance") {
+    D <- rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+  } else if (type =="class") {
     D <- rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
     D2 <- D^2
     min.d <- apply(D2, 1, which.min)
@@ -253,20 +285,24 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "crossp
 }
 
 #' @export
-predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "scores", "crossprod"), ncomp=NULL) {
+predict.plscorr_result_da <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance"), ncomp=NULL, pre_process=TRUE) {
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
     x <- matrix(newdata, nrow=1, ncol=ncol(x$condMeans))
   }
   
   assert_that(is.matrix(newdata))
   assert_that(ncol(newdata) == ncol(x$condMeans))
-  assert_that(type %in% c("class", "prob", "scores", "crossprod"))
+  assert_that(type %in% c("class", "prob", "scores", "crossprod", "distance"))
   
   if (is.null(ncomp)) {
     ncomp <- x$ncomp
   }
   
-  xc <- x$pre_process(as.matrix(newdata))
+  xc <- if (pre_process) {
+    x$pre_process(as.matrix(newdata))
+  } else {
+    newdata
+  }
   
   #fscores <- xc %*% x$v[,1:ncomp,drop=FALSE]
   fscores <- xc %*% x$u[,1:ncomp,drop=FALSE]
@@ -413,14 +449,18 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
     if (ord == 1) {
       form <- as.formula(paste("X ~ ", colnames(facs)[i], "-1"))
       G <- model.matrix(form,data=design)
+      cnames <- colnames(G)
+      Y <- factor(cnames[apply(G, 1, function(x) which(x==1))])
       plsres <- plscorr_contrast(X, G, strata, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
-      list(G=G, Glower=NULL, form=form, lower_form = ~ 1, plsres=plsres)
+      list(G=G, Y=Y, Glower=NULL, form=form, lower_form = ~ 1, plsres=plsres)
     } else {
       lower_form <- get_lower_form(ord)
       Glower <- model.matrix(lower_form, data=design)
       Xresid <- resid(lsfit(Glower, X, intercept=FALSE))
       form <- as.formula(paste("Xresid ~ ", colnames(facs)[i], "-1"))
       G <- model.matrix(form, data=design)
+      cnames <- colnames(G)
+      Y <- factor(cnames[apply(G, 1, function(x) which(x==1))])
       plsres <- plscorr_contrast(Xresid, G, strata=strata, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
       list(G=G, Glower, form=form, lower_form = lower_form, plsres=plsres)
     }
@@ -472,6 +512,29 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
 #   plscorr_da(Y1,  Rtot, ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
 # }
 
+blockwise_average <- function(X, G, strata, center=TRUE, scale=FALSE) {
+  dummy_matrix <- turner::factor_to_dummy(as.factor(strata))
+  
+  Xblocks <- lapply(1:ncol(dummy_matrix), function(i) {
+    ind <- dummy_matrix[,i] == 1
+    scale(t(t(X[ind,]) %*% G[ind,]), center=center, scale=scale)
+  })
+  
+  X0c <- Reduce("+", Xblocks)/length(Xblocks)
+  
+  if (center) {
+    xc <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:center"))))
+    attr(X0c, "scaled:center") <- xc
+  }
+  if (scale) {
+    xs <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:scale"))))
+    attr(X0c, "scaled:scale") <- xs
+  }
+  
+  X0c
+    
+}
+
 
 #' @export
 #' @import turner
@@ -509,7 +572,7 @@ plscorr_contrast <- function(X, G, strata=NULL, ncomp=2, center=TRUE, scale=FALS
   scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
   row.names(scores) <- colnames(G)
   
-  refit <- function(X, G, ncomp, ...) { plscorr_contrast(X, G, ncomp,...) }
+  refit <- function(X, G, ncomp, ...) { plscorr_contrast(X, G, strata, ncomp,...) }
   
   ret <- list(X=X, G=G, ncomp=svdres$ncomp, condMeans=X0c, center=center, scale=scale, pre_process=apply_scaling(X0c), 
               svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit, strata=strata)
@@ -564,18 +627,75 @@ optimal_components.pls_result_contrast <- function(x, method="smooth") {
   FactoMineR::estim_ncp(t(x$condMeans),method=method)
 }
 
+get_perm <- function(G, strata) {
+  if (!is.null(x$strata)) {
+    Gperm <- do.call(rbind, lapply(levels(x$strata), function(lev) {
+      Gs <- G[strata==lev,]
+      Gs <- Gs[sample(1:nrow(Gs)),]
+    }))
+  } else {
+    Gperm <- x$G[sample(1:nrow(x$G)),]
+  }
+}
+
 #' @export
-permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
+permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, ncomp=2, verbose=TRUE, seed=NULL) {
   if (!is.null(seed)) set.seed(seed)
   
   dstat <- x$d[1:x$ncomp]^2/sum(x$d[1:x$ncomp]^2)
-  dstat0 <- matrix(0, nperms, length(dstat))
+  
+  dummy_matrix <- turner::factor_to_dummy(strata)
+  
+  subtract_recon <- function(recon) {
+    ret <- lapply(1:length(Xblocks), function(i) {
+      Xblocks[[i]] - recon
+    })
+  }
+  
+  permute_blocks <- function(xb, permset) {
+    lapply(1:length(xb), function(i) {
+      xb[[i]][permset[[i]],]
+    })
+  }
+  
+  Xblocks <- lapply(1:ncol(dummy_matrix), function(i) {
+    ind <- dummy_matrix[,i] == 1
+    scale(t(t(x$X[ind,]) %*% x$G[ind,]), center=x$center, scale=x$scale) 
+  })
+  
+  if (ncomp > x$ncomp) {
+    ncomp <- x$ncomp
+  }
+  
+  dstat0 <- matrix(0, nperms, ncomp)
   
   for (i in 1:nperms) {
-    print(i)
-    Gperm <- x$G[sample(1:nrow(x$G)),]
-    pres <- plscorr_contrast(x$X, Gperm, x$ncomp, x$center, x$scale, svd.method=x$svd.method) 
-    dstat0[i, ] <- pres$d[1:length(dstat)]^2/sum(pres$d[1:length(dstat)]^2)
+    
+    message("permutation", i)
+    for (j in 1:ncomp) {
+      permset <- lapply(Xblocks, function(x) sample(1:nrow(x)))
+      message("factor: ", j)
+      if (j > 1) {
+        message("recon")
+        recon <- t(x$u[,1:(j-1),drop=FALSE] %*% t(x$scores[,1:(j-1),drop=FALSE]))
+        message("subtract recon")
+        Xresid <- subtract_recon(recon)
+        message("permute blocks")
+        Xperm <- permute_blocks(Xresid, permset)
+        message("compute avg")
+        Xpermavg <- Reduce("+", Xperm)/length(Xperm)
+        #Xresidavg <- Reduce("+", Xresid)/length(Xresid)
+        message("svd")
+        dstat0[i,j] <- svd(Xpermavg)$d[1]
+      } else {
+        
+        Xperm <- permute_blocks(Xblocks, permset)
+        Xpermavg <- Reduce("+", Xperm)/length(Xperm)
+        dstat0[i,j] <- svd(Xpermavg)$d[1]
+      }
+    }
+  }
+      
   }
   
   p <- rep(0, x$ncomp)
