@@ -411,6 +411,12 @@ plscorr_lm <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, sc
 
 
 #' @export
+#' @param X the data matrix
+#' @param formula a formula specifying the design
+#' @param design a \code{data.frame} providing the variables provided in \code{formula} argument.
+#' @param random a \code{character} string indicating the name of the random effects variable
+#' @param ncomp of components to compute
+#' @param 
 plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
   tform <- terms(formula)
   facs <- attr(tform, "factors")
@@ -425,7 +431,7 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
   #}
   
   strata <- if (!is.null(random)) {
-    design[[random]]
+    as.factor(design[[random]])
   } else {
     NULL
   }
@@ -450,7 +456,7 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
       form <- as.formula(paste("X ~ ", colnames(facs)[i], "-1"))
       G <- model.matrix(form,data=design)
       cnames <- colnames(G)
-      Y <- factor(cnames[apply(G, 1, function(x) which(x==1))])
+      Y <- factor(cnames[apply(G, 1, function(x) which(x==1))], levels=cnames)
       plsres <- plscorr_contrast(X, G, strata, center=center, scale=scale, ncomp=ncomp, svd.method=svd.method)
       list(G=G, Y=Y, Glower=NULL, form=form, lower_form = ~ 1, plsres=plsres)
     } else {
@@ -465,6 +471,11 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
       list(G=G, Glower, form=form, lower_form = lower_form, plsres=plsres)
     }
   })
+  
+  permute <- function(obj) {
+    idx <- sample(1:nrow(obj$X))
+    list(X=obj$X, Y=obj$Y[idx,], idx=idx, group=group[idx])
+  }
   
   names(res) <- colnames(facs)
   ret <- list(
@@ -481,36 +492,67 @@ plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, s
   
 }
 
-
-# #' @export
-# plscorr_behav <- function(Y, X, groupdes, random=NULL, ncomp=2, svd.method="base") {
-#   if (is.vector(Y)) {
-#     Y <- as.matrix(Y)
-#   }
-#   
-#   if (is.null(colnames(Y))) {
-#     colnames(Y) <- paste0("V", 1:ncol(Y))
-#   }
-#   
-#   assert_that(nrow(Y) == nrow(X))
-#   assert_that(length(groupdes) == nrow(X))
-#   
-#   
-#   Xs <- split(tibble::as_data_frame(X), groupdes)
-#   Ys <- split(tibble::as_data_frame(Y), groupdes)
-#   
-#   Xs <- lapply(Xs, scale)
-#   Ys <- lapply(Ys, scale)
-#   
-#   R <- lapply(1:length(Xs), function(i) {
-#     t(cor(Xs[[i]], Ys[[i]]))
-#   })
-#   
-#   Rtot <- plyr::rbind.fill.matrix(R)
-#   Y1 <- rep(colnames(Y), length(levels(groupdes)))
-#   
-#   plscorr_da(Y1,  Rtot, ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
-# }
+# 
+#' @export
+#' @import turner
+plscorr_behav <- function(Y, X, group=NULL, random=NULL, ncomp=2, svd.method="base") {
+    if (is.vector(Y)) {
+      Y <- as.matrix(Y)
+    }
+    
+    if (is.null(colnames(Y))) {
+      colnames(Y) <- paste0("V", 1:ncol(Y))
+    }
+    
+    assert_that(nrow(Y) == nrow(X))
+    assert_that(length(group) == nrow(X))
+    
+    reduce <- function(obj) {
+      blockids <- split(seq(1,nrow(obj$X)), obj$group)
+      
+      Xs <- turner::matrix_to_blocks(obj$X, blockids)
+      Ys <- turner::matrix_to_blocks(obj$Y, blockids)
+   
+      Xs <- lapply(Xs, scale)
+      Ys <- lapply(Ys, scale)
+    
+      R <- lapply(1:length(Xs), function(i) {
+        t(cor(Xs[[i]], Ys[[i]]))
+      })
+    
+      do.call(cbind, R)
+    }
+    
+    bootstrap_sample <- function() {
+      idx <- unlist(lapply(blockids, function(ids) sort(sample(ids, replace=TRUE))))
+      YBoot <- Y[idx,]
+      XBoot <- X[idx,]
+      list(XBoot=XBoot, YBoot=YBoot, idx=idx, group=group[idx])
+    }
+    
+    permute <- function(obj) {
+      idx <- sample(1:nrow(obj$X))
+      list(X=obj$X, Y=obj$Y[idx,], idx=idx, group=group[idx])
+    }
+    
+    Yvars <- rep(colnames(Y), length(levels(group)))
+    Gvars <- rep(levels(group), each=ncol(Y))
+    
+    Xred <- reduce(list(X=X, Y=Y, group=group))
+    
+    svdres <- svd.wrapper(t(Xred), ncomp, svd.method)
+    scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
+    
+    refit <- function(Y, X, group, ncomp, ...) { plscorr_behav(Y, X, group, ncomp, ...) }
+      
+    
+    ret <- list(X=X, Y=Y, Xred=Xred, design=data.frame(Y=Yvars, group=Gvars), ncomp=svdres$ncomp, 
+                svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, 
+                refit=refit, bootstrap=bootstrap_sample, reduce=reduce, permute=permute)
+    
+    class(ret) <- c("plscorr_result", "plscorr_result_behav")
+    ret
+}
 
 blockwise_average <- function(X, G, strata, center=TRUE, scale=FALSE) {
   dummy_matrix <- turner::factor_to_dummy(as.factor(strata))
@@ -543,29 +585,11 @@ plscorr_contrast <- function(X, G, strata=NULL, ncomp=2, center=TRUE, scale=FALS
   assert_that(nrow(G) == nrow(X))
   
   if (!is.null(strata)) {
-    dummy_matrix <- turner::factor_to_dummy(as.factor(strata))
-    
-    Xblocks <- lapply(1:ncol(dummy_matrix), function(i) {
-      ind <- dummy_matrix[,i] == 1
-      scale(t(t(X[ind,]) %*% G[ind,]), center=center, scale=scale)
-    })
-    
-    X0c <- Reduce("+", Xblocks)/length(Xblocks)
-    
-    if (center) {
-      xc <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:center"))))
-      attr(X0c, "scaled:center") <- xc
-    }
-    if (scale) {
-      xs <- colMeans(do.call(rbind, lapply(Xblocks, function(x) attr(x, "scaled:scale"))))
-      attr(X0c, "scaled:scale") <- xs
-    }
-           
+    X0c <- blockwise_average(X, G, strata, center,scale)
   } else {
     X0 <- t(t(X) %*% G)
     X0c <- scale(X0, center=center, scale=scale)
   }
-  
   
   svdres <- svd.wrapper(t(X0c), ncomp, svd.method)
   
@@ -696,8 +720,6 @@ permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, ncomp=
     }
   }
       
-  }
-  
   p <- rep(0, x$ncomp)
   for (i in 1:x$ncomp) {
     p[i] <- mean(dstat0[, i] >= dstat[i])
@@ -711,31 +733,43 @@ permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, ncomp=
 }
 
 #' @export
-permutation.pls_result_da <- function(x, nperms=100, threshold=.05, verbose=TRUE, seed=NULL) {
+permutation.pls_result <- function(x, nperms=100, threshold=.05, ncomp=2, verbose=TRUE, seed=NULL) {
   if (!is.null(seed)) set.seed(seed)
   
-  dstat <- x$d[1:x$ncomp]^2/sum(x$d[1:x$ncomp]^2)
-  dstat0 <- matrix(0, nperms, length(dstat))
+  dstat <- x$d[1:x$ncomp]^2
+  
+  if (ncomp > x$ncomp) {
+    ncomp <- x$ncomp
+  }
+  
+  dstat0 <- matrix(0, nperms, ncomp)
   
   for (i in 1:nperms) {
     print(i)
-    yperm <- x$Y[sample(1:length(x$Y))]
-    pres <- plscorr_da(yperm, x$X, x$ncomp, x$center, x$scale, svd.method=x$svd.method) 
-    dstat0[i, ] <- pres$d[1:length(dstat)]^2/sum(pres$d[1:length(dstat)]^2)
+    message("permutation ", i)
+    perm <- x$permute(x)
+    message("reducing")
+    Xred <- x$reduce(perm)
+    message("svd")
+    svdres <- svd.wrapper(t(Xred), ncomp, x$svd.method)
+    message("done svd")
+    dstat0[i, ] <- svdres$d[1:ncomp]^2
   }
   
-  p <- rep(0, x$ncomp)
-  
-  for (i in 1:x$ncomp) {
+  p <- rep(0, ncomp)
+  for (i in 1:ncomp) {
     p[i] <- mean(dstat0[, i] >= dstat[i])
   }
-  for (i in 2:x$ncomp) {
+  for (i in 2:ncomp) {
     p[i] <- max(p[(i - 1)], p[i])
   }
   r <- sum(p <= threshold)
   return(list(r = r, p = p))
   
 }
+
+
+
 
 #' @export
 bootstrap.plscorr_result_da <- function(x, niter, strata=NULL) {

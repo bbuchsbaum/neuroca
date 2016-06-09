@@ -83,7 +83,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   ## scale each table by 'alpha'
   #normXBc <- lapply(1:length(XBc), function(i) XBc[[i]] * alpha[[i]])
   
-  YB <- factor(row.names(normXBc[[1]]))
+  YB <- factor(row.names(normXBc[[1]]), levels=row.names(normXBc[[1]]))
   pls_res <- plscorr_da(YB, do.call(cbind, normXBc), ncomp=ncomp, center=FALSE, scale=FALSE)
   
   
