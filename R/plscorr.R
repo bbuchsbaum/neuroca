@@ -409,14 +409,14 @@ plscorr_lm <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, sc
 }
  
 
-
+#' plscorr_aov
+#' 
 #' @export
 #' @param X the data matrix
 #' @param formula a formula specifying the design
 #' @param design a \code{data.frame} providing the variables provided in \code{formula} argument.
 #' @param random a \code{character} string indicating the name of the random effects variable
 #' @param ncomp of components to compute
-#' @param 
 plscorr_aov <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {
   tform <- terms(formula)
   facs <- attr(tform, "factors")

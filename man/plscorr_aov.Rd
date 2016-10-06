@@ -2,6 +2,7 @@
 % Please edit documentation in R/plscorr.R
 \name{plscorr_aov}
 \alias{plscorr_aov}
+\title{plscorr_aov}
 \usage{
 plscorr_aov(X, formula, design, random = NULL, ncomp = 2, center = TRUE,
   scale = TRUE, svd.method = "base")
@@ -16,5 +17,8 @@ plscorr_aov(X, formula, design, random = NULL, ncomp = 2, center = TRUE,
 \item{random}{a \code{character} string indicating the name of the random effects variable}
 
 \item{ncomp}{of components to compute}
+}
+\description{
+plscorr_aov
 }
 
