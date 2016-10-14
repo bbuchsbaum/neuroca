@@ -31,6 +31,10 @@ combinedAUC <- function(Pred, Obs) {
 #' @export
 scores <- function(x,...) UseMethod("scores")
 
+
+#' @export
+reduce <- function(x, Y, ...) UseMethod("reduce")
+
 #' @export
 loadings <- function(x,...) UseMethod("loadings")
 
@@ -50,7 +54,18 @@ jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
 permutation <- function(x, ...) UseMethod("permutation")
 
 #' @export
+permute_refit <- function(x, ...) UseMethod("permute_refit")
+
+#' @export
+split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
+
+#' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
+
+#' @export
+singular_values <- function(x, niter, ...) UseMethod("singular_values")
+
+partial_scores <- function(x, ...) UseMethod("partial_scores")
 
 #' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
@@ -69,29 +84,38 @@ project.cols <- function(xc, v, ncomp) {
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
-svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irlba")) {
-  assert_that(method %in% c("base", "fast", "irlba"))
+svd.wrapper <- function(XC, ncomp=min(dim(XC)), method=c("base", "fast", "irlba", "propack")) {
+  assert_that(method %in% c("base", "fast", "irlba", "propack"))
+  
   res <- switch(method[1],
                 base=svd(XC),
                 fast=corpcor:::fast.svd(XC),
+                propack=svd::propack.svd(XC, neig=ncomp),
                 irlba=irlba:::irlba(XC, nu=min(ncomp, min(dim(XC)) -3), nv=min(ncomp, min(dim(XC)) -3)))
   
  
   res$d <- res$d[1:length(res$d)]
-  res$u <- res$u[,1:length(res$d)]
-  res$v <- res$v[,1:length(res$d)]
+  res$u <- res$u[,1:length(res$d), drop=FALSE]
+  res$v <- res$v[,1:length(res$d), drop=FALSE]
   res$ncomp <- length(res$d)
   res
 }
 
 #' @export
 group_means <- function(Y, X) {
-  Rs <- rowsum(X,Y)
-  yt <- table(Y)
-  ret <- sweep(Rs, 1, yt, "/")
-  row.names(ret) <- names(yt)
-  ret
+  if (all(table(Y) == 1)) {
+    row.names(X) <- names(table(Y))
+    X
+  } else {
+    Rs <- rowsum(X,Y)
+    yt <- table(Y)
+    ret <- sweep(Rs, 1, yt, "/")
+    row.names(ret) <- names(yt)
+    ret
+  }
 }
+
+
 
 #' @export
 plscorr <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast.svd") {
@@ -606,11 +630,11 @@ plscorr_contrast <- function(X, G, strata=NULL, ncomp=2, center=TRUE, scale=FALS
   
 }
 
-
 #' @export
 plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base") {
   assert_that(is.factor(Y))
-  
+  message("svd.method ", svd.method)
+  message("barycenters")
   if (any(table(Y) > 1)) {
     ## compute barycenters
     XB <- group_means(Y, X)
@@ -619,22 +643,46 @@ plscorr_da <- function(Y, X, ncomp=2, center=TRUE, scale=FALSE, svd.method="base
     XB <- X
     XBc <- scale(XB, center=center, scale=scale)
   }
-  
-  #svdres <- svd.wrapper(XBc, ncomp, svd.method)
-  svdres <- svd.wrapper(t(XBc), ncomp, svd.method)
-  
-  scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
+  message("done")
+  message("pca core, method: ", svd.method)
+ 
+  pcres <- pca_core(t(XBc), ncomp, center=FALSE, scale=FALSE, svd.method)
+  message("done")
+  scores <- pcres$scores
   row.names(scores) <- levels(Y)
 
-  refit <- function(Y, X, ncomp, ...) { plscorr_da(Y, X, ncomp,...) }
+  refit <- function(.Y, .X) { plscorr_da(.Y, .X, ncomp, center, scale, svd.method) }
   
-  ret <- list(Y=Y,X=X,ncomp=svdres$ncomp, condMeans=XBc, center=center, scale=scale, pre_process=apply_scaling(XBc), 
-              svd.method=svd.method, scores=scores, v=svdres$v, u=svdres$u, d=svdres$d, refit=refit)
+  permute_refit <- function(.X) {
+    idx <- sample(seq_along(Y))
+    refit(Y[idx], .X)
+  }
+  
+  ret <- list(Y=Y,X=X,ncomp=ncomp, condMeans=XBc, center=center, scale=scale, pre_process=apply_scaling(XBc), 
+              svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, permute_refit=permute_refit)
   
   class(ret) <- c("plscorr_result", "plscorr_result_da")
   ret
   
 }
+
+
+pca_core <- function(X, ncomp=2, center=FALSE, scale=FALSE, svd.method="base") {
+  
+  if (center || scale) {
+    X <- scale(X, center=center, scale=scale)
+  }
+  
+ 
+  svdres <- svd.wrapper(X, ncomp, method=svd.method)
+  scores <- svdres$v %*% diag(svdres$d, nrow=svdres$ncomp, ncol=svdres$ncomp)
+  
+  ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, scores=scores, ncomp=ncomp, svd.method=svd.method)
+  
+  class(ret) <- c("pca_result")
+  ret
+}
+  
 
 #' @export
 scores.pls_result_da <- function(x) {
@@ -660,6 +708,49 @@ get_perm <- function(G, strata) {
   } else {
     Gperm <- x$G[sample(1:nrow(x$G)),]
   }
+}
+
+
+
+permutation_ <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  d <- singular_values(x)[1:ncomp]^2
+  
+  if (ncomp > x$ncomp) {
+    ncomp <- x$ncomp
+  }
+  
+  dstat0 <- matrix(0, nperms, ncomp)
+  
+  for (i in 1:nperms) {
+    print(i)
+    message("permutation ", i)
+    fit <- x$permute_refit()
+    dp <- singular_values(fit)[1:ncomp]^2
+    dstat0[i, ] <- dp
+  }
+  
+  p <- rep(0, ncomp)
+  for (i in 1:ncomp) {
+    p[i] <- mean(dstat0[, i] >= dstat[i])
+  }
+  
+  for (i in 2:ncomp) {
+    p[i] <- max(p[(i - 1)], p[i])
+  }
+  r <- sum(p <= threshold)
+  return(list(perm_mat=dstat0, pval=p))
+
+}
+
+
+permutation.musubada_result <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+}
+
+permutation.bada_result <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+  permutation_(x,nperms,threshold, ncomp, verbose, seed)
 }
 
 #' @export
@@ -733,7 +824,7 @@ permutation.pls_result_contrast <- function(x, nperms=100, threshold=.05, ncomp=
 }
 
 #' @export
-permutation.pls_result <- function(x, nperms=100, threshold=.05, ncomp=2, verbose=TRUE, seed=NULL) {
+permutation.plscorr_result <- function(x, nperms=100, threshold=.05, ncomp=2, verbose=TRUE, seed=NULL) {
   if (!is.null(seed)) set.seed(seed)
   
   dstat <- x$d[1:x$ncomp]^2
@@ -747,7 +838,7 @@ permutation.pls_result <- function(x, nperms=100, threshold=.05, ncomp=2, verbos
   for (i in 1:nperms) {
     print(i)
     message("permutation ", i)
-    perm <- x$permute(x)
+    perm <- 
     message("reducing")
     Xred <- x$reduce(perm)
     message("svd")
