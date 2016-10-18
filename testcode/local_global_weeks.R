@@ -8,10 +8,12 @@ bvec <- loadVector("~/Dropbox/Brad/neuropls/weeks/s5_pcue_all.nii.gz")
 mat <- as.matrix(bvec)[mask.idx,]
 time <- seq(0,24,by=2)
 
-dframe <- data.frame(time=rep(time, 39), sid=factor(rep(1:39, each=13)), 
+
+N <- 39
+dframe <- data.frame(time=rep(time, N), sid=factor(rep(1:N, each=13)), 
                      group=c(rep("old", each=19*13), rep("young", each=20*13)))
 
-Xlist <- lapply(1:39, function(i) {
+Xlist <- lapply(1:N, function(i) {
   idx <- which(dframe$sid == i)
   t(mat[,idx])
 })

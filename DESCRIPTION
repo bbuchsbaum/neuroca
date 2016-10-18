@@ -12,7 +12,7 @@ Author: Bradley Buchsbaum
 Description: neuropls is an implementation of partial least squares for
     neuroimaging data.
 Version: 0.0.1
-Date: 2012-12-01
+Date: 2016-10-14
 Depends:
     R (>= 2.15.0),
     methods,
