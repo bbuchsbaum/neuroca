@@ -29,6 +29,23 @@ corMat <- function(Xl) {
 }
 
 
+dcorMat <- function(Xlist) {
+  
+}
+  
+SimMat <- function(Xlist, FUN, ...) {
+  pairs <- combn(length(Xlist),2)
+  M <- matrix(0, length(Xlist), length(Xlist))
+  for (i in 1:ncol(pairs)) {
+    p1 <- pairs[1,i]
+    p2 <- pairs[2,i]
+    rv <- FUN(Xlist[[p1]], Xlist[[p2]], ...)
+    M[p1,p2] <- rv
+    M[p2,p1] <- rv
+  }
+  M
+}
+
 RVMat <- function(Xlist) {
   pairs <- combn(length(Xlist),2)
   M <- matrix(0, length(Xlist), length(Xlist))
@@ -68,42 +85,40 @@ blockIndices <- function(Xlist) {
   csum1 <- c(0, csum[-length(csum)])
   m <- cbind(csum1+1, csum)
 }
-  
-#' @importFrom assertthat assert_that 
+
+
 ### implement soft-thresholding that spans datasets...? similar to spls?
+### musubada is really a bada with block structure -- bada can be engine
+#' @importFrom assertthat assert_that 
+#' @importFrom energy dcor.ttest
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 #'        If there are a different nume rof rows (e..g different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a list of X matrices, one per subject. 
 #' @importFrom assertthat assert_that 
 #' @export
-musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast", normalization=c("MFA", "RV", "None")) {
+musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast", 
+                     normalization=c("MFA", "RV", "None","DCor")) {
   normalization <- normalization[1]
   
   assert_that(all(sapply(Xlist, is.matrix)))
   
-  message("svd.method", svd.method)
-  
-  print("expanding Y")
+ 
   if (is.factor(Y)) {
     ## Y is a single factor, therefore all matrices must have same number of rows.
     assert_that(all(sapply(Xlist, nrow) == nrow(Xlist[[1]])))
     Yl <- replicate(length(Xlist), Y, simplify=FALSE)
   } else if (is.list(Y)) {
+    ## Y is a list of factors
     assert_that(all(sapply(Y, is.factor)))
     Yl <- Y
     assert_that(length(unlist(Y)) == sum(sapply(Xlist, nrow)))
   }
-  print("done")
-  print("Y indices")
+  
   YIndices <- rep(1:length(Xlist), sapply(Xlist, nrow))
   
-  
-  print("done")
-  print("blockVar")
   ## create block variable
   blockInd <- blockIndices(Xlist)
-  print("done")
-  
+ 
   pre_process <- function(X) {
     Xc <- scale(X, center=center, scale=scale)
     
@@ -112,7 +127,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
       Xc <- Xc * alpha
     } else if (normalization == "None") {
       alpha <- 1
-    } else if (normalization == "RV" || "VoxelCor") {
+    } else if (normalization == "RV" || normalization == "DCor") {
       alpha <- 1
     } else {
       stop(paste0("normalization of type: '", normalization, "' is not supported."))
@@ -132,16 +147,14 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     }
     
     attr(Xc, "applyFun") <- applyFun
-   
     Xc
   }
   
   ## take a new design and reduce original data
   reduce <- function(Xlist) {
     ## compute barycenters for each table
-    print("group_means")
+    
     XB <- lapply(1:length(Xlist), function(i) group_means(Yl[[i]], Xlist[[i]]))
-    print("done")
     # center/scale barcycenters of each table
     
     print("pre_process")
@@ -149,30 +162,27 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     
     if (normalization == "RV") {
       message("rv normalization")
-      rvmat <- RVMat(normXBc)
-      diag(rvmat) <- 1
-      wts <- abs(svd.wrapper(rvmat, ncomp=1, method="propack")$u[,1])
+      smat <- SimMat(normXBc, function(x1,x2) coefficientRV(x1,x2, center=FALSE, scale=FALSE))
+      diag(smat) <- 1
+      wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
       alpha <- wts/sum(wts)
       normXBc <- lapply(1:length(normXBc), function(i) normXBc[[i]] * alpha[i])
-    } else if (normalization == "VoxelCor") {
-      rmat <- corMat(normXBc)
-      rmat <- rmat + min(rmat)
-      diag(rmat) <- 1
-      wts <- abs(svd.wrapper(rmat, ncomp=1, method="propack")$u[,1])
+    } else if (normalization == "DCor") {
+      message("dcor normalization")
+      smat <- SimMat(normXBc, function(x1,x2) energy::dcor.ttest(x1,x2)$estimate)
+      diag(smat) <- 1
+      wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
       alpha <- wts/sum(wts)
       normXBc <- lapply(1:length(normXBc), function(i) normXBc[[i]] * alpha[i])
     }
-    
 
-    print("done")
-    
-    print("cbind")
     Xr <- do.call(cbind, normXBc)
-    print("done")
     list(Xred=Xr, XB=XB, alpha=sapply(normXBc, function(x) attr(x, "alpha")))
   }
   
-  refit <- function(.Y, .Xlist, .ncomp) { musubada(.Y, .Xlist, .ncomp, center, scale, svd.method, normalization) }
+  refit <- function(.Y, .Xlist, .ncomp) { 
+    musubada(.Y, .Xlist, .ncomp, center, scale, svd.method, normalization) 
+  }
   
   permute_refit <- function(.ncomp=ncomp) {
     nreps <- sapply(lapply(Yl, table), min)
@@ -187,43 +197,41 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     
   }
     
-  
   Xred <- reduce(Xlist)
  
   YB <- factor(row.names(normXBc[[1]]), levels=row.names(normXBc[[1]]))
-  pls_res <- plscorr_da(YB, Xred$Xred, ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
+  pca_fit <- pca_core(t(Xred$Xred), ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
  
-  
   result <- list(
     Y=Y,
-    scores=pls_res$scores,
+    scores=pca_fit$scores,
     partial_fscores = 
       lapply(1:length(Xlist), function(i) {
         ind <- blockInd[i,1]:blockInd[i,2]
-        length(Xlist) * normXBc[[i]] %*% pls_res$u[ind,]
+        length(Xlist) * normXBc[[i]] %*% pca_fit$u[ind,]
       }),
     
     table_contr = do.call(cbind, lapply(1:ncomp, function(i) {
       sapply(1:length(Xlist), function(j) {
         ind <- blockInd[j,1]:blockInd[j,2]
-        sum(pls_res$u[ind,i]^2)
+        sum(pca_fit$u[ind,i]^2)
       })
     })),
     ntables=length(Xlist),
     ncond=nrow(XB[[1]]),
-    plsfit=pls_res,
+    pca_fit=pca_fit,
     center=center,
     scale=scale,
     ncomp=ncomp,
     blockIndices=blockInd,
-    blockVar=blockVar,
+    #blockVar=blockVar,
     alpha=Xred$alpha,
     pre_process=pre_process,
     refit=refit,
     permute_refit=permute_refit
   )
   
-  class(result) <- c("pca_result", "musubada_result")
+  class(result) <- c("musubada_result")
   result
 }
 
@@ -256,6 +264,7 @@ project_table.musubada_result <- function(x, suptab, ncomp=x$ncomp, table_index=
   Fsup <- x$ntables * (suptab %*% Qsup) 
 }
 
+#' @export
 supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
   Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE])
@@ -265,7 +274,7 @@ supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
 #' @export
 loadings.musubada_result <- function(x, table_index) {
  ind <- x$blockIndices[table_index,1]:x$blockIndices[table_index,2]
- x$plsfit$u[ind, ,drop=FALSE]
+ x$pca_fit$u[ind, ,drop=FALSE]
 }
 
 
@@ -301,7 +310,7 @@ predict.musubada_result <- function(x, newdata, type=c("class", "prob", "scores"
     loadings <- x$plsfit$u[ind,1:ncomp]
     Xp %*% loadings
   } else {
-    Xp %*% x$plsfit$u[,1:ncomp]
+    Xp %*% x$pca_fit$u[,1:ncomp]
   }
   
   scorepred(fscores, x$scores, ncomp)
