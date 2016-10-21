@@ -28,11 +28,6 @@ corMat <- function(Xl) {
   
 }
 
-
-dcorMat <- function(Xlist) {
-  
-}
-  
 SimMat <- function(Xlist, FUN, ...) {
   pairs <- combn(length(Xlist),2)
   M <- matrix(0, length(Xlist), length(Xlist))
@@ -152,8 +147,8 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   
   ## take a new design and reduce original data
   reduce <- function(Xlist) {
-    ## compute barycenters for each table
     
+    ## compute barycenters for each table
     XB <- lapply(1:length(Xlist), function(i) group_means(Yl[[i]], Xlist[[i]]))
     # center/scale barcycenters of each table
     
@@ -198,9 +193,12 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   }
     
   Xred <- reduce(Xlist)
- 
   YB <- factor(row.names(normXBc[[1]]), levels=row.names(normXBc[[1]]))
-  pca_fit <- pca_core(t(Xred$Xred), ncomp=ncomp, center=FALSE, scale=FALSE, svd.method=svd.method)
+  
+  pca_fit <- pca_core(t(Xred$Xred), ncomp=ncomp, 
+                      center=FALSE, 
+                      scale=FALSE, 
+                      svd.method=svd.method)
  
   result <- list(
     Y=Y,
@@ -217,6 +215,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
         sum(pca_fit$u[ind,i]^2)
       })
     })),
+    
     ntables=length(Xlist),
     ncond=nrow(XB[[1]]),
     pca_fit=pca_fit,
@@ -224,7 +223,6 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     scale=scale,
     ncomp=ncomp,
     blockIndices=blockInd,
-    #blockVar=blockVar,
     alpha=Xred$alpha,
     pre_process=pre_process,
     refit=refit,
