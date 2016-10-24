@@ -113,22 +113,17 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   
   ## create block variable
   blockInd <- blockIndices(Xlist)
+  
+  normalization <- function(X) {
+    if (normalization == "MFA") {
+      alpha <- 1/svd.wrapper(X, ncomp=1, method="propack")$d[1]
+    } else {
+      1
+    }
+  }
  
   pre_process <- function(X) {
     Xc <- scale(X, center=center, scale=scale)
-    
-    if (normalization == "MFA") {
-      alpha <- 1/svd.wrapper(X, ncomp=1, method="propack")$d[1]
-      Xc <- Xc * alpha
-    } else if (normalization == "None") {
-      alpha <- 1
-    } else if (normalization == "RV" || normalization == "DCor") {
-      alpha <- 1
-    } else {
-      stop(paste0("normalization of type: '", normalization, "' is not supported."))
-    }
-    
-    attr(Xc, "alpha") <- alpha
     
     applyFun <- function(X) {
       if (center) {
@@ -138,7 +133,6 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
         X <- sweep(X, 2, attr(Xc, "scaled:scale"), "/")
       }
       
-      X * alpha
     }
     
     attr(Xc, "applyFun") <- applyFun
@@ -150,18 +144,24 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     
     ## compute barycenters for each table
     XB <- lapply(1:length(Xlist), function(i) group_means(Yl[[i]], Xlist[[i]]))
-    # center/scale barcycenters of each table
     
-    print("pre_process")
+    # center/scale barcycenters of each table
     normXBc <- lapply(XB, pre_process)
     
-    if (normalization == "RV") {
+    # compute normalization factor
+    alpha <- sapply(XB, normalization)
+    
+    if (normalization == "MFA") {
+      normXBc <- lapply(1:length(alpha), function(i) normXBc[[i]] * alpha[i])
+    } else if (normalization == "RV") {
       message("rv normalization")
       smat <- SimMat(normXBc, function(x1,x2) coefficientRV(x1,x2, center=FALSE, scale=FALSE))
       diag(smat) <- 1
       wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
       alpha <- wts/sum(wts)
       normXBc <- lapply(1:length(normXBc), function(i) normXBc[[i]] * alpha[i])
+      attr(normXBc, "alpha") <- alpha
+      normXBC
     } else if (normalization == "DCor") {
       message("dcor normalization")
       smat <- SimMat(normXBc, function(x1,x2) energy::dcor.ttest(x1,x2)$estimate)
@@ -169,6 +169,8 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
       wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
       alpha <- wts/sum(wts)
       normXBc <- lapply(1:length(normXBc), function(i) normXBc[[i]] * alpha[i])
+      attr(normXBc, "alpha") <- alpha
+      normXBc
     }
 
     Xr <- do.call(cbind, normXBc)
@@ -195,7 +197,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   Xred <- reduce(Xlist)
   YB <- factor(row.names(normXBc[[1]]), levels=row.names(normXBc[[1]]))
   
-  pca_fit <- pca_core(t(Xred$Xred), ncomp=ncomp, 
+  pca_fit <- pca_core(Xred$Xred, ncomp=ncomp, 
                       center=FALSE, 
                       scale=FALSE, 
                       svd.method=svd.method)
@@ -206,13 +208,13 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     partial_fscores = 
       lapply(1:length(Xlist), function(i) {
         ind <- blockInd[i,1]:blockInd[i,2]
-        length(Xlist) * normXBc[[i]] %*% pca_fit$u[ind,]
+        length(Xlist) * normXBc[[i]] %*% pca_fit$v[ind,]
       }),
     
     table_contr = do.call(cbind, lapply(1:ncomp, function(i) {
       sapply(1:length(Xlist), function(j) {
         ind <- blockInd[j,1]:blockInd[j,2]
-        sum(pca_fit$u[ind,i]^2)
+        sum(pca_fit$v[ind,i]^2)
       })
     })),
     
@@ -233,13 +235,23 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   result
 }
 
+contributions.musubada_result <- function(x, fac, component=1) {
+  out <- lapply(1:x$ntables, function(j) {
+    ind <- x$blockInd[j,1]:x$blockInd[j,2]
+    contr <- pca_fit$v[ind,component]^2 * x$alpha[j]
+    tapply(contr,fac, sum)
+  })
+  
+  do.call(cbind, out)
+  
+}
 
 permute_refit.musubada_result <- function(x) {
   x$permute_refit()
 }
 
 singular_values.musubada_result <- function(x) {
-  x$plsfit$d
+  x$pca_core$d
 }
 
 
@@ -254,32 +266,33 @@ project_table.musubada_result <- function(x, suptab, ncomp=x$ncomp, table_index=
   assert_that(nrow(suptab) == x$ncond )
   assert_that(ncomp >= 1)
   
+  ## pre-process new table
   suptab <- x$pre_process(suptab)
   #Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE] %*% diag(1/x$plsfit$d[1:ncomp]))
   #Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE] %*% matrix(1/x$plsfit$d[1:ncomp], ncomp, nrow(Xr), byrow=TRUE)
   #Qsup <- t(suptab) %*% (x$scores)    
-  Qsup <- t(suptab) %*% (x$plsfit$v)  
+  Qsup <- t(suptab) %*% (x$plsfit$u)  
   Fsup <- x$ntables * (suptab %*% Qsup) 
 }
 
 #' @export
 supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
-  Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE])
+  Qsup <- t(suptab) %*% (x$plsfit$u[,1:ncomp,drop=FALSE])
 }
 
 
 #' @export
-loadings.musubada_result <- function(x, table_index) {
+loadings.musubada_result <- function(x, table_index=1) {
  ind <- x$blockIndices[table_index,1]:x$blockIndices[table_index,2]
- x$pca_fit$u[ind, ,drop=FALSE]
+ x$pca_fit$v[ind, ,drop=FALSE]
 }
 
 
 #' @export
 supplementary_predictor.musubada_result <- function(x, suptab, type=c("class", "prob", "scores", "crossprod"), ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
-  Qsup <- t(suptab) %*% (x$plsfit$v[,1:ncomp,drop=FALSE])
+  Qsup <- t(suptab) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE])
   
   predfun <- function(newdat) {
     pfun <- attr(suptab, "applyFun")
@@ -305,7 +318,7 @@ predict.musubada_result <- function(x, newdata, type=c("class", "prob", "scores"
   
   fscores <- if (!is.null(table_index)) {
     ind <- x$blockIndices[[table_index]]
-    loadings <- x$plsfit$u[ind,1:ncomp]
+    loadings <- x$pca_fit$u[ind,1:ncomp]
     Xp %*% loadings
   } else {
     Xp %*% x$pca_fit$u[,1:ncomp]

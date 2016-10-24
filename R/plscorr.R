@@ -58,6 +58,8 @@ singular_values <- function(x, niter, ...) UseMethod("singular_values")
 
 partial_scores <- function(x, ...) UseMethod("partial_scores")
 
+contributions <- function(x, ...) UseMethod("contributions")
+
 #' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 
