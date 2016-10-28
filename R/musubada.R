@@ -74,12 +74,6 @@ coefficientRV <- function(X, Y, center=TRUE, scale=FALSE) {
   return(rv)
 }
 
-blockIndices <- function(Xlist) {
-  ncols <- sapply(Xlist, ncol)
-  csum <- cumsum(ncols)
-  csum1 <- c(0, csum[-length(csum)])
-  m <- cbind(csum1+1, csum)
-}
 
 
 ### implement soft-thresholding that spans datasets...? similar to spls?
