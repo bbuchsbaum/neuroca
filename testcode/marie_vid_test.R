@@ -1,31 +1,50 @@
-sids <- c("1001", "1007", "1008", "1016", "3008", "5001", "5002")
+sids <- c("1001", "1002", "1003", "1007", "1008", "1016", "3008", "5001", "5002")
 
-PATH <- "~/Dropbox/Brad/neuropls/video_marie/"
-bold <- loadVolume(paste0(PATH, "/mean_bold.nii"))
-mask.idx <- which(bold > 600)
+PATH <- "~/Dropbox/Brad/neuropls/video_marie/rds/"
 
 loadMat <- function(sid) {
   message("loading", sid)
-  des <- read.table(paste0(PATH, sid, "/trial_data_all_blockavg.txt"), header=TRUE)
-  fnames <- list.files(paste0(PATH, sid), "nw.*nii.gz", full.names=TRUE)
-  mlist <- lapply(1:length(fnames), function(i) {
-    d <- subset(des, run == i)
-    m <- t(as.matrix(loadVector(fnames[i]))[mask.idx,])
-    folded <- do.call(rbind, lapply(levels(d$Video), function(vid) {
-      vidx <- which(d$Video == vid & d$condition == "Encod")
-      vec <- unlist(lapply(vidx, function(j) m[j,]))
-    }))
-    
-  })
-  
-  M <- do.call(rbind, mlist)
-  dout <- subset(des, time==0 & condition == "Encod")
-  list(des=dout, M=M)
-  
+  dat <- readRDS(paste0(PATH, sid, "_nlm_trial_data_all_K256.rds"))
+  idx <- which(dat$design$Rating == "Video")
+  dat$X <- dat$X[idx,]
+  dat$design <- dat$design[idx,]
+  dat
+  # mlist <- lapply(1:length(fnames), function(i) {
+  #   d <- subset(des, run == i)
+  #   m <- t(as.matrix(loadVector(fnames[i]))[mask.idx,])
+  #   folded <- do.call(rbind, lapply(levels(d$Video), function(vid) {
+  #     vidx <- which(d$Video == vid & d$condition == "Encod")
+  #     vec <- unlist(lapply(vidx, function(j) m[j,]))
+  #   }))
+  #   
+  # })
+  # 
 }
 
-allMat <- lapply(sids, loadMat)
-Xlist <- lapply(allMat, "[[","M")
-fulldes <- subset(allMat[[1]]$des, condition == "Encod")
-Y <- fulldes$Video
+fold_matrix <- function(X, des) {
+  Xs <- split_matrix(X, des$Video)
+  dsplit <- split(des, des$Video)
+  
+  ret <- lapply(1:length(dsplit), function(i) {
+    do.call(cbind, split_matrix(Xs[[i]], factor(dsplit[[i]]$time)))
+  })
+  
+  nreps <- sapply(ret,nrow)
+  ret <- do.call(rbind, ret)
+  Y <- rep(levels(des$Video), nreps)
+  
+  list(Y=Y, X=ret, time=rep(sort(unique(des$time)), each=ncol(X)))
+}
+
+
+alldat <- lapply(sids, loadMat)
+Xlist <- lapply(alldat, "[[","X")
+dlist <- lapply(alldat, function(x) x$design)
+
+ret <- lapply(1:length(Xlist), function(i) fold_matrix(Xlist[[i]], dlist[[i]]))
+Xs <- lapply(ret, "[[", "X")
+Ys <- lapply(ret, "[[", "Y")
+time <- lapply(ret, "[[", "time")
+
+
 

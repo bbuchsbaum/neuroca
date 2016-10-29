@@ -69,3 +69,9 @@ as.list.block_matrix <- function(x) {
 as.list.block_matrix_list <- function(x) {
   x
 }
+
+split_matrix <- function(X, fac) {
+  idx <- split(1:nrow(X), fac)
+  lapply(idx, function(i) X[i,])
+}
+
