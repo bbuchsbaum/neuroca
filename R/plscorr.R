@@ -51,6 +51,9 @@ permute_refit <- function(x, ...) UseMethod("permute_refit")
 split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
 
 #' @export
+supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
+
+#' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
 
 #' @export
@@ -180,26 +183,6 @@ cross_validate.plscorr_result_contrast <- function(x, nfolds=2, nrepeats=10, met
   
 }
 
-
-#' @export
-apply_scaling <- function(Xc) {
-  force(Xc)
-  function(M) {
-    center <- !is.null(attr(Xc, "scaled:center"))
-    scale <- !is.null(attr(Xc, "scaled:scale"))
-    
-    if (!center && !scale) {
-      M
-    } else if (center && !scale) {
-      sweep(M, 2, attr(Xc, "scaled:center"))
-    } else if (scale && !center) {
-      sweep(M, 2, attr(Xc, "scaled:scale"), "/")
-    } else {
-      M <- sweep(M, 2, attr(Xc, "scaled:center"))
-      sweep(M, 2, attr(Xc, "scaled:scale"), "/")
-    }
-  }
-}
 
 
 plscorr_lm <- function(X, formula, design, random=NULL, ncomp=2, center=TRUE, scale=TRUE, svd.method="base") {

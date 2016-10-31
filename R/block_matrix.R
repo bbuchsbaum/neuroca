@@ -11,7 +11,7 @@ blockIndices <- function(Xlist) {
 
 
 #' block_matrix_list
-#' @param Xs a list of k matrices with N_k rows and M_k columns 
+#' @param Xs a list of k matrices each with with N_k rows and M_k columns 
 #' @export
 #' @importFrom assert assertthat
 block_matrix_list <- function(Xs) {
@@ -42,6 +42,7 @@ block_matrix <- function(Xs) {
   X <- do.call(cbind, Xs)
   attr(X, "block_indices") <- blockInd
   attr(X, "nblock") <- length(Xs)
+  
   class(X) <- c("block_matrix", "matrix") 
   
   X
