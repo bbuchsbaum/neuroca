@@ -1,9 +1,14 @@
-sids <- c("1001", "1002", "1003", "1007", "1008", "1009", "1010",
-           "1011", "1013", "1014", "1015", "1016", "13001", "13002",
-           "3003", "3004", "3005", "3006", "3008", "2004", "2005", "2006", "2007",
-            "2009", "2010", "2013", "2014", "5001", "5002")
+library(tibble)
+library(dplyr)
+library(neuroim)
 
 PATH <- "~/Dropbox/Brad/neuropls/video_marie/rds/"
+group_des <- read.table(paste0(PATH, "/group_design.txt"), header=TRUE)
+group_des$patient <- ifelse(group_des$sid %in% c(5001,5002), "patient", "control")
+group_des <- subset(group_des, group != "old")
+group_des$sid <- factor(group_des$sid)
+clusnames <- paste0(PATH, levels(group_des$sid), "_nw_nlm_trial_data_run_all_blockavg_clus_256.nii")
+clusvols <- lapply(clusnames, loadVolume)
 
 loadMat <- function(sid) {
   message("loading", sid)
@@ -16,26 +21,39 @@ loadMat <- function(sid) {
   
 }
 
-# fold_matrix <- function(X, des) {
-#   Xs <- split_matrix(X, des$Video)
-#   dsplit <- split(des, des$Video)
-#   
-#   ret <- lapply(1:length(dsplit), function(i) {
-#     do.call(cbind, split_matrix(Xs[[i]], factor(dsplit[[i]]$time)))
-#   })
-#   
-#   nreps <- sapply(ret,nrow)
-#   ret <- do.call(rbind, ret)
-#   Y <- rep(levels(des$Video), nreps)
-#   
-#   run <- unlist(lapply(dsplit, function(d) subset(d, time==0)$run))
-#   
-#   list(Y=Y, X=ret, run=run, time=rep(sort(unique(des$time)), each=ncol(X)))
-# }
+fill_clus <- function(clusvol, vals, K=256) {
+  out <- fill(clusvol, cbind(1:K, vals))
+}
+
+fill_and_average <- function(cvols, lmat, K=256) {
+  Reduce("+", lapply(1:length(cvols), function(i) {
+    fill_clus(cvols[[i]], lmat[,i], K)
+  }))/length(cvols)
+}
 
 
-alldat <- bind_rows(lapply(sids, loadMat))
-roicols <- 10:ncol(alldat)
+fulldes <- bind_rows(lapply(group_des$sids, loadMat))
+
+#### temporal analysis of encoding
+encode_des <- filter(fulldes, Rating == "Video")
+roicols <- 10:ncol(encode_des)
+XBlocks <- plyr::dlply(encode_des, "sid", function(x) as.matrix(x[, roicols]))
+Ytime <- plyr::dlply(encode_des, "sid", function(x) ordered(x$time))
+mfit <- musubada(Ytime, XBlocks, ncomp=10, center=TRUE, scale=FALSE, normalization="MFA")
+avg_lds1 <- fill_and_average(clusvols, do.call(cbind, lapply(1:mfit$ntables, function(i) loadings(mfit, i, 1))))
+avg_lds2 <- fill_and_average(clusvols, do.call(cbind, lapply(1:mfit$ntables, function(i) loadings(mfit, i, 1))))
+## this yields two components
+## next, project data on comp1 and 2. compare NC and HC to group.
+
+
+#### temporal analysis of recall
+recall_des <- filter(fulldes, Rating != "Video")
+XBlocks <- plyr::dlply(recall_des, "sid", function(x) as.matrix(x[, roicols]))
+Ytime <- plyr::dlply(recall_des, "sid", function(x) ordered(x$time))
+mfit2 <- musubada(Ytime, XBlocks, ncomp=10, center=TRUE, scale=FALSE, normalization="MFA")
+avg_lds1 <- fill_and_average(clusvols, do.call(cbind, lapply(1:mfit$ntables, function(i) loadings(mfit2, i, 1))))
+avg_lds2 <- fill_and_average(clusvols, do.call(cbind, lapply(1:mfit$ntables, function(i) loadings(mfit2, i, 2))))
+avg_lds3 <- fill_and_average(clusvols, do.call(cbind, lapply(1:mfit$ntables, function(i) loadings(mfit2, i, 3))))
 
 runsub <- function(s, tsel) {
   

@@ -217,6 +217,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   
   result <- list(
     Y=YB,
+    XB=Xreduced$Xr,
     scores=sc,
     partial_scores=partial_fscores,
     table_contr = do.call(cbind, lapply(1:ncomp, function(i) {
@@ -294,12 +295,21 @@ supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
 
 
 #' @export
-loadings.musubada_result <- function(x, table_index=1:nrow(x$blockIndices)) {
+loadings.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$v)) {
   do.call(cbind, lapply(table_index, function(i) {
     ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
-    1/x$alpha[i] * x$pca_fit$v[ind, ,drop=FALSE]
+    1/x$alpha[i] * x$pca_fit$v[ind, comp,drop=FALSE]
   }))
 }
+
+#' @export
+correlations.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$u)) {
+  do.call(cbind, lapply(table_index, function(i) {
+    ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
+    cor(x$XB[,ind,drop=FALSE], x$pca_fit$u[, comp])
+  }))
+}
+
 
 # rename "embed_table"?
 

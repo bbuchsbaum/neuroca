@@ -29,6 +29,11 @@ reduce <- function(x, Y, ...) UseMethod("reduce")
 #' @export
 loadings <- function(x,...) UseMethod("loadings")
 
+
+#' @export
+correlations <- function(x,...) UseMethod("correlations")
+
+
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")
 
