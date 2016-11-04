@@ -53,6 +53,9 @@ permutation <- function(x, ...) UseMethod("permutation")
 permute_refit <- function(x, ...) UseMethod("permute_refit")
 
 #' @export
+project_cols <- function(x, ncomp,...) UseMethod("project_cols")
+
+#' @export
 split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
 
 #' @export
@@ -64,6 +67,8 @@ optimal_components <- function(x, ...) UseMethod("optimal_components")
 #' @export
 singular_values <- function(x, niter, ...) UseMethod("singular_values")
 
+
+#' @export
 partial_scores <- function(x, ...) UseMethod("partial_scores")
 
 contributions <- function(x, ...) UseMethod("contributions")
@@ -71,15 +76,7 @@ contributions <- function(x, ...) UseMethod("contributions")
 #' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 
-#' @export
-project.rows <- function(xr, u, ncomp) {
-  xr %*% u 
-}
 
-#' @export
-project.cols <- function(xc, v, ncomp) {
-  xc %*% v
-}
 
 #' @export
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
