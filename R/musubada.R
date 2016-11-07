@@ -403,7 +403,7 @@ project_cols.musubada <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:
       lv <- lapply(ysplit, function(idx) {
         xnewdat <- newdata[idx,]
         #t(t(xnewdat) %*% x$pca_fit$u[, 1:ncomp])
-        t(t(xnewdat) %*% (x$pca_fit$u[, 1:ncomp] %*% diag(1/x$pca_fit$d[1:ncomp]))
+        t(t(xnewdat) %*% (x$pca_fit$u[, 1:ncomp] %*% diag(1/x$pca_fit$d[1:ncomp])))
       })
       
       abind::abind(lv, along=3)
