@@ -325,9 +325,9 @@ project_table.musubada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=
   suptab <- block_reduce(list(supX), list(supY), normalization=x$normalization, scale=x$scale, center=x$center)
   
   ## compute supplementary Q
-  ##Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] %*% diag(1/x$pca_fit$d[1:ncomp]))
+  Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] %*% diag(1/x$pca_fit$d[1:ncomp]))
   
-  Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] )
+  ##Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] )
   
   ## compute supplementary factor scores
   Fsup <- x$ntables * (suptab$Xr %*% Qsup) 
@@ -337,7 +337,7 @@ project_table.musubada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=
 #' @export
 supplementary_loadings.musubada <- function(x, suptab, ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
-  Qsup <- t(suptab) %*% (x$plsfit$u[,1:ncomp,drop=FALSE])
+  Qsup <- t(suptab) %*% (x$plsfit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$pca_fit$d[1:ncomp])
 }
 
 
@@ -379,7 +379,7 @@ supplementary_predictor.musubada <- function(x, supX, supY, type=c("class", "pro
       newdat <- sweep(newdat, 2, suptab$centroids[[1]], "-")
     }
     if (!is.null(suptab$scales[[1]])) {
-      sweep(newd at, 2, suptab$scales[[1]], "/")
+      sweep(newdat, 2, suptab$scales[[1]], "/")
     }
     
     newdat <- newdat * suptab$alpha
@@ -403,7 +403,7 @@ project_cols.musubada <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:
       lv <- lapply(ysplit, function(idx) {
         xnewdat <- newdata[idx,]
         #t(t(xnewdat) %*% x$pca_fit$u[, 1:ncomp])
-        t(t(xnewdat) %*% (x$pca_fit$u[, 1:ncomp]))
+        t(t(xnewdat) %*% (x$pca_fit$u[, 1:ncomp] %*% diag(1/x$pca_fit$d[1:ncomp]))
       })
       
       abind::abind(lv, along=3)
