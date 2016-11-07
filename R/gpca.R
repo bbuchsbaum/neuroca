@@ -30,7 +30,7 @@ generalized_pca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALS
   
   ret <- list(v=gpfit$v, u=gpfit$u, d=gpfit$d, scores=scores, ncomp=ncomp)
   
-  class(ret) <- c("pca_result")
+  class(ret) <- c("gpca")
   ret
   
 }

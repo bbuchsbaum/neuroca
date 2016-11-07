@@ -53,17 +53,17 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
               svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, permute_refit=permute_refit, reduce=reduce,
               strata=strata, XBlock=xb$XBlock)
  
-  class(ret) <- c("pca_result", "bada_result")
+  class(ret) <- c("bada")
   ret
   
 }
 
 
-singular_values.bada_result <- function(x) {
+singular_values.bada <- function(x) {
   x$d
 }
 
-partial_scores.bada_result <- function(x) {
+partial_scores.bada <- function(x) {
   if (is.null(x$strata)) {
     x$scores
   } else {
@@ -75,17 +75,17 @@ partial_scores.bada_result <- function(x) {
 }
 
 #' @export
-scores.bada_result <- function(x) {
+scores.bada <- function(x) {
   x$scores
 }
 
-loadings.bada_result <- function(x) {
+loadings.bada <- function(x) {
   x$v
 }
 
 #' @export
 #' @importFrom MatrixCorrelation PCAcv
-optimal_components.bada_result <- function(x, ncomp=x$ncomp) {
+optimal_components.bada <- function(x, ncomp=x$ncomp) {
   if (ncol(x$condMeans) > 5000) {
     ssize <- as.integer(min(c(.1 * ncol(x$condMeans)), 5000))
     iter <- min(round(2*ncol(x$condMeans)/ssize), 100)
@@ -101,7 +101,7 @@ optimal_components.bada_result <- function(x, ncomp=x$ncomp) {
 }
 
 #' @export
-cross_validate.bada_result <- function(x, folds, metric="AUC") {
+cross_validate.bada <- function(x, folds, metric="AUC") {
   if (length(folds) == 1) {
     folds <- caret::createFolds(1:length(x$Y), folds)
   } else if (length(folds) == length(x$Y)) {
@@ -133,7 +133,7 @@ cross_validate.bada_result <- function(x, folds, metric="AUC") {
 }
 
 #' @export
-nested_cv.bada_result <- function(x, innerFolds, heldout, metric=c("ACC", "AUC"), min.comp=1) {
+nested_cv.bada <- function(x, innerFolds, heldout, metric=c("ACC", "AUC"), min.comp=1) {
   metric <- match.arg(metric)
   res <- lapply(innerFolds, function(fidx) {
     
@@ -174,7 +174,7 @@ nested_cv.bada_result <- function(x, innerFolds, heldout, metric=c("ACC", "AUC")
 
 
 #' @export
-predict.bada_result <- function(x, newdata, type=c("class", "prob", "scores", "cosine", "distance"), ncomp=x$ncomp, pre_process=TRUE) {
+predict.bada <- function(x, newdata, type=c("class", "prob", "scores", "cosine", "distance"), ncomp=x$ncomp, pre_process=TRUE) {
   assert_that(type %in% c("class", "prob", "scores", "crossprod", "distance"))
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
     newdata <- matrix(newdata, nrow=1, ncol=ncol(x$condMeans))

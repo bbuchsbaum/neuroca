@@ -18,16 +18,16 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method=
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, scores=scores, ncomp=ncomp, svd.method=svd.method)
   
-  class(ret) <- c("pca_result")
+  class(ret) <- c("pca")
   ret
 }
 
 #' @export
-loadings.pca_result <- function(x) {
+loadings.pca <- function(x) {
   x$v
 }
 
-scores.pca_result <- function(x) {
+scores.pca <- function(x) {
   x$scores
 }
 

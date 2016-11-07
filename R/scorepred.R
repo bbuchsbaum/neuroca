@@ -21,9 +21,22 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine
     #DTotal <- (scores[, 1:ncomp] - rowMeans(scores[, 1:ncomp]))^2
     #DBetween/DTotal
   } else if (type == "prob"){
-    D <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])^2
-    t(apply(D, 1, function(x) 1/x / sum(1/x)))
+    D <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+    Dmin <- D - min.col.value(D)
+    dsd <- apply(Dmin, 1, sd)
+    Dmin <- sweep(Dmin, 1, dsd, "/")
+    probs <- exp(-Dmin)
+    probs <- zapsmall(probs/rowSums(probs))
   } else {
     stop(paste("illegal 'type' argument: ", type))
   }
+}
+
+
+max.col.value <- function (x) {
+  return(x[cbind(1:nrow(x), max.col(x, ties.method = "first"))])
+}
+
+min.col.value <- function (x) {
+  return(x[cbind(1:nrow(x), max.col(-x, ties.method = "first"))])
 }

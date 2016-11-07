@@ -76,7 +76,8 @@ coefficientRV <- function(X, Y, center=TRUE, scale=FALSE) {
 
 normalization_factors <- function(Xl, type=c("MFA", "RV", "DCor", "None")) {
   type <- match.arg(type)
-  if (type == "MFA") {
+  
+  alpha <- if (type == "MFA") {
     sapply(Xl, function(X) 1/(svd.wrapper(X, ncomp=1, method="propack")$d[1]^2))
   } else if (type == "RV" && length(Xl) > 2) {
     message("rv normalization")
@@ -85,22 +86,33 @@ normalization_factors <- function(Xl, type=c("MFA", "RV", "DCor", "None")) {
     wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
     wts/sum(wts)
     
+    ## make alpha average 1
+    (wts - mean(wts)) + 1
+    
   } else if (type == "DCor" && length(Xl) > 2) {
     message("dcor normalization")
     smat <- SimMat(Xl, function(x1,x2) energy::dcor.ttest(x1,x2)$estimate)
     diag(smat) <- 1
     wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
     wts/sum(wts)
+    (wts - mean(wts)) + 1
+    ## make alpha average 1
   } else {
     rep(1, length(Xl))
   }
+  
+  alpha <- (alpha - mean(alpha)) + 1
+  
+  
 }
 
 
 ## take a new design and reduce original data
-block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "None"), center=TRUE, scale=FALSE) {
-  
+#' @importFrom assertthat assert_that
+block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "None", "Pre"), center=TRUE, scale=FALSE, alpha=rep(1, length(Xlist))) {
+  assert_that(length(Xlist) == length(Ylist))
   normalization <- match.arg(normalization)
+  
   ## compute barycenters for each table
   XB <- lapply(1:length(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
   
@@ -110,9 +122,10 @@ block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "Non
   centroids <- lapply(XBc, attr, "scaled:center")
   scales <- lapply(XBc, attr, "scaled:scale")
   
-  
-  # compute normalization factor
-  alpha <- sqrt(normalization_factors(XBc, normalization))
+  if (normalization != "Pre") {
+    # compute normalization factor
+    alpha <- sqrt(normalization_factors(XBc, normalization))
+  }
   
   # normalize
   normXBc <- lapply(1:length(alpha), function(i) XBc[[i]] * alpha[i])
@@ -123,11 +136,6 @@ block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "Non
   list(Xr=Xr, XB=XB, alpha=alpha, centroids=centroids, scales=scales)
 }
 
-
-code_replications <- function(f) {
-  m <- outer(f, unique(f), "==")
-  ordered(apply(m* apply(m,2,cumsum), 1, sum))
-}
 
 
 ### implement soft-thresholding that spans datasets...? similar to spls?
@@ -201,7 +209,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     }
     if (!is.null(Xreduced$scales[[table_index]])) {
       ## rescale
-      sweep(M, 2, Xreduced$scales[[table_index]], "/")
+      sweep(newdat, 2, Xreduced$scales[[table_index]], "/")
     }
     
     newdat * Xreduced$alpha[table_index]
@@ -258,11 +266,11 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     permute_refit=permute_refit
   )
   
-  class(result) <- c("musubada_result")
+  class(result) <- c("musubada")
   result
 }
 
-contributions.musubada_result <- function(x, fac, component=1) {
+contributions.musubada <- function(x, fac, component=1) {
   out <- lapply(1:x$ntables, function(j) {
     ind <- x$blockInd[j,1]:x$blockInd[j,2]
     contr <- pca_fit$v[ind,component]^2 * x$alpha[j]
@@ -273,23 +281,42 @@ contributions.musubada_result <- function(x, fac, component=1) {
   
 }
 
-permute_refit.musubada_result <- function(x) {
+permute_refit.musubada <- function(x) {
   x$permute_refit()
 }
 
-singular_values.musubada_result <- function(x) {
+singular_values.musubada <- function(x) {
   x$pca_core$d
 }
 
 
 #' @export
-project_table <- function(x, newdata, ncomp, ...) UseMethod("project_table")
+project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
+project_copy <- function(x, ...) UseMethod("project_copy")
+
+project_copy.musubada <- function(x, Ylist, Xlist) {
+  ## reduce but no centering or scaling
+  XB <- lapply(1:length(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
+  
+  XBlocks <- lapply(1:length(XB), function(i) x$reprocess(XB[[i]], i))
+  browser()
+  partial_scores = 
+    lapply(1:length(XBlocks), function(i) {
+      ind <- x$blockInd[i,1]:x$blockInd[i,2]
+      length(XBlocks) * XBlocks[[i]] %*% x$pca_fit$v[ind,]
+    })
+  
+  lds <- do.call(cbind, XBlocks %*% x$pca_fit$u)
+  
+  scores <- Reduce("+", partial_fscores)/length(partial_fscores)
+  list(scores=scores, partial_scores=partial_scores, loadings=lds)
+  
+}
 
 #' @importFrom assertthat assert_that 
 #' @export
-project_table.musubada_result <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=NULL, table_name = NULL) {
-  assert_that(is.matrix(suptab))
+project_table.musubada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=NULL, table_name = NULL) {
   assert_that(ncomp >= 1)
   assert_that(is.factor(supY))
   assert_that(length(levels(supY)) == x$ncond)
@@ -298,21 +325,24 @@ project_table.musubada_result <- function(x, supY, supX, ncomp=x$ncomp) { #table
   suptab <- block_reduce(list(supX), list(supY), normalization=x$normalization, scale=x$scale, center=x$center)
   
   ## compute supplementary Q
-  Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] %*% diag(1/x$pca_fit$d[1:ncomp]))
+  ##Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] %*% diag(1/x$pca_fit$d[1:ncomp]))
+  
+  Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] )
   
   ## compute supplementary factor scores
   Fsup <- x$ntables * (suptab$Xr %*% Qsup) 
+  list(scores=Fsup, loadings=Qsup)
 }
 
 #' @export
-supplementary_loadings.musubada_result <- function(x, suptab, ncomp=x$ncomp) {
+supplementary_loadings.musubada <- function(x, suptab, ncomp=x$ncomp) {
   suptab <- x$pre_process(suptab)
   Qsup <- t(suptab) %*% (x$plsfit$u[,1:ncomp,drop=FALSE])
 }
 
 
 #' @export
-loadings.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$v)) {
+loadings.musubada <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$v)) {
   do.call(cbind, lapply(table_index, function(i) {
     ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
     1/x$alpha[i] * x$pca_fit$v[ind, comp,drop=FALSE]
@@ -320,7 +350,7 @@ loadings.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), comp
 }
 
 #' @export
-correlations.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$u)) {
+correlations.musubada <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$u)) {
   do.call(cbind, lapply(table_index, function(i) {
     ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
     cor(x$XB[,ind,drop=FALSE], x$pca_fit$u[, comp])
@@ -332,7 +362,8 @@ correlations.musubada_result <- function(x, table_index=1:nrow(x$blockIndices), 
 
 #' @export
 #' @importFrom assertthat assert_that
-supplementary_predictor.musubada_result <- function(x, supX, supY, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), ncomp=x$ncomp) {
+supplementary_predictor.musubada <- function(x, supX, supY, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
+                                             ncomp=x$ncomp) {
   assert_that(length(supY) == nrow(supX))
   type <- match.arg(type)
   ## pre-process new table
@@ -341,17 +372,17 @@ supplementary_predictor.musubada_result <- function(x, supX, supY, type=c("class
   ## compute supplementary Q
   Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE] %*% diag(1/x$pca_fit$d[1:ncomp]))
   
+  ##Qsup <- t(suptab$Xr) %*% (x$pca_fit$u[, 1:ncomp, drop=FALSE])
+  
   predfun <- function(newdat) {
     if (!is.null(suptab$centroids)) {
       newdat <- sweep(newdat, 2, suptab$centroids[[1]], "-")
     }
     if (!is.null(suptab$scales[[1]])) {
-      sweep(M, 2, suptab$scales[[1]], "/")
+      sweep(newd at, 2, suptab$scales[[1]], "/")
     }
     
-    
     newdat <- newdat * suptab$alpha
-    
     fscores <- x$ntables * newdat %*% Qsup
     scorepred(fscores, x$scores, type, ncomp)
   }
@@ -359,19 +390,20 @@ supplementary_predictor.musubada_result <- function(x, supX, supY, type=c("class
 
  
 #' @import From abind abind
-project_cols.musubada_result <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:x$ntables) {
+project_cols.musubada <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:x$ntables) {
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   
   if (is.null(newdata)) {
+    ## project each replication onto the subject's components
     lapply(table_index, function(i) {
       yr <- x$Y_reps[[i]]
       ysplit <- split(1:length(yr), yr)
       newdata <- x$reprocess(x$Xlist[[i]],i)
-      
+      #browser()
       lv <- lapply(ysplit, function(idx) {
         xnewdat <- newdata[idx,]
-        t(t(xnewdat) %*% x$pca_fit$u[, 1:ncomp])
-        
+        #t(t(xnewdat) %*% x$pca_fit$u[, 1:ncomp])
+        t(t(xnewdat) %*% (x$pca_fit$u[, 1:ncomp]))
       })
       
       abind::abind(lv, along=3)
@@ -380,10 +412,13 @@ project_cols.musubada_result <- function(x, newdata=NULL, ncomp=x$ncomp, table_i
     
   } else {
     stop()
-    lapply(table_index, function(i) {
-      ind <- x$blockIndices[i,]
-      xnewdat <- x$reprocess(newdata[, ind[1]:ind[2]], i)
-      t(t(xnewdat) %*% x$pca_fit$u[, 1:ncomp])
+    ## project new data-point from existing table.
+    lapply(1:length(table_index), function(i) {
+      browser()
+      tbind <- table_index[i]
+      ind <- x$blockIndices[tbind,]
+      xnewdat <- x$reprocess(newdata[[i]], i)
+      t(t(xnewdat) %*% x$pca_fit$u[ind[1]:ind[2], 1:ncomp])
     })
   }
 }
@@ -392,7 +427,7 @@ project_cols.musubada_result <- function(x, newdata=NULL, ncomp=x$ncomp, table_i
 
 ## project from existing table
 #' @export
-predict.musubada_result <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance"), 
+predict.musubada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance"), 
                                     ncomp=x$ncomp, table_index=1:x$ntables) {
   type <- match.arg(type)
   assert_that(is.matrix(newdata))
@@ -410,6 +445,8 @@ predict.musubada_result <- function(x, newdata, type=c("class", "prob", "scores"
     Xp <- x$reprocess(newdata, table_index)
     Xp %*% x$pca_fit$v[ind[1]:ind[2], , drop=FALSE]
   }
+  
+  
     
   scorepred(fscores, x$scores, type=type, ncomp=ncomp)
   
