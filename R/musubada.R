@@ -427,7 +427,7 @@ project_cols.musubada <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:
 
 ## project from existing table
 #' @export
-predict.musubada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance"), 
+predict.musubada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
                                     ncomp=x$ncomp, table_index=1:x$ntables) {
   type <- match.arg(type)
   assert_that(is.matrix(newdata))
