@@ -1,3 +1,11 @@
+
+
+# Barycentric Discriminant Analysis
+#' 
+#' @param Y
+#' @param X
+#' @param ncomp
+#' @param center
 #' @export
 #' @importFrom assertthat assert_that
 bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.method="base", strata=NULL) {
@@ -53,7 +61,7 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
               svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, permute_refit=permute_refit, reduce=reduce,
               strata=strata, XBlock=xb$XBlock)
  
-  class(ret) <- c("bada")
+  class(ret) <- c("projector", "bada")
   ret
   
 }
@@ -175,13 +183,14 @@ nested_cv.bada <- function(x, innerFolds, heldout, metric=c("ACC", "AUC"), min.c
 
 #' @export
 predict.bada <- function(x, newdata, type=c("class", "prob", "scores", "cosine", "distance"), ncomp=x$ncomp, pre_process=TRUE) {
-  assert_that(type %in% c("class", "prob", "scores", "crossprod", "distance"))
+  type <- match.arg(type)
+   
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
     newdata <- matrix(newdata, nrow=1, ncol=ncol(x$condMeans))
   }
+  
   assert_that(is.matrix(newdata))
   assert_that(ncol(newdata) == ncol(x$condMeans))
-  type <- match.arg(type)
   
  
   if (is.null(ncomp)) {

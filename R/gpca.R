@@ -13,7 +13,7 @@
 #' @importFrom assertthat assert_that
 #' @importFrom sGPCA gpca
 #' @export
-generalized_pca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
+genpca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
@@ -25,51 +25,76 @@ generalized_pca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALS
     M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
   }
   
-  gpfit <- sGPCA::gpca(X, M, A, K=10)
-  scores <- t(t(as.matrix(gpfit$U)) * gpfit$D)
+  assert_that(nrow(A) == ncol(A))
+  assert_that(nrow(M) == ncol(M))
+  assert_that(nrow(A) == ncol(X))
+  assert_that(nrow(M) == nrow(X))
+  assert_that(ncomp > 0)
+  ncomp <- min(min(dim(X)), ncomp)
   
-  ret <- list(v=gpfit$v, u=gpfit$u, d=gpfit$d, scores=scores, ncomp=ncomp)
+  n = dim(X)[1]
+  p = dim(X)[2]
   
+  if(n < p){
+    ret = gmdLA(t(X), A, M, ncomp,p,n)
+    svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
+  }else{
+    svdfit = gmdLA(X,M,A,ncomp,n,p)
+  }
+  
+  scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
+  
+  ret <- list(v=svdfit$v, u=svdfit$u, d=svdfit$d, scores=scores, ncomp=ncomp)
+
   class(ret) <- c("gpca")
   ret
   
 }
 
-# gmdLA <- function(X,Q,R,k,n,p){
-#   
-#   ##computation
-#   
-#   decomp = eigen(R)
-#   Rtilde = decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
-#   inv.values = decomp$values
-#   inv.values[which(decomp$values!=0)] = 1/sqrt(decomp$values[which(decomp$values!=0)])
-#   Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
-#   inmat =  t(X) %*% Q %*% X
-#   
-#   RtinRt = Rtilde %*% inmat %*% Rtilde
-#   xtilde.decomp = eigen(RtinRt)
-#   
-#   vgmd = Rtilde.inv %*% xtilde.decomp$vectors
-#   dgmd = sqrt(xtilde.decomp$values[1:k])
-#   
-#   ugmd = matrix(nrow = n,ncol = k)
-#   cumv = rep(0,k)
-#   
-#   
-#   propv = dgmd^2/sum(diag(as.matrix(inmat %*% R)))
-#   
-#   normalizing.number = 1
-#   
-#   XR = X %*% R
-#   RnR = R %*% inmat %*% R
-#   
-#   for( i in 1:k){
-#     normalizing.number = sqrt(vgmd[,i] %*% RnR %*% vgmd[,i])
-#     ugmd[,i] = as.matrix(XR %*% vgmd[,i])/as.double(normalizing.number)
-#     cumv[i] = sum(propv[1:i]) 
-#   }
-#   
-#   return.object = list("u"=ugmd,"v"=vgmd[,1:k],"d"=dgmd,"cumv"=cumv,"propv"=propv)
-#   return(return.object)
-#   
-# }
+gmdLA <- function(X,Q,R,k,n,p){
+
+  ##computation
+
+  decomp <- eigen(R)
+  keep <- which(abs(decomp$values) > 1e-8)
+  decomp$vectors <- decomp$vectors[,keep]
+  decomp$values <- decomp$values[keep]
+  
+  Rtilde = decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
+  inv.values = 1/sqrt(decomp$values)
+  
+  Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors[,keep])
+  
+  #inmat =  t(X) %*% Q %*% X
+  inmat <- crossprod(X, Q) %*% X
+
+  RtinRt = Rtilde %*% inmat %*% Rtilde
+  xtilde.decomp = eigen(RtinRt)
+  
+  keep <- which(abs(xtilde.decomp$values) > 1e-8)
+  xtilde.decomp$vectors <- xtilde.decomp$vectors[,keep]
+  xtilde.decomp$values <- xtilde.decomp$values[keep]
+  
+  vgmd = Rtilde.inv %*% xtilde.decomp$vectors
+  dgmd = sqrt(xtilde.decomp$values[1:k])
+
+  ugmd = matrix(nrow = n,ncol = k)
+  cumv = rep(0,k)
+
+
+  propv = dgmd^2/sum(diag(as.matrix(inmat %*% R)))
+
+  normalizing.number = 1
+
+  XR = X %*% R
+  RnR = R %*% inmat %*% R
+
+  for( i in 1:k) {
+    normalizing.number = sqrt(vgmd[,i] %*% RnR %*% vgmd[,i])
+    ugmd[,i] = as.matrix(XR %*% vgmd[,i])/as.double(normalizing.number)
+    cumv[i] = sum(propv[1:i])
+  }
+
+  list(u=ugmd[,1:k],v=vgmd[,1:k],d=dgmd[1:k],cumv=cumv,propv=propv)
+  
+}
