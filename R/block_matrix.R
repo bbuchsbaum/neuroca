@@ -11,9 +11,10 @@ blockIndices <- function(Xlist) {
 
 
 #' block_matrix_list
+#' 
 #' @param Xs a list of k matrices each with with N_k rows and M_k columns 
 #' @export
-#' @importFrom assert assertthat
+#' @importFrom assertthat assert_that
 block_matrix_list <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
@@ -29,9 +30,10 @@ block_matrix_list <- function(Xs) {
 }
 
 #' block_matrix
+#' 
 #' @param Xs a list of k matrices with N rows and M_k columns 
 #' @export
-#' @importFrom assert assertthat
+#' @importFrom assertthat assert_that
 block_matrix <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
@@ -48,6 +50,8 @@ block_matrix <- function(Xs) {
   X
 }
 
+#' get_block
+#' 
 #' @export
 #' @param x the object to retrive the block of variables from.
 #' @param i the index of the block.

@@ -2,6 +2,7 @@
 % Please edit documentation in R/musubada.R
 \name{musubada}
 \alias{musubada}
+\title{musubada}
 \usage{
 musubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
   svd.method = "fast", normalization = c("MFA", "RV", "None", "DCor"))
@@ -11,5 +12,8 @@ musubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
 If there are a different nume rof rows (e..g different numbers of replications per subject), Y can be a list of factors.}
 
 \item{Xlist}{a list of X matrices, one per subject.}
+}
+\description{
+musubada
 }
 

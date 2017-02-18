@@ -2,6 +2,7 @@
 % Please edit documentation in R/block_matrix.R
 \name{get_block}
 \alias{get_block}
+\title{get_block}
 \usage{
 get_block(x, i)
 }
@@ -9,5 +10,8 @@ get_block(x, i)
 \item{x}{the object to retrive the block of variables from.}
 
 \item{i}{the index of the block.}
+}
+\description{
+get_block
 }
 

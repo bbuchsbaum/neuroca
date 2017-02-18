@@ -1,7 +1,11 @@
-#' @export
+
+
+#' svd.wrapper
+#' 
 #' @param X the \code{matrix}
 #' @param ncomp number of components to estimate
 #' @param method the svd method to use. One of: 'base', 'fast', 'irlba', 'propack'
+#' @export
 svd.wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", "propack")) {
   assert_that(method %in% c("base", "fast", "irlba", "propack"))
   

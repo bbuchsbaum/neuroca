@@ -2,6 +2,7 @@
 % Please edit documentation in R/svd_wrapper.R
 \name{svd.wrapper}
 \alias{svd.wrapper}
+\title{svd.wrapper}
 \usage{
 svd.wrapper(X, ncomp = min(dim(X)), method = c("base", "fast", "irlba",
   "propack"))
@@ -12,5 +13,8 @@ svd.wrapper(X, ncomp = min(dim(X)), method = c("base", "fast", "irlba",
 \item{ncomp}{number of components to estimate}
 
 \item{method}{the svd method to use. One of: 'base', 'fast', 'irlba', 'propack'}
+}
+\description{
+svd.wrapper
 }
 

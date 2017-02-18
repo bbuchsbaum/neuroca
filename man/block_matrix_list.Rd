@@ -7,7 +7,7 @@
 block_matrix_list(Xs)
 }
 \arguments{
-\item{Xs}{a list of k matrices with N_k rows and M_k columns}
+\item{Xs}{a list of k matrices each with with N_k rows and M_k columns}
 }
 \description{
 block_matrix_list

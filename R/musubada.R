@@ -140,11 +140,19 @@ block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "Non
 
 ### implement soft-thresholding that spans datasets...? similar to spls?
 ### musubada is really a bada with block structure -- bada can be engine
+
+#' musubada
+#' 
 #' @importFrom assertthat assert_that 
 #' @importFrom energy dcor.ttest
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 #'        If there are a different nume rof rows (e..g different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a list of X matrices, one per subject. 
+#' @param ncomp
+#' @param center
+#' @param scale
+#' @param svd.method
+#' @param normalization
 #' @importFrom assertthat assert_that 
 #' @export
 musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast", 
@@ -389,7 +397,7 @@ supplementary_predictor.musubada <- function(x, supX, supY, type=c("class", "pro
 }
 
  
-#' @import From abind abind
+#' @importFrom abind abind
 project_cols.musubada <- function(x, newdata=NULL, ncomp=x$ncomp, table_index=1:x$ntables) {
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   
