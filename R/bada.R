@@ -6,6 +6,9 @@
 #' @param X
 #' @param ncomp
 #' @param center
+#' @param scale
+#' @param svd.method
+#' @param strata
 #' @export
 #' @importFrom assertthat assert_that
 bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.method="base", strata=NULL) {
@@ -22,7 +25,7 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
       ## compute barycenters, no strata
       XB <- group_means(.Y, .X)
       list(XBc=scale(XB, center=.center, scale=.scale), XBlock=NULL)
-    } else if (!is.null(strata)) {
+    } else if (any(table(.Y) > 1) && !is.null(strata)) {
       ## compute barycenters by strata
       XBlock <- lapply(levels(.strata), function(i) {
         idx <- which(.strata==i)
@@ -57,8 +60,10 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
     }
   }
   
-  ret <- list(Y=Y,X=X,ncomp=ncomp, condMeans=xb$XBc, center=center, scale=scale, pre_process=apply_scaling(xb$XBc), 
-              svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, permute_refit=permute_refit, reduce=reduce,
+  ret <- list(Y=Y,X=X,ncomp=ncomp, condMeans=xb$XBc, center=center, scale=scale, 
+              pre_process=apply_scaling(xb$XBc), 
+              svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, 
+              permute_refit=permute_refit, reduce=reduce,
               strata=strata, XBlock=xb$XBlock)
  
   class(ret) <- c("projector", "bada")
