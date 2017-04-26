@@ -1,4 +1,4 @@
-#' plscorr_aov
+#' musu_asca
 #' 
 #' @export
 #' @param Xlist the data matrices, 1 per subject
@@ -71,7 +71,7 @@ musu_asca <- function(Xlist, formula, design, svd.method="base") {
   )
   
   
-  class(ret) <- "plscorr_result_aov"
+  class(ret) <- c("musu_asca", "list")
   ret
   
 }
