@@ -62,6 +62,7 @@ musu_asca <- function(Xlist, formula, design, svd.method="base") {
   }
   
   names(res) <- colnames(facs)
+  
   ret <- list(
     results=res,
     formula=formula,
