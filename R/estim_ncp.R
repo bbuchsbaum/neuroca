@@ -1,11 +1,12 @@
 
-
+#' fast_estim_ncomp
+#' 
 #' @param X
 #' @param ncp.min
 #' @param ncp.max
 #' @param scale
 #' @export
-fast_estim_ncp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE){
+fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE){
   
   p=ncol(X)
   n=nrow(X)
@@ -34,12 +35,12 @@ fast_estim_ncp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE){
       if (!is.null(chash[[as.character(q)]])) {
         cval <- chash[[as.character(q)]]
       } else if (q>1)  {
-        rec <- tcrossprod(rr$u[,1:q] * rr$d[1:q], rr$v[,1:q,drop=F])
+        rec <- tcrossprod(sweep(rr$u[, 1:q, drop = F], 2, rr$d[1:q], FUN = "*"), rr$v[, 1:q, drop = F])
         cval <- mean(( n*p*(X-rec)/ ((n-1)*(p)- q*(n+p-q-1)))^2, na.rm=T)
         chash[[as.character(q)]] <<- cval
         print(chash)
       } else {
-        rec <- tcrossprod(as.matrix(rr$u)[,1,drop=FALSE]*rr$d[1],as.matrix(rr$v)[,1,drop=FALSE])
+        rec <- tcrossprod(rr$u[,1,drop=FALSE]*rr$d[1],rr$v[,1,drop=FALSE])
         cval <- mean(( n*p*(X-rec)/ ((n-1)*(p)- q*(n+p-q-1)))^2, na.rm=T)
         chash[[as.character(q)]] <<- cval
       }
