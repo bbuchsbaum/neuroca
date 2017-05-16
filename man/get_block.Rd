@@ -14,4 +14,3 @@ get_block(x, i)
 \description{
 get_block
 }
-
