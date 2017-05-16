@@ -66,19 +66,8 @@ reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
-project <- function(x, newX, pre_process, ncomp, ...) UseMethod("project")
+project <- function(x, newX, ...) UseMethod("project")
 
-project.projector <- function(obj, newX, pre_process, ncomp) {
-  if (pre_process) {
-    newX <- pre_process(obj, newX)
-  }
-  
-  proj <- get_projection_matrix(obj)
-  
-  ncomp <- min(ncomp, ncol(proj))
-  newX %*% get_projection_matrix(obj)[, 1:ncomp]
-  
-}
 
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 

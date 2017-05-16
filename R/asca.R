@@ -1,5 +1,4 @@
 
-
 gen_threeway_mat <- function(n1,n2,n3, nvox, index) {
   nk <- n1*n2*n3
 
@@ -200,6 +199,7 @@ asca <- function(X, formula, design, center=TRUE, scale=FALSE, svd.method="base"
   )
   
   
+
   class(ret) <- c("projector", "asca")
   ret
   
