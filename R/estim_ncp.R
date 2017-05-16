@@ -59,8 +59,8 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE){
   while (TRUE) {
     crit <- run_gcv(cand)
     wmin <- which.min(crit[,2])
-    low <- crit[wmin-1,1] + 1
-    high <- crit[wmin+1,1] - 1
+    low <- max(ncp.min, crit[wmin-1,1] + 1)
+    high <- min(ncp.max, crit[wmin+1,1] - 1)
     opt <-crit[wmin,1]
     
     if ((high - low) < 5) { 
