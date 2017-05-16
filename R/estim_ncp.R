@@ -6,7 +6,7 @@
 #' @param ncp.max
 #' @param scale
 #' @export
-fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE){
+fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE) {
   
   p=ncol(X)
   n=nrow(X)
