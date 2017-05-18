@@ -10,7 +10,7 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method=
   
   X <- pre_processor(X, center,scale)
   
-  svdres <- svd.wrapper(X, ncomp, method=svd.method)
+  svdres <- svd_wrapper(X, ncomp, method=svd.method)
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   
