@@ -69,7 +69,7 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=TRUE) {
     
     
     high <- if (wmin == nrow(crit)) {
-     opt
+      opt
     } else {
       min(ncp.max, crit[wmin+1,1] - 1)
     }
