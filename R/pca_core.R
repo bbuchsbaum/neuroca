@@ -35,6 +35,6 @@ project.pca <- function(obj, newX) {
   obj$pre_process(newX) %*% obj$v
 }
 
-
-hierarchical_pca <- function(X, comps, hierarchy, svd.method="base") {
-}
+# 
+# hierarchical_pca <- function(X, comps, hierarchy, svd.method="base") {
+# }
