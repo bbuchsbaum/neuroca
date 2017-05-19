@@ -6,7 +6,7 @@
 #' @param scale
 #' @param svd.method
 #' @export
-pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method="base") {
+pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method="fast") {
   
   X <- pre_processor(X, center,scale)
   
@@ -16,7 +16,7 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method=
   
   ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, scores=scores, ncomp=ncomp, svd.method=svd.method, pre_process=attr(X, "pre_process"))
   
-  class(ret) <- c("pca", "projector")
+  class(ret) <- c("pca", "projector", "list")
   ret
 }
 
@@ -34,6 +34,14 @@ scores.pca <- function(x) {
 project.pca <- function(obj, newX) {
   obj$pre_process(newX) %*% obj$v
 }
+
+
+reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, reducer=pca_core, ...) {
+  res <- reducer(x, k, center=center, scale=scale, ...)
+  
+  ret <- list(
+}
+
 
 # 
 # hierarchical_pca <- function(X, comps, hierarchy, svd.method="base") {
