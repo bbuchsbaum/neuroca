@@ -21,4 +21,3 @@ plscorr_aov(X, formula, design, random = NULL, ncomp = 2, center = TRUE,
 \description{
 plscorr_aov
 }
-

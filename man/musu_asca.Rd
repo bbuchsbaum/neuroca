@@ -2,20 +2,22 @@
 % Please edit documentation in R/asca.R
 \name{musu_asca}
 \alias{musu_asca}
-\title{plscorr_aov}
+\title{musu_asca}
 \usage{
-musu_asca(Xlist, formula, design, svd.method = "base")
+musu_asca(Xlist, formula, design, center = TRUE, scale = FALSE,
+  svd.method = "base", strata)
 }
 \arguments{
-\item{Xlist}{the data matrices, 1 per subject}
+\item{Xlist}{the list of data matrices}
 
 \item{formula}{a formula specifying the ANOVA design}
 
 \item{design}{a \code{data.frame} providing the variables provided in \code{formula} argument.}
 
 \item{svd.method}{the svd method to use.}
+
+\item{strata}{name of variable in design matrix that indicates any blocking structure, such as "subject".}
 }
 \description{
-plscorr_aov
+musu_asca
 }
-

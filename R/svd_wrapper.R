@@ -1,6 +1,6 @@
 
 
-#' svd.wrapper
+#' svd_wrapper
 #' 
 #' @param X the \code{matrix}
 #' @param ncomp number of components to estimate
