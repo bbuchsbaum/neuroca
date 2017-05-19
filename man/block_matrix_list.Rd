@@ -12,4 +12,3 @@ block_matrix_list(Xs)
 \description{
 block_matrix_list
 }
-
