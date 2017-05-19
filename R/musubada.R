@@ -77,13 +77,14 @@ coefficientRV <- function(X, Y, center=TRUE, scale=FALSE) {
 normalization_factors <- function(Xl, type=c("MFA", "RV", "DCor", "None")) {
   type <- match.arg(type)
   
+  message("normalization type:", type)
   alpha <- if (type == "MFA") {
-    sapply(Xl, function(X) 1/(svd.wrapper(X, ncomp=1, method="propack")$d[1]^2))
+    sapply(Xl, function(X) 1/(svd_wrapper(X, ncomp=1, method="propack")$d[1]^2))
   } else if (type == "RV" && length(Xl) > 2) {
     message("rv normalization")
     smat <- SimMat(Xl, function(x1,x2) coefficientRV(x1,x2, center=FALSE, scale=FALSE))
     diag(smat) <- 1
-    wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
+    wts <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
     wts/sum(wts)
     
     ## make alpha average 1
@@ -93,23 +94,20 @@ normalization_factors <- function(Xl, type=c("MFA", "RV", "DCor", "None")) {
     message("dcor normalization")
     smat <- SimMat(Xl, function(x1,x2) energy::dcor.ttest(x1,x2)$estimate)
     diag(smat) <- 1
-    wts <- abs(svd.wrapper(smat, ncomp=1, method="propack")$u[,1])
+    wts <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
     wts/sum(wts)
     (wts - mean(wts)) + 1
     ## make alpha average 1
   } else {
     rep(1, length(Xl))
   }
-  
-  alpha <- (alpha - mean(alpha)) + 1
-  
-  
 }
 
 
 ## take a new design and reduce original data
 #' @importFrom assertthat assert_that
 block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "None", "Pre"), center=TRUE, scale=FALSE, alpha=rep(1, length(Xlist))) {
+  
   assert_that(length(Xlist) == length(Ylist))
   normalization <- match.arg(normalization)
   
@@ -120,16 +118,23 @@ block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "Non
   XBc <- lapply(XB, pre_process, center, scale)
   
   centroids <- lapply(XBc, attr, "scaled:center")
+  
   scales <- lapply(XBc, attr, "scaled:scale")
   
+  message("normalization is: ", normalization)
+  
   if (normalization != "Pre") {
+    message("computing normalization factors")
     # compute normalization factor
+    
     alpha <- sqrt(normalization_factors(XBc, normalization))
+    print(alpha)
   }
   
   # normalize
   normXBc <- lapply(1:length(alpha), function(i) XBc[[i]] * alpha[i])
   
+
   # construct matrix of barycenters
   Xr <- do.call(cbind, normXBc)
   
@@ -153,10 +158,11 @@ block_reduce <- function(Xlist, Ylist, normalization=c("MFA", "RV", "DCor", "Non
 #' @param scale
 #' @param svd.method
 #' @param normalization
+#' @param pca_k use PCA to pre-process data blocks, retaining k components per block. 
 #' @importFrom assertthat assert_that 
 #' @export
 musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fast", 
-                     normalization=c("MFA", "RV", "None","DCor")) {
+                     normalization=c("MFA", "RV", "None","DCor"), pca_k=NULL) {
   normalization <- normalization[1]
 
   assert_that(all(sapply(Xlist, is.matrix)))
@@ -170,6 +176,7 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   if (is.factor(Y)) {
     ## Y is a single factor, therefore all matrices must have same number of rows.
     assert_that(all(sapply(Xlist, nrow) == nrow(Xlist[[1]])))
+    assert_that(length(Y) == nrow(Xlist[[1]]))
     Yl <- replicate(length(Xlist), Y, simplify=FALSE)
   } else if (is.list(Y)) {
     ## Y is a list of factors

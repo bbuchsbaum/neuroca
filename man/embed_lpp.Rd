@@ -16,4 +16,3 @@ embed_lpp(X, W, ndim = 2)
 \description{
 locality preserving projections
 }
-

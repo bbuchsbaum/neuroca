@@ -18,4 +18,3 @@ genpca(X, A, M, ncomp = min(dim(X)), center = FALSE, scale = FALSE)
 \description{
 genpca
 }
-
