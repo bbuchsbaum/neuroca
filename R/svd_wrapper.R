@@ -6,13 +6,14 @@
 #' @param ncomp number of components to estimate
 #' @param method the svd method to use. One of: 'base', 'fast', 'irlba', 'propack'
 #' @export
-svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", "propack", "rsvd"), ...) {
+svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", "propack", "rsvd", "svds"), ...) {
   method <- match.arg(method)
   
   res <- switch(method,
                 base=svd(X,...),
                 fast=corpcor:::fast.svd(X,...),
-                rsvd=rsvd::rsvd(X, k=ncomp, ...),
+                rsvd=rsvd::rsvd(X, k=ncomp, q=2, ...),
+                svds=RSpectra::svds(X,k=ncomp),
                 propack=svd::propack.svd(X, neig=ncomp,...),
                 irlba=irlba:::irlba(X, nu=min(ncomp, min(dim(X)) -3), nv=min(ncomp, min(dim(X)) -3)), ...)
   

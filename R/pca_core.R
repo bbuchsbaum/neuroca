@@ -39,7 +39,7 @@ project.pca <- function(obj, newX) {
 reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, reducer=pca_core, ...) {
   res <- reducer(x, k, center=center, scale=scale, ...)
   
-  ret <- list(
+  #ret <- list(
 }
 
 
