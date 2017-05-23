@@ -16,12 +16,12 @@ pre_processor <- function(X, scale=FALSE, center=TRUE) {
     if (!center && !scale) {
       M
     } else if (center && scale) {
-      sweep(M, 2, cen, "-")
+      sweep(M, 2, center_vec, "-")
     } else if (!center && scale) {
-      sweep(M, 2, stdev, "/")
+      sweep(M, 2, scale_vec, "/")
     } else if (center && scale) {
-      M <- sweep(M, 2, cen)
-      sweep(M, 2, stdev, "/")
+      M <- sweep(M, 2, center_vec)
+      sweep(M, 2, scale_vec, "/")
     } else {
       stop()
     }
