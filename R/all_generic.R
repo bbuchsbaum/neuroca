@@ -26,6 +26,13 @@ bootstrap <- function(x, niter, ...) UseMethod("bootstrap")
 #' @export
 resample <- function(x, ...) UseMethod("resample")
 
+#' @export
+block_apply <- function(x, f, ...) UseMethod("block_apply")
+
+#' @export
+nblocks <- function(x) UseMethod("nblocks")
+
+
 
 #' @export
 jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
