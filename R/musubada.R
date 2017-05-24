@@ -68,7 +68,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "DCor", "None",
   
   message("normalization type:", type)
   alpha <- if (type == "MFA") {
-    unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="propack")$d[1]^2)))
+    unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="svds")$d[1]^2)))
   } else if (type == "RV" && nblocks(block_mat) > 2) {
     message("rv normalization")
     smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
@@ -419,7 +419,6 @@ project.musubada <- function(x, newX=NULL, ncomp=x$ncomp, table_index=1:x$ntable
   }
   
  
-  
   # if (is.null(newX)) {
   #   ## project each replication onto the subject's components
   #   lapply(table_index, function(i) {
@@ -453,8 +452,10 @@ project.musubada <- function(x, newX=NULL, ncomp=x$ncomp, table_index=1:x$ntable
     
   ## project new data-point 
   res <- lapply(1:length(table_index), function(i) {
+    
     tbind <- table_index[i]
-    xnewdat <- x$reprocess(newX[[i]], i)
+    print(tbind)
+    xnewdat <- x$reprocess(newX[[i]], tbind)
     ind <- x$blockIndices[tbind,]
     xnewdat %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp] * x$ntables
   })
@@ -483,8 +484,9 @@ predict.musubada <- function(x, newdata, type=c("class", "prob", "scores", "cros
   } else if (length(table_index) == 1) {
     ind <- x$blockIndices[table_index,]
     Xp <- x$reprocess(newdata, table_index)
-    Xp %*% x$pca_fit$v[ind[1]:ind[2], , drop=FALSE]
+    Xp %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp, drop=FALSE] * x$ntables
   }
+  
   
   scorepred(fscores, x$scores, type=type, ncomp=ncomp)
   
