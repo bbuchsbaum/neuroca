@@ -151,9 +151,13 @@ reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   
   assert_that(length(k) == nblocks(x))
   
+
+  
   pcres <- lapply(1:nblocks(x), function(i) {
     print(i)
-    pca_core(get_block(x, i), k[i], center=center, scale=scale, svd.method="propack")
+    xb <- get_block(x, i)
+    k <- min(min(dim(xb)), k[i])
+    pca_core(get_block(x, i), k, center=center, scale=scale, svd.method="propack")
   })
   
   
