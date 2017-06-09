@@ -40,6 +40,9 @@ jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
 #' @export
 permutation <- function(x, ...) UseMethod("permutation")
 
+#' @export 
+performance <- function(x, yobs, ncomp, folds, metric, ...) UseMethod("performance")
+
 #' @export
 permute_refit <- function(x, ...) UseMethod("permute_refit")
 
@@ -57,6 +60,9 @@ optimal_components <- function(x, ...) UseMethod("optimal_components")
 
 #' @export
 singular_values <- function(x) UseMethod("singular_values")
+
+#' @export
+truncate <- function(x, ncomp) UseMethod("truncate")
 
 #' @export
 eigen_values <- function(x) UseMethod("eigen_values")

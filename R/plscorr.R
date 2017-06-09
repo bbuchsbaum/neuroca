@@ -30,41 +30,8 @@ nested_cv.plscorr_result_contrast <- function(x, innerFolds, heldout, metric="AU
 }
 
 
-#' @export
-reconstruct.plscorr_result <- function(x, ncomp=x$ncomp) {
-  t(x$u[,1:ncomp,drop=FALSE] %*% t(x$scores[,1:ncomp,drop=FALSE]))
-}
 
-#' @export
-reproducibility.pls_result_da <- function(x, folds, metric=c("norm-2", "norm-1", "avg_cor")) {
-  if (length(folds) == 1) {
-    folds <- caret::createFolds(1:length(x$Y), folds)
-  } else if (length(folds) == length(x$Y)) {
-    folds <- split(1:length(x$Y), folds)
-  }
-  
-  metric <- metric[1]
-  
-  preds <- lapply(seq_along(folds), function(fnum) {
-    message("plscorr_da: reproducibility iteration: ", fnum)
-    fidx <- folds[[fnum]]
-    pmod <- plscorr_da(x$Y[-fidx], x$X[-fidx,,drop=FALSE], ncomp=x$ncomp, svd.method=x$svd.method)
-    
-    xb <- group_means(x$Y[fidx], x$X[fidx,,drop=FALSE])
-    xb <- x$pre_process(xb)
-    
-    res <- lapply(seq(1, x$ncomp), function(nc) {
-      xrecon <- reconstruct(x, ncomp=nc)
-      switch(metric,
-            "norm-2"=sqrt(sum((xb - xrecon)^2)),
-            "norm-1"=sum(abs(xb - xrecon)),
-            "avg_cor"=mean(diag(cor(t(xb), t(xrecon))))
-      )
-    })
-  })
-    
-           
-}
+
 
 
 stratified_folds <- function(strata, nfolds=2) {
