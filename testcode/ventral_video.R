@@ -178,22 +178,43 @@ Ximagery <- do.call(cbind, lapply(idat, "[[", "mat"))
 Yimagery <- idat[[1]]
 
 Xnback <- do.call(cbind, lapply(ndat, "[[", "mat"))
-imp_fit <- softImpute(Xnback, rank.max=50, type="als", trace.it=TRUE)
-Xcomplete <- complete(Xnback,imp_fit)
+#imp_fit <- softImpute(Xnback, rank.max=50, type="als", trace.it=TRUE)
+imp_fit <- softImpute(Xall, rank.max=50, type="als", trace.it=TRUE)
+Xcomplete <- complete(Xall,imp_fit)
 lens <- lapply(ndat, "[[", "len")
 groups <- rep(1:length(lens), unlist(lens))
 
 Xbm <- matrix_to_block_matrix(Xcomplete, groups)
 Xl <- as.list(Xbm)
-Y <- ndat[[1]]$design$label
-mbres <- musubada(Y, Xl, ncomp=10, normalization="MFA")
+Y <- factor(c(zerostr(1:1092), as.character(ndat[[1]]$design$label)))
+nback_ind <- 1093:(1093+179)
+mbres <- musubada(Y, Xl, ncomp=100, normalization="MFA", rank_k=200)
 
 
 Xibm <- as.list(matrix_to_block_matrix(Ximagery, groups))
+time <- idat[[1]]$design$time
 
+pres_cos <- lapply(1:length(Xibm), function(i) {
+  print(i)
+  pred <- predict(mbres, Xibm[[i]], type="cosine", ncomp=100, table_index=i)
+  pred <- pred[,nback_ind]
+  lver <- idat[[i]]$design$LabelVersion
+  react <- pred[cbind(1:length(lver), as.integer(lver))]
+  
+  dfx <- data.frame(time = idat[[i]]$design$time,
+                    cond = ifelse(idat[[i]]$design$cresp == 1, "same", "different"),
+                    #acc = ifelse(idat[[i]]$design$acc == 1, "correct", "incorrect"),
+                    acc = idat[[i]]$design$acc,
+                    vivid = idat[[i]]$design$vivid,
+                    react=react)
+  
+  dfx %>% group_by(time,cond) %>% dplyr::summarize(cor_acc=cor(react, acc, method="spearman",use="pairwise.complete.obs")) %>% mutate(sid=sids[i])
+  #agg1 <- aggregate(react ~ time + vivid, FUN=mean)
+  #agg1$sid <- sids[i]
+  #agg1
+})
 
-
-
+pres_cos = do.call(rbind, pres_cos)
 
 
 
