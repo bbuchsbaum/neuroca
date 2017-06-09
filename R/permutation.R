@@ -12,7 +12,7 @@ get_perm <- function(G, strata) {
 
 
 
-permutation_ <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+permutation_ <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL, deflate=FALSE) {
   if (!is.null(seed)) set.seed(seed)
   
   d <- singular_values(x)[1:ncomp]^2
@@ -33,19 +33,33 @@ permutation_ <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, se
   
   p <- rep(0, ncomp)
   for (i in 1:ncomp) {
-    p[i] <- mean(dstat0[, i] >= dstat[i])
+    p[i] <- mean(dstat0[, i] >= d[i])
   }
   
   for (i in 2:ncomp) {
     p[i] <- max(p[(i - 1)], p[i])
   }
   r <- sum(p <= threshold)
-  return(list(perm_mat=dstat0, pval=p))
+  return(list(perm_eig=dstat0, eig=d, pval=p))
   
 }
 
 
-permutation.musubada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+permutation.musu_asca <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL,term="*") {
+  if (term == "*") {
+    term <- names(x$results)
+  }
+  
+  res <- lapply(term, function(tname) {
+    message("permutation for term: ", tname)
+    permutation(x$results[[tname]]$bada_result, nperms=nperms, threshold=threshold,ncomp=ncomp, verbose=verbose, seed=seed)
+  })
+  
+  names(res) <- term
+  res
+}
+
+permutation.musu_bada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
   permutation_(x,nperms,threshold, ncomp, verbose, seed)
 }
 

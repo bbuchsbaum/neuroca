@@ -9,7 +9,7 @@ resampleXY <- function(X, Y) {
   
 }
 
-resample.musubada <- function(x, resample_blocks=TRUE, resample_observations=TRUE) {
+resample.musu_bada <- function(x, resample_blocks=TRUE, resample_observations=TRUE) {
   ## check for multiple repetitions per Y levels per block
 
   if (resample_blocks) {
