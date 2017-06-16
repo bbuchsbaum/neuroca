@@ -63,7 +63,7 @@ molist <- lapply(1:length(sids), function(i) load_mouthing_mat(fnames[i], sids[i
 deslist_sp <- lapply(splist, "[[", "design")
 deslist_mo <- lapply(molist, "[[", "design")
 
-des <- do.call(rbind, deslist)
+##des <- do.call(rbind, deslist)
 
 run_asca <- function(dlist, rnum,nc=2, deslist, form = ~ vowel * consonant) {
   
@@ -95,18 +95,18 @@ rnums <- rnums[rnums < 12000]
 
 tres_sp <- do.call(rbind, lapply(rnums, function(rn) {
   print(rn)
-  run_asca(splist, c(rn, rn+1000), nc=2, deslist=deslist_sp)
+  run_asca(splist, c(rn, rn+1000), nc=2, deslist=deslist_sp, form=~ vowel*consonant)
 }))
 
 tres_mo <- do.call(rbind, lapply(rnums, function(rn) {
   print(rn)
-  run_asca(molist, c(rn, rn+1000), nc=2, deslist=deslist_mo)
+  run_asca(molist, c(rn, rn+1000), nc=2, deslist=deslist_mo,form=~ vowel*consonant*speaker)
 }))
 
-best <- c(11134,11175)
+best <- c(11104, 11133, 11134, 11135, 11136, 11141, 11175)
 
 best <- c(best, best+1000)
-tbest1 <- run_asca(splist, best, 1)
-tbest2 <- run_asca(splist, best, 2)
-tbest3 <- run_asca(splist, best, 3)
-tbest4 <- run_asca(splist, best, 5)
+tbest1 <- run_asca(splist, best, 1, deslist=deslist_sp)
+tbest2 <- run_asca(splist, best, 2, deslist=deslist_sp)
+tbest3 <- run_asca(splist, best, 3, deslist=deslist_sp)
+tbest4 <- run_asca(splist, best, 5, deslist=deslist_sp)
