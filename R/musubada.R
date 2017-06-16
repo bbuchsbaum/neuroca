@@ -552,7 +552,7 @@ musu_subset <- function(x, fidx) {
   
 }
 
-performance.musu_bada <- function(x, yobs, ncomp=x$ncomp, folds=10, metric=c("ACC", "AUC")) {
+performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "AUC")) {
   if (length(folds) == 1) {
     folds <- lapply(1:length(x$Y), function(i) caret::createFolds(x$Y[[i]], folds))
   } else {
@@ -561,6 +561,8 @@ performance.musu_bada <- function(x, yobs, ncomp=x$ncomp, folds=10, metric=c("AC
   }
   
   ncomp <- min(x$ncomp, ncomp)
+  
+  yobs <- x$Yl
   
   res <- lapply(seq_along(folds[[1]]), function(fnum) {
     message("musu_bada: performance fold: ", fnum)

@@ -85,6 +85,8 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
     do.call(function(...) interaction(..., sep=":"), d[, row.names(facs)])
   })
   
+  
+  
   lens <- sapply(Ymaximal, function(x) length(levels(x)))
   assert_that(all(lens[1] == lens))
   
@@ -105,19 +107,17 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   
   dgrid[[paste0(main_terms, collapse=":")]] <- levels(Ymaximal[[1]])
   
+  Yfacl[[names(dgrid)[ncol(dgrid)]]] <- Ymaximal
+  
+  
+  refit <- function(.Xlist, .design, .ncomp=ncomp) { 
+    musu_asca(.Xlist, formula, ncomp=.ncomp, design=.design, center=center, scale=scale, svd.method=svd.method) 
+  }
+  
 
-  
-  #X <- do.call(cbind, Xlist)
-  
   get_lower_form <- function(ord) {
     tnames <- colnames(facs)[termorder < ord]
-    
-    meat <- if (!is.null(strata)) {
-      paste0("(", paste(tnames, collapse= " + "))
-    } else {
-      paste(tnames, collapse= " + ")
-    }
-    
+    meat <-paste0("(", paste(tnames, collapse= " + "),")")
     as.formula(paste(" ~ ", meat))
   }
   
@@ -185,6 +185,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   ret <- list(
     ntables=length(Xlist),
     ncomp=ncomp,
+    Xlist=Xlist,
     Yl=Yfacl,
     Ymaximal=Ymaximal,
     fac_design=dgrid,
@@ -194,6 +195,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
     loadings=do.call(cbind, lapply(res, function(x) loadings(x$bada_result$pca_fit))),
     formula=formula,
     design=designL,
+    refit=refit,
     terms=colnames(facs)
   )
   
@@ -214,56 +216,118 @@ scores.musu_asca <- function(x) {
 
 #' @export
 predict.musu_asca <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
-                              table_index=1:x$ntables, terms=x$terms) {
+                              table_index=1:x$ntables) {
   type <- match.arg(type)
   assert_that(is.matrix(newdata))
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
+  
   if (length(table_index) == x$ntables) {
     assert_that(ncol(newdata) == sum(sapply(x$Xlist, ncol)))
   }
+  
+  terms <- x$terms
   
   fscores <- do.call(cbind, lapply(terms, function(tname) {
       xres <- x$results[[tname]]
       predict(xres$bada_result, newdata, type="scores",table_index=table_index)
   }))
   
+  preds <- scorepred(fscores, x$scores, type=type, class_name=FALSE)
   
-  ids <- scorepred(fscores, x$scores, type=type, class_name=FALSE)
-  ret <- x$fac_design[ids,]
-  row.names(ret) <- NULL
-  ret
+  if (type == "class") {
+    ret <- x$fac_design[preds,]
+    row.names(ret) <- NULL
+    ret
+  } else {
+    preds
+  }
 }
 
-performance.musu_asca <- function(x, yobs, ncomp=x$ncomp, blocks, term=names(x$fac_design)[ncol(x$fac_design)], metric=c("ACC", "AUC")) {
- 
+
+asca_subset <- function(x, fidx) {
+  .Xlist <- lapply(1:length(x$Xlist), function(i) {
+    xi <- x$Xlist[[i]]
+    xi[fidx[[i]],,drop=FALSE]
+  })
+  
+  .d <- lapply(1:length(x$Xlist), function(i) {
+    des <- x$design[[i]]
+    des[fidx[[i]],]
+  })
+  
+  list(x=.Xlist, design=.d)
+  
+}
+
+
+performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_design)[ncol(x$fac_design)], metric=c("ACC", "AUC")) {
+  metric <- match.arg(metric)
+  
   folds <- lapply(blocks, function(bind) split(1:length(bind), bind))
   
-  ncomp <- min(x$ncomp, ncomp)
-  
+  yobs <- x$Yl[[term]]
+
   res <- lapply(seq_along(folds[[1]]), function(fnum) {
     message("musu_asca: performance fold: ", fnum)
+    
     fidx <- lapply(folds, "[[", fnum)
-    xsub <- musu_subset(x, lapply(fidx, "*", -1))
+    xsub <- asca_subset(x, lapply(fidx, "*", -1))
     
-    rfit <- x$refit(xsub$y,xsub$x, ncomp) 
+    rfit <- x$refit(xsub$x, .design=xsub$design,.ncomp=ncomp) 
     
-    xsubout <- musu_subset(x, fidx)
+    xsubout <- asca_subset(x, fidx)
     
     preds <- lapply(1:rfit$ntables, function(i) {
-      predict.musu_bada(rfit, xsubout$x[[i]], type="class", ncomp=ncomp, table_index=i)
+      if (metric == "ACC") {
+        predict.musu_asca(rfit, xsubout$x[[i]], type="class", table_index=i)
+      } else {
+        predict.musu_asca(rfit, xsubout$x[[i]], type="prob", table_index=i)
+      }
     })
     
   })
   
-  perf <- lapply(1:x$ntables, function(tind) {
-    p <- unlist(lapply(res, "[[", tind))
-    p == yobs[[tind]]
-  })
-  
+  if (metric == "ACC") {
+    perf <- lapply(1:x$ntables, function(tind) {
+      ptabs <- lapply(res, "[[", tind)
+      p <- unlist(lapply(ptabs, function(x) x[, term]))
+      data.frame(table_index=tind, pred=p, observed=yobs[[tind]])
+    })
+    
+    acc <- sapply(perf, function(x) sum(as.character(x$pred)==as.character(x$observed))/nrow(x))
+    total_acc <- unlist(lapply(perf, "[[","pred")) == unlist(lapply(perf, "[[","observed"))
+    total_acc <- sum(total_acc)/length(total_acc)
+    list(acc=acc, total_acc=total_acc, pred_table=do.call(rbind, perf))
+  } else {
+
+    perf <- lapply(1:x$ntables, function(tind) {
+      ptabs <- lapply(res, "[[", tind)
+      ptab <- do.call(rbind, ptabs)
+      rowlabs <- as.character(x$fac_design[,term])
+      colnames(ptab) <- rowlabs
+      auc <- .combinedAUC(ptab, yobs[[tind]], rowlabs)
+      list(table_index=tind, pred=ptab, observed=yobs[[tind]])
+    })
+   
+    auc <- sapply(perf, function(x) .combinedAUC(x$pred, x$observed, colnames(x$pred)))
+    ptab_all <- do.call(rbind, lapply(perf, function(x) x$pred))
+    yobs_all <- unlist(lapply(perf, "[[", "observed"))
+    auc_all <- .combinedAUC(ptab_all, yobs_all, colnames(ptab_all))
+    
+    list(auc=auc, total_auc=auc_all, pred_list=perf)
+  }
   
 }
 
 
 
+.combinedAUC <- function(Pred, Obs, predlabels) {
 
+  mean(sapply(levels(Obs), function(lev) {
+    pos <- Obs == lev
+    pclass <- rowMeans(Pred[,predlabels==lev, drop=FALSE])
+    pother <- rowMeans(Pred[,predlabels!=lev, drop=FALSE])
+    Metrics::auc(as.numeric(pos), pclass - pother)
+  }))
+}
 
