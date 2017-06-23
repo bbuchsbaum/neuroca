@@ -5,7 +5,7 @@
 \title{svd_wrapper}
 \usage{
 svd_wrapper(X, ncomp = min(dim(X)), method = c("base", "fast", "irlba",
-  "propack", "rsvd"), ...)
+  "propack", "rsvd", "svds"), ...)
 }
 \arguments{
 \item{X}{the \code{matrix}}

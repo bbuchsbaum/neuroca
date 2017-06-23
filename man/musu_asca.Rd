@@ -4,8 +4,8 @@
 \alias{musu_asca}
 \title{musu_asca}
 \usage{
-musu_asca(Xlist, formula, design, center = TRUE, scale = FALSE,
-  svd.method = "base", strata)
+musu_asca(Xlist, formula, ncomp = 2, design, center = TRUE, scale = FALSE,
+  svd.method = "fast")
 }
 \arguments{
 \item{Xlist}{the list of data matrices}
@@ -14,9 +14,11 @@ musu_asca(Xlist, formula, design, center = TRUE, scale = FALSE,
 
 \item{design}{a \code{data.frame} providing the variables provided in \code{formula} argument.}
 
-\item{svd.method}{the svd method to use.}
+\item{center}{whether to center the variables}
 
-\item{strata}{name of variable in design matrix that indicates any blocking structure, such as "subject".}
+\item{scale}{whether to scale the variables}
+
+\item{svd.method}{the svd method to use.}
 }
 \description{
 musu_asca
