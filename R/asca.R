@@ -105,12 +105,14 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   })
   
   
-  
   lens <- sapply(Ymaximal, function(x) length(levels(x)))
+  
   assert_that(all(lens[1] == lens))
   
   main_terms <- terms[termorder == 1]
+  
   dgrid <- expand.grid(lapply(1:length(main_terms), function(i) levels(Yfacl[[i]][[1]])))
+  
   names(dgrid) <- main_terms
   
   if (any(termorder > 1)) {
@@ -175,11 +177,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
         G <- model.matrix(form, data=des)
       })
       
-      #Yl <- lapply(Gl, function(G) {
-      #  cnames <- colnames(G)
-      #  factor(cnames[apply(G, 1, function(x) which(x==1))], levels=cnames)
-      #})
-      
+   
       Yl <- Yfacl[[i]]
       
       bres <- musu_bada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
