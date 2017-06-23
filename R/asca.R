@@ -16,15 +16,34 @@ gen_threeway_mat <- function(n1,n2,n3, nvox, index) {
 #strata <- "sid"
 
 
+#' collapse
+#' @param form the formula defining the model to collapse over
+#' @param X the matrix to collpased ober rows
+#' @param design the \code{data.frame} containing the variables reference in \code{form}
+#' 
+collapse <- function(form, X, design) {
+  tt <- terms(form)
+  facnames <- colnames(attr(tt, "factors"))
+  facs <- lapply(facnames, function(fname) as.factor(design[[fname]]))
+  names(facs) <- facnames
+  crossed <- do.call(interaction, facs)
+  Xbar <- group_means(crossed, X)
+  
+  levlist <- lapply(facs, levels)
+  rdes <- do.call(expand.grid, levlist)
+  list(X=Xbar, design=rdes)
+}
+
+
 #' residualize
 #' @param form the formula defining the model to fit for residuals
 #' @param X the response matrix
 #' @param design the \code{data.frame} containing the design variables specified in \code{form} argument.
 #' @export
 residualize <- function(form, X, design) {
+  options(contrasts = c("contr.sum", "contr.poly"))
   modmat <- model.matrix(form, data=design)
   resid(lsfit(modmat, X, intercept=FALSE))
-  
 }
   
   
@@ -145,6 +164,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
     } else {
       lower_form <- get_lower_form(ord)
       
+    
       XresidL <- lapply(1:length(Xlist), function(i) {
         residualize(lower_form, Xlist[[i]], designL[[i]])
       })
@@ -291,7 +311,9 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
     perf <- lapply(1:x$ntables, function(tind) {
       ptabs <- lapply(res, "[[", tind)
       p <- unlist(lapply(ptabs, function(x) x[, term]))
-      data.frame(table_index=tind, pred=p, observed=yobs[[tind]])
+      
+      ord <- unlist(folds[[tind]])
+      data.frame(table_index=tind, pred=p, observed=yobs[[tind]][ord])
     })
     
     acc <- sapply(perf, function(x) sum(as.character(x$pred)==as.character(x$observed))/nrow(x))
@@ -305,8 +327,10 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
       ptab <- do.call(rbind, ptabs)
       rowlabs <- as.character(x$fac_design[,term])
       colnames(ptab) <- rowlabs
-      auc <- .combinedAUC(ptab, yobs[[tind]], rowlabs)
-      list(table_index=tind, pred=ptab, observed=yobs[[tind]])
+      
+      ord <- unlist(folds[[tind]])
+      auc <- .combinedAUC(ptab, yobs[[tind]][ord], rowlabs)
+      list(table_index=tind, pred=ptab, observed=yobs[[tind]][ord])
     })
    
     auc <- sapply(perf, function(x) .combinedAUC(x$pred, x$observed, colnames(x$pred)))

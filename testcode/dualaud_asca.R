@@ -5,13 +5,24 @@ sids <- seq(1001, 1018)
 
 
 combine_mats <- function(l1, l2) {
-  lapply(1:length(l1), function(i) {
+  res <- lapply(1:length(l1), function(i) {
     m1 <- l1[[i]]$mat
     m2 <- l2[[i]]$mat
     m3 <- rbind(m1,m2)
     
-    d1 <- l1[[i]]$design[, c("block", "trial", "syllable", "consonant", "vowel", "place", "task", "sid")]
-    d2 <- l2[[i]]$design[, c("block", "trial", "syllable", "consonant", "vowel", "place", "task", "sid")]
+    d1 <- l1[[i]]$design[, c("block", "trial", "syllable", "consonant", "vowel", "place", "sid", "speaker")]
+    d2 <- l2[[i]]$design[, c("block", "trial", "syllable", "consonant", "vowel", "place")]
+    
+    d2$sid <- d1$sid[1]
+    d1$task <- "speech"
+    d2$task <- "mouthing"
+    d2$speaker <- "internal"
+    
+    out <- rbind(d1,d2)
+    out$task <- factor(out$task)
+    
+    list(mat=m3, design=out, roi=l1[[i]]$roi)
+    
   })
   
 }
@@ -59,9 +70,11 @@ fnames <- paste0(path, paste0(sids, "_betas_lang_sp_and_mo.RDS"))
 
 splist <- lapply(1:length(sids), function(i) load_speech_mat(fnames[i], sids[i]))
 molist <- lapply(1:length(sids), function(i) load_mouthing_mat(fnames[i], sids[i]))
+bolist <- combine_mats(splist, molist)
 
 deslist_sp <- lapply(splist, "[[", "design")
 deslist_mo <- lapply(molist, "[[", "design")
+deslist_bo <- lapply(bolist, "[[", "design")
 
 ##des <- do.call(rbind, deslist)
 
