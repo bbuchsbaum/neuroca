@@ -4,7 +4,7 @@
 \alias{pre_processor}
 \title{pre_processor}
 \usage{
-pre_processor(X, scale = FALSE, center = TRUE)
+pre_processor(X, center = TRUE, scale = FALSE)
 }
 \description{
 pre_processor
