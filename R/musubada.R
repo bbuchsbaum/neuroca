@@ -562,7 +562,7 @@ performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "A
   
   ncomp <- min(x$ncomp, ncomp)
   
-  yobs <- x$Yl
+  yobs <- x$Y
   
   res <- lapply(seq_along(folds[[1]]), function(fnum) {
     message("musu_bada: performance fold: ", fnum)
@@ -581,7 +581,7 @@ performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "A
   
   perf <- lapply(1:x$ntables, function(tind) {
     p <- unlist(lapply(res, "[[", tind))
-    p == yobs[[tind]]
+    p == yobs[[tind]][unlist(folds[[tind]])]
   })
   
   
