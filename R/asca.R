@@ -62,7 +62,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   tform <- terms(formula)
   facs <- attr(tform, "factors")
   
-  termorder <- apply(facs,2, sum)
+  termorder <- apply(facs,2, function(x) sum(x > 0))
   terms <- names(termorder)
   orders <- seq(1, max(termorder))
   
@@ -87,7 +87,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   
   
   Yfacl <- lapply(1:ncol(facs), function(i) {
-    find <- which(facs[,i] == 1)
+    find <- which(facs[,i] > 0)
     facnames <- row.names(facs)[find]
     lapply(designL, function(d) {
       if (length(facnames) > 1) {
@@ -110,26 +110,28 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   assert_that(all(lens[1] == lens))
   
   main_terms <- terms[termorder == 1]
+  all_terms <- row.names(facs)
   
-  dgrid <- expand.grid(lapply(1:length(main_terms), function(i) levels(Yfacl[[i]][[1]])))
+  dgrid <- expand.grid(lapply(all_terms, function(tname) levels(designL[[1]][[tname]])))
   
-  names(dgrid) <- main_terms
+  names(dgrid) <- all_terms
   
+
   if (any(termorder > 1)) {
     high_facs <- which(termorder > 1)
   
     for (i in high_facs) {
       nam <- colnames(facs)[i]
-      idx <- which(facs[,i] == 1)
+      idx <- which(facs[,i] > 0)
       cols <- dgrid[,idx]
       dgrid[[nam]] <- do.call(paste, c(cols, list(sep=":")))
     }
   }
   
-  dgrid[[paste0(main_terms, collapse=":")]] <- levels(Ymaximal[[1]])
+  
+  dgrid[[paste0(all_terms, collapse=":")]] <- levels(Ymaximal[[1]])
   
   Yfacl[[names(dgrid)[ncol(dgrid)]]] <- Ymaximal
-  
   
   refit <- function(.Xlist, .design, .ncomp=ncomp) { 
     musu_asca(.Xlist, formula, ncomp=.ncomp, design=.design, center=center, scale=scale, svd.method=svd.method) 
