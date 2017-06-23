@@ -62,9 +62,12 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   tform <- terms(formula)
   facs <- attr(tform, "factors")
   
+  ## get the order number of each term (1 = main effect, 2 = two-way interaction, etc.)
   termorder <- apply(facs,2, function(x) sum(x > 0))
   terms <- names(termorder)
-  orders <- seq(1, max(termorder))
+  
+  ## the set of orders
+  orders <- sort(unique(termorder))
   
   if (length(ncomp) == 1) {
     ncomp <- rep(ncomp, length(terms))
