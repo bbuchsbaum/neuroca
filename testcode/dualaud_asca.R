@@ -20,8 +20,11 @@ combine_mats <- function(l1, l2) {
     
     out <- rbind(d1,d2)
     out$task <- factor(out$task)
+    out$block2 <- rep(rep(1:4, each=6), length.out=nrow(out))
     
-    list(mat=m3, design=out, roi=l1[[i]]$roi)
+    mred <- collapse(~ task + vowel + consonant + block2, m3, out)
+    
+    list(mat=mred$X, design=mred$design, roi=l1[[i]]$roi)
     
   })
   
@@ -87,7 +90,7 @@ run_asca <- function(dlist, rnum,nc=2, deslist, form = ~ vowel * consonant) {
   
   #form = ~ vowel * consonant * speaker
   #form = ~ vowel * consonant
-  folds <- lapply(deslist, "[[", "block")
+  folds <- lapply(deslist, "[[", "block2")
   res <- musu_asca(Xlist, form, deslist, ncomp=2, svd.method="base")
 
   ncomp=nc
@@ -98,8 +101,12 @@ run_asca <- function(dlist, rnum,nc=2, deslist, form = ~ vowel * consonant) {
     class(xx) <- "musu_bada"
     n <- length(levels(xx$Y[[1]]))
     chance <- 1/n
-    p <- performance(xx, xx$Y, folds=folds, ncomp=ncomp)
-    t.test(sapply(p, function(x) sum(x)/length(x) - chance))$statistic
+    p <- performance(xx, folds=folds, ncomp=ncomp)
+    if (all(sapply(p, all))) {
+      10
+    } else {
+      t.test(sapply(p, function(x) sum(x)/length(x) - chance))$statistic
+    }
   })
 }
 
