@@ -89,6 +89,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   blockInd <- blockIndices(Xlist)
   
   
+  
   Yfacl <- lapply(1:ncol(facs), function(i) {
     find <- which(facs[,i] > 0)
     facnames <- row.names(facs)[find]
@@ -104,7 +105,11 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   names(Yfacl) <- terms
   
   Ymaximal <- lapply(designL, function(d) {
-    do.call(function(...) interaction(..., sep=":"), d[, row.names(facs)])
+    if (length(row.names(facs)) > 1) {
+      do.call(function(...) interaction(..., sep=":"), d[, row.names(facs)])
+    } else {
+      d[, row.names(facs)]
+    }
   })
   
   
