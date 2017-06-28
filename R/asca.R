@@ -233,12 +233,20 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   
 }
 
+#' @export
 loadings.musu_asca <- function(x) {
   do.call(cbind, lapply(res, function(x) loadings(x$bada_result$pca_fit)))
 }
 
+#' @export
 scores.musu_asca <- function(x) {
   x$scores
+}
+
+
+#' @export
+bootstrap.musu_asca <- function(x, niter=100, term=res$terms[1], ncomp=x$ncomp[1]) {
+  bootstrap(x$results[[term]]$bada_result, niter=niter, ncomp=ncomp)
 }
 
 
@@ -288,6 +296,7 @@ asca_subset <- function(x, fidx) {
 }
 
 
+#' @export
 performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_design)[ncol(x$fac_design)], metric=c("ACC", "AUC")) {
   metric <- match.arg(metric)
   
