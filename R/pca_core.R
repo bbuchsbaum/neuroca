@@ -35,6 +35,10 @@ project.pca <- function(obj, newX) {
   obj$pre_process(newX) %*% obj$v
 }
 
+project_cols <- function(obj, newX) {
+  newX %*% obj$v
+}
+
 #' @export
 reconstruct.pca <- function(x, ncomp=x$ncomp) {
   x$reverse_pre_process(x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE]))
