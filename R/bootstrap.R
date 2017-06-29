@@ -31,7 +31,7 @@ bootstrap.musu_bada <- function(x, niter, ncomp=x$ncomp) {
   }
   
   project.rows <- function(xr) {
-     xr %*% x$pca_fit$v 
+     xr %*% x$pca_fit$v[,1:ncomp,drop=FALSE] 
    }
    
   project.cols <- function(xc) {
