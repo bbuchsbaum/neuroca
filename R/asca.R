@@ -298,6 +298,7 @@ asca_subset <- function(x, fidx) {
 
 #' @export
 performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_design)[ncol(x$fac_design)], metric=c("ACC", "AUC")) {
+  assertthat::assert_that(term %in% names(x$fac_design))
   metric <- match.arg(metric)
   
   folds <- lapply(blocks, function(bind) split(1:length(bind), bind))
