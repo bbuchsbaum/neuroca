@@ -35,7 +35,7 @@ bootstrap.musu_bada <- function(x, niter, ncomp=x$ncomp) {
    }
    
   project.cols <- function(xc) {
-    t(xc) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE]) %*% as.matrix(diag(1/x$pca_fit$d[1:ncomp]))
+    t(xc) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$pca_fit$d[1:ncomp], nrow=ncomp, ncol=ncomp)
   }
   
   do_boot <- function() {
