@@ -115,12 +115,21 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 ### implement soft-thresholding that spans datasets...? similar to spls?
 ### musu_bada is really a bada with block structure -- bada can be engine
 
+
+
+
+hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, scale=FALSE, svd.method="svds", 
+                           normalization=c("MFA", "RV", "None","DCor")) {
+  
+  assert_that(all(sapply(Xlist, function(x) is(x, "block_matrix"))))
+}
+
 #' musu_bada
 #' 
 #' @importFrom assertthat assert_that 
 #' @importFrom energy dcor.ttest
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
-#'        If there are a different nume rof rows (e..g different numbers of replications per subject), Y can be a list of factors.
+#'        If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a list of X matrices, one per subject. 
 #' @param ncomp
 #' @param center
@@ -128,7 +137,6 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 #' @param svd.method
 #' @param normalization
 #' @param rank_k use reduce data to k components per block
-#' @importFrom assertthat assert_that 
 #' @export
 musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="svds", 
                      normalization=c("MFA", "RV", "None","DCor"), rank_k=NULL) {
@@ -236,8 +244,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
   sc <- pca_fit$scores
   row.names(sc) <- levels(Yl[[1]])
   
-  
-  
+
   result <- list(
     Xlist=Xlist,
     Y=Yl,
@@ -279,7 +286,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
 contributions.musu_bada <- function(x, component=1) {
   out <- lapply(1:x$ntables, function(j) {
     ind <- x$blockInd[j,1]:x$blockInd[j,2]
-    contr <- pca_fit$v[ind,component]^2 * x$alpha[j]
+    contr <- x$pca_fit$v[ind,component]^2 * x$alpha[j]
     sum(contr)
   })
   
@@ -452,7 +459,7 @@ project.musu_bada <- function(x, newX=NULL, ncomp=x$ncomp, table_index=1:x$ntabl
 ## project from existing table
 #' @export
 predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
-                                    ncomp=x$ncomp, table_index=1:x$ntables) {
+                                    ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
   type <- match.arg(type)
   assert_that(is.matrix(newdata))
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
@@ -461,13 +468,26 @@ predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "cro
     assert_that(ncol(newdata) == sum(sapply(x$Xlist, ncol)))
     Reduce("+", lapply(table_index, function(i) {
       ind <- x$blockIndices[i,]
-      Xp <- x$reprocess(newdata[, ind[1]:ind[2]], i)
+      
+      Xp <- if (pre_process) {
+        x$reprocess(newdata[, ind[1]:ind[2]], i)
+      } else {
+        newdata[, ind[1]:ind[2]]
+      }
+      
       fscores <- Xp %*% x$pca_fit$v[ind[1]:ind[2],,drop=FALSE]
     }))
   } else if (length(table_index) == 1) {
     ind <- x$blockIndices[table_index,]
-    Xp <- x$reprocess(newdata, table_index)
+    
+    Xp <- if (pre_process) {
+      x$reprocess(newdata, table_index)
+    } else {
+      newdata[, ind[1]:ind[2]]
+    }
+    
     Xp %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp, drop=FALSE] * x$ntables
+    
   }
   
   if (type == "scores") {
