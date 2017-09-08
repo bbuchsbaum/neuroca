@@ -85,5 +85,6 @@ project <- function(x, newX, ...) UseMethod("project")
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 
+block_lengths <- function(object) UseMethod("block_lengths")
 
 

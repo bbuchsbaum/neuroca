@@ -78,6 +78,11 @@ dim.block_matrix_list <- function(x) {
   c(attr(x, "nrow"), attr(x, "ncol"))
 }
 
+block_lengths.block_matrix <- function(object) {
+  bind <- attr(object, "block_indices")
+  apply(bind, 1, diff)+1
+}
+
 
 
 print.block_matrix <- function(object) {
@@ -121,6 +126,20 @@ as.matrix.block_matrix_list <- function(x) {
 
 nblocks.block_matrix <- function(x) {
   attr(x, "nblock")
+}
+
+rbind.block_matrix <- function(...) {
+  mlist <- list(...)
+  nb <- unlist(lapply(mlist, nblocks))
+  
+  assert_that(all(nb[1] == nb))
+  res <- lapply(1:nb[1], function(bnum) {
+    do.call(rbind, lapply(mlist, function(x) get_block(x, bnum)))
+  })
+  
+  
+  
+  block_matrix(res)
 }
 
 
