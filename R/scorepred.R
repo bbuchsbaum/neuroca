@@ -3,7 +3,7 @@
 #' @param type
 #' @param ncomp
 #' @export
-scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine", "distance", "r2"), ncomp=1) {
+scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine", "distance", "r2"), ncomp=ncol(fscores), class_name=TRUE) {
   if (type == "scores") {
     fscores
   } else if (type == "cosine") {
@@ -14,7 +14,12 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine
     D <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
     D2 <- D^2
     min.d <- apply(D2, 1, which.min)
-    row.names(scores)[min.d]
+    if (class_name) {
+      row.names(scores)[min.d]
+    } else {
+      min.d
+    }
+  
   #} #else if (type == "r2") {
     ## distance of prediction to the category barycenters
     #DBetween <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
