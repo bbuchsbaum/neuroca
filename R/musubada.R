@@ -171,11 +171,16 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     assert_that(length(unlist(Y)) == sum(sapply(Xlist, nrow)))
   }
   
-  Y_reps <- 
+  has_reps <- any(sapply(Yl, function(y) any(table(y) > 1)))
+  
+  Y_reps <- if (has_reps) {
     lapply(Yl, function(f) {
       m <- outer(f, unique(f), "==")
-      apply(m* apply(m,2,cumsum), 1, sum)
+      apply(m * apply(m,2,cumsum), 1, sum)
     })
+  } else {
+    lapply(Yl, function(y) rep(1, length(y)))
+  }
   
   YIndices <- rep(1:length(Xlist), sapply(Xlist, nrow))
   
@@ -199,7 +204,9 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
     
   }
     
+  message("block reduce")
   Xreduced <- block_reduce(Xlist, Yl, normalization, center, scale)
+  message("done")
   
   reprocess <- function(newdat, table_index) {
     ## given a new observation(s), pre-process it in the same way the original observations were processed
@@ -219,11 +226,12 @@ musubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="fa
   
   YB <- factor(levels(Yl[[1]]), levels=levels(Yl[[1]]))
   
+  message("svd")
   pca_fit <- pca_core(Xreduced$Xr, ncomp=ncomp, 
                       center=FALSE, 
                       scale=FALSE, 
                       svd.method=svd.method)
-  
+  message("done")
   ncomp <- length(pca_fit$d)
   
  
