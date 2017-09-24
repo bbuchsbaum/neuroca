@@ -10,6 +10,8 @@ reduce <- function(x, Y, ...) UseMethod("reduce")
 #' @export
 loadings <- function(x,...) UseMethod("loadings")
 
+#' @export
+ncomp <- function(x) UseMethod("ncomp")
 
 #' @export
 correlations <- function(x,...) UseMethod("correlations")
