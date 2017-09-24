@@ -1,81 +1,84 @@
 library(neuroim)
 library(foreach)
 library(FNN)
+library(Matrix)
 
-mask <- loadVolume("~/Dropbox/Brad/neuropls/video_marie/1001/mean1.nii")
-gmask <- loadVolume("~/Dropbox/Brad/neuropls/video_marie/s5_young_gray.nii")
-des <- read.table("~/Dropbox/Brad/neuropls/video_marie/1001/trial_data_all_blockavg.txt", header=TRUE)
-des1 <- subset(des, run ==1 & condition == "Encod")
-idx <- which(des$run == 1 & des$condition == "Encod")
+dset <- readRDS("/Users/brad/code/neuropls/test_data/video/video_testset.rds")
+grid <- indexToGrid(dset$mask, dset$mask.idx)
 
-mask.idx <- which(mask !=0 & gmask > .2)
-mask2 <- LogicalBrainVolume(rep(TRUE, length(mask.idx)), space(mask), indices=mask.idx)
+design <- dset$deslist[[1]]
+enc_idx <- which(design$Condition == "Encod")
 
-fnames <- list.files("~/Dropbox/Brad/neuropls/video_marie/1001/", "nwtrial.*nii.gz", full.names=TRUE)
+X <- dset$bvecs[[1]]@data[enc_idx,]
 
-mlist <- lapply(fnames, function(fn) {
-  as.matrix(loadVector(fn))[mask.idx,idx]
-})
+X <- t(scale(t(X)))
 
-h=.6
-X <- Reduce("+", mlist)/length(mlist)
-Xs <- scale(t(X), scale=FALSE, center=TRUE)
-Xvec <- SparseBrainVector(X, addDim(space(mask), ncol(X)), mask=mask2)
-grid <- indexToGrid(mask2, mask.idx)
+labels <- design$Video[enc_idx]
 
-full_nn <- get.knnx(grid, grid, 80)
+A <- spatial_adjacency(grid)
+L <- spatial_laplacian(grid)
+diag(A) <- 1
 
-K <- 25
-res <- lapply(1:nrow(grid), function(i) {
+X <- scale(X, center=TRUE, scale=FALSE)
+Lnorm <- L/RSpectra::eigs(L, k=1)$values[1]
+Anorm <- A/RSpectra::eigs(A, k=1)$values[1]
+
+Ta <- temporal_adjacency(1:nrow(X), window=4, weight_mode="heat", sigma=2)
+diag(Ta) <- rowSums(Ta)
+D <- Diagonal(x=rowSums(Ta))
+Tl <- D - Ta
+#diag(Tl) <- rowSums(Tl)
+
+Tlnorm <- Tl/RSpectra::eigs(Tl, k=1)$values[1]
+Tanorm <- Ta/RSpectra::eigs(Ta, k=1)$values[1]
+
+gres1 = genpca(X, Anorm, Tlnorm, ncomp=10)
+gres2 = genpca(X, Anorm, Tanorm, ncomp=10)
+
+
+Q <- construct_weight_matrix(X, neighbor_mode="supervised", weight_mode="normalized", sigma=.4, k=5, labels=labels)
+diag(Q) <- rowSums(Q)
+
+Qnorm <- Q/RSpectra::eigs(Q, k=1)$values[1]
+
+pgrid = expand.grid(sigma=seq(.1,.3, by=.05), k=seq(3, 20, by=4))
+
+res <- lapply(1:nrow(pgrid), function(i) {
   print(i)
-  cen <- grid[i,,drop=FALSE]
-  ##nn <- get.knnx(grid, cen, 27)
-  ##keep <- which(nn$nn.dist < 3 & nn$nn.dist > 0)
+  sig <- pgrid$sigma[i]
+  k <- pgrid$k[i]
+  Q <- construct_weight_matrix(X, neighbor_mode="supervised", weight_mode="normalized", sigma=sig, k=k, labels=labels)
+  diag(Q) <- rowSums(Q)
+  Qnorm <- Q/RSpectra::eigs(Q, k=1)$values[1]
+  gres1 = sGPCA::gpca(X, Qnorm, Anorm, K=10)
+  fstats <- sapply(1:10, function(j) {
+    summary(aov(gres1$U[,j] ~ labels))[[1]]$F[1]
+  })
   
-  D <- full_nn[[2]][i,]
-  keep <- which(D < 8) 
-  ind <- full_nn[[1]][i,keep]
-  ovox <- grid[ind,]
-  
-  m <- series(Xvec, ovox)
-  cvals <- as.vector(cor(series(Xvec, cen), m))
-  S <- exp(cvals/(h^2))
-  
-  #wts <- exp(-D/(1.5^2))
-  ord <- order(S, decreasing=TRUE)
-  cbind(i=mask.idx[i], j=mask.idx[ind[ord[1:K]]], S[ord[1:K]])
-  #cbind(i=mask.idx[i], j=mask.idx[keep], S)
+  print(fstats)
+  fstats
   
 })
 
+gres1 = sGPCA::gpca(X, Qnorm, Anorm, K=6)
+gres2 = sGPCA::gpca(X, diag(nrow(X)), Anorm, K=6)
+gres3 = sGPCA::gpca(X, Qnorm, Lnorm, K=6)
+gres4 <- svd(X)
 
-smat <- do.call(rbind, res)
-adj <- sparseMatrix(i=lookup(Xvec, smat[,1]), j=lookup(Xvec, smat[,2]), x=smat[,3], dims=c(length(mask.idx), length(mask.idx)))
-adj <- (adj + t(adj))/2
 
-g <- graph_from_adjacency_matrix(adj, mode="undirected", weighted=TRUE)
-g <- simplify(g, remove.loops=TRUE)
-#D <- rowSums(adj)  
-#D <- sparseMatrix(i=seq(1,length(mask.idx)), j=seq(1,length(mask.idx)), x=D)
-#L <- D - adj
-
-#Lnorm <- D_inv %*% adj %*% D_inv
-Lnorm <- laplacian_matrix(g, normalized=FALSE)
-Lnorm <- Lnorm/eigs(Lnorm, k=1)$values[1]
-Snorm <- adj/eigs(adj, k=1)$values[1]
-
-gres1 = sGPCA::gpca(Xs, diag(nrow(Xs)), Lnorm, K=8)
-gres2 = sGPCA::gpca(Xs, diag(nrow(Xs)), Snorm, K=8)
-sres <- svd(Xs)
 
 savepc <- function(vals, oname) {
-  bv <- BrainVolume(scale(vals), space(mask), indices=mask.idx)
+  bv <- BrainVolume(scale(vals), space(dset$mask), indices=dset$mask.idx)
   writeVolume(bv, oname)
 }
 
-for (i in 1:8) {
-  savepc(gres1$V[,i], paste0("~/Dropbox/Brad/neuropls/video_marie/1001/gpc_laplacian_", i, ".nii"))
-  savepc(gres2$V[,i], paste0("~/Dropbox/Brad/neuropls/video_marie/1001/gpc_adj_", i, ".nii"))
+for (i in 1:5) {
+  savepc(gres1$v[,i], paste0("/Users/brad/code/neuropls/test_data/video/super_gpc_laptime_", i, ".nii"))
+  savepc(gres2$v[,i], paste0("/Users/brad/code/neuropls/test_data/video/super_gpc_smoothtime_", i, ".nii"))
+}
+
+for (i in 1:5) {
+  savepc(gres1$V[,1], "~/Dropbox/Brad/neuropls/video_marie/1001/gpc1.nii")
 }
   
 

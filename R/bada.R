@@ -1,3 +1,14 @@
+
+
+# Barycentric Discriminant Analysis
+#' 
+#' @param Y
+#' @param X
+#' @param ncomp
+#' @param center
+#' @param scale
+#' @param svd.method
+#' @param strata
 #' @export
 #' @importFrom assertthat assert_that
 bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.method="base", strata=NULL) {
@@ -14,7 +25,7 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
       ## compute barycenters, no strata
       XB <- group_means(.Y, .X)
       list(XBc=scale(XB, center=.center, scale=.scale), XBlock=NULL)
-    } else if (!is.null(strata)) {
+    } else if (any(table(.Y) > 1) && !is.null(strata)) {
       ## compute barycenters by strata
       XBlock <- lapply(levels(.strata), function(i) {
         idx <- which(.strata==i)
@@ -28,9 +39,9 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
     
   }
   
+
   xb <- reduce(Y, X, strata, center, scale)
-  pcres <- pca_core(t(xb$XBc), ncomp, center=FALSE, scale=FALSE, svd.method)
-  
+  pcres <- pca_core(xb$XBc, ncomp, center=FALSE, scale=FALSE, svd.method)
   scores <- pcres$scores
   row.names(scores) <- levels(Y)
   
@@ -49,11 +60,14 @@ bada <- function(Y, X, ncomp=length(levels(Y)), center=TRUE, scale=FALSE, svd.me
     }
   }
   
-  ret <- list(Y=Y,X=X,ncomp=ncomp, condMeans=xb$XBc, center=center, scale=scale, pre_process=apply_scaling(xb$XBc), 
-              svd.method=svd.method, scores=scores, v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, permute_refit=permute_refit, reduce=reduce,
+  ret <- list(Y=Y,X=X,ncomp=ncomp, condMeans=xb$XBc, center=center, scale=scale, 
+              pre_process=apply_scaling(xb$XBc), 
+              svd.method=svd.method, scores=scores, 
+              v=pcres$v, u=pcres$u, d=pcres$d, refit=refit, 
+              permute_refit=permute_refit, reduce=reduce,
               strata=strata, XBlock=xb$XBlock)
  
-  class(ret) <- c("bada")
+  class(ret) <- c("projector", "bada")
   ret
   
 }
@@ -175,13 +189,14 @@ nested_cv.bada <- function(x, innerFolds, heldout, metric=c("ACC", "AUC"), min.c
 
 #' @export
 predict.bada <- function(x, newdata, type=c("class", "prob", "scores", "cosine", "distance"), ncomp=x$ncomp, pre_process=TRUE) {
-  assert_that(type %in% c("class", "prob", "scores", "crossprod", "distance"))
+  type <- match.arg(type)
+   
   if (is.vector(newdata) && (length(newdata) == ncol(x$condMeans))) {
     newdata <- matrix(newdata, nrow=1, ncol=ncol(x$condMeans))
   }
+  
   assert_that(is.matrix(newdata))
   assert_that(ncol(newdata) == ncol(x$condMeans))
-  type <- match.arg(type)
   
  
   if (is.null(ncomp)) {

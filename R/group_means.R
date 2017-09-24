@@ -1,6 +1,11 @@
-#' @export
+
+
+
+#' group_means
+#' 
 #' @param Y \code{factor} variable defining the groups
 #' @param X \code{matrix} defining the matrix data to be group-wise averaged
+#' @export
 group_means <- function(Y, X) {
   
   if (all(table(Y) == 1)) {
