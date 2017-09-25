@@ -21,32 +21,32 @@ pre_processor <- function(X, center=TRUE, scale=FALSE) {
   }
   
   
-  rf <- function(M) {
+  rf <- function(M, subind=1:ncol(X)) {
     if (!center && !scale) {
       M
     } else if (center && scale) {
-      m1 <- sweep(M, 2, center_vec, "+")
+      m1 <- sweep(M, 2, center_vec[subind], "+")
       sweep(m1, 2, scale_vec, "*")
     } else if (!center && scale) {
-      sweep(M, 2, scale_vec, "*")
+      sweep(M, 2, scale_vec[subind], "*")
     } else if (center && !scale) {
-      sweep(M, 2, center_vec, "+")
+      sweep(M, 2, center_vec[subind], "+")
     } else {
       stop()
     }
   }
   
-  f <- function(M) {
+  f <- function(M, subind=1:ncol(X)) {
 
     if (!center && !scale) {
       M
     } else if (center && scale) {
-      m1 <- sweep(M, 2, center_vec, "-")
-      sweep(m1, 2, scale_vec, "/")
+      m1 <- sweep(M, 2, center_vec[subind], "-")
+      sweep(m1, 2, scale_vec[subind], "/")
     } else if (!center && scale) {
-      sweep(M, 2, scale_vec, "/")
+      sweep(M, 2, scale_vec[subind], "/")
     } else if (center && !scale) {
-      sweep(M, 2, center_vec, "-")
+      sweep(M, 2, center_vec[subind], "-")
     } else {
       stop()
     }

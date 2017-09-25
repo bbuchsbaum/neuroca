@@ -104,6 +104,9 @@ reac_by_viv_acc <- pres_cos %>% group_by(sid) %>% mutate(qvivid=ntile(zvivid, 3)
 qplot(time, react, colour=factor(qvivid), data=subset(reac_by_viv_acc, !is.na(qvivid) & acc==1), geom=c("point", "line")) + 
   facet_wrap( ~ type)
 
+qplot(time, react, colour=factor(acc), data=subset(reac_by_viv_acc, !is.na(qvivid) & qvivid > 2), geom=c("point", "line")) + 
+  facet_wrap( ~ type)
+
 reac_by_cond <- pres_cos %>%  group_by(time, cond, type) %>% summarize(react=mean(react, na.rm=TRUE)) 
 qplot(time, react, colour=factor(cond), data=reac_by_cond, geom=c("point", "line")) + facet_wrap(~ type)
 
