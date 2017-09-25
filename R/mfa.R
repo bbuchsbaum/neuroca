@@ -63,5 +63,39 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, normalization=c("MFA", "RV
   }
   
   alpha <- normalization_factors(Xr, type=normalization)
+  bind <- attr(Xr, "block_ind")
+  
+  reprocess <- function(newdat, table_index) {
+    ## given a new observation(s), pre-process it in the same way the original observations were processed
+    newdat <- Xreduced$pre_process_funs[[table_index]](newdat)
+    
+    if (is_reduced) {
+      newdat <- project(reducer, newdat, table_index)
+    }
+    
+    newdat
+    
+  }
+  
+  A <- rep(alpha, block_lengths(Xr))
+  
+  pca_fit <- genpca(Xr, A=A, 
+                    ncomp=ncomp, 
+                    center=FALSE, 
+                    scale=FALSE)
+  
+  
+  ncomp <- length(pca_fit$d)
+  
+  
+  partial_fscores = 
+    lapply(1:nblocks(X), function(i) {
+      ind <- attr(Xr, "block_indices")[i,]
+      nblocks(X) * (get_block(Xr, i) * alpha[i]) %*% pca_fit$v[ind[1]:ind[2],]
+    })
+  
+  sc <- pca_fit$scores
+  row.names(sc) <- row.names(X)
+  
   
 }

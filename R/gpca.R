@@ -16,22 +16,31 @@
 #' @export
 genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
+  if (!is.vector(A) && isDiagonal(A)) {
+    A <- diag(A) 
+  }
+  
+  if (!is.vector(M) && isDiagonal(M)) {
+    M <- diag(M) 
+  }
+  
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
-    A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
+    #A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
+  } else {
+    assert_that(nrow(A) == ncol(A))
+    assert_that(nrow(A) == ncol(X))
   }
   
   if (is.vector(M)) {
     assert_that(length(M) == nrow(X))
-    M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
+    #M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
+  } else {
+    assert_that(nrow(M) == ncol(M))
+    assert_that(nrow(M) == nrow(X))
   }
   
-  assert_that(nrow(A) == ncol(A))
-  assert_that(nrow(M) == ncol(M))
-  assert_that(nrow(A) == ncol(X))
-  assert_that(nrow(M) == nrow(X))
   assert_that(ncomp > 0)
-  
   ncomp <- min(min(dim(X)), ncomp)
   
   n = nrow(X)
@@ -59,55 +68,115 @@ genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), cen
   
 }
 
+project_xav <- function(X, A, V) {
+  if (is.vector(A)) {
+    t(t(X) * A) %*% V
+  } else {
+    X %*% A %*% V
+  }
+}
+  
+  
+  
 predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
-  browser()
-  Xsup <- x$pre_process(newdata)
-  Xsup %*% x$A %*% x$v[,1:ncomp]
+  Xsup <- if (pre_process) {
+    x$pre_process(newdata)
+  } else {
+    newdata
+  }
+  
+  project_xav(Xsup, x$A, x$v[,1:ncomp,drop=FALSE])
+  
+}
+
+project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
+  if (is.null(subind)) {
+    predict(x, newdata, ncomp, pre_process)
+  } else {
+    assertthat::assert_that(length(subind) == ncol(newdata))
+    Xsup <- if (pre_process) {
+      x$pre_process(newdata, subind)
+    } else {
+      newdata
+    }
+    project_xav(Xsup, x$A[subind,subind], x$v[,1:ncomp,drop=FALSE])
+  }
+}
+
+mmult_ <- function(X, q) {
+  if (is.vector(q)) {
+    t(t(X) * q)
+  } else {
+    X %*% q
+  }
+}
+
+cprod_ <- function(X, q) {
+  if (is.vector(q)) {
+    t(X * q)
+  } else {
+    Matrix::crossprod(X, q)
+  }
 }
 
 gmdLA <- function(X,Q,R,k,n,p){
 
   ##computation
-
-  decomp <- eigen(R)
-  keep <- which(abs(decomp$values) > 1e-7)
   
-  decomp$vectors <- decomp$vectors[,keep]
-  decomp$values <- decomp$values[keep]
+  if (is.vector(R)) {
+    Rtilde <- sqrt(R)
+    inv.values = 1/Rtilde
+    Rtilde.inv <- rev(inv.values)
+    inmat <- t(X * Q) %*% X
+    
+    RtinRt <- t(t(Rtilde * inmat) * Rtilde)
+    
+    XR <- t(t(X) * R)
+    
+    RnR <- t(t(R * inmat) * R)
   
-  Rtilde = decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
+  } else {
+    
+    decomp <- eigen(R)
+    keep <- which(abs(decomp$values) > 1e-7)
   
-  inv.values = 1/sqrt(decomp$values)
-  Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
+    decomp$vectors <- decomp$vectors[,keep]
+    decomp$values <- decomp$values[keep]
   
-  #inmat =  t(X) %*% Q %*% X
+    Rtilde <- decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
   
-  inmat <- Matrix::crossprod(X, Q) %*% X
-
-  RtinRt = Rtilde %*% inmat %*% Rtilde
-  xtilde.decomp = eigen(RtinRt)
+    inv.values = 1/sqrt(decomp$values)
+    Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
+    inmat <- crossprod(X, Q) %*% X
+    
+    RtinRt <- Rtilde %*% inmat %*% Rtilde
+    
+    XR <- X %*% R
+    RnR <- R %*% inmat %*% R
+    
+  }
   
+  
+  xtilde.decomp <- eigen(RtinRt)
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
   k <- length(keep)
   xtilde.decomp$vectors <- xtilde.decomp$vectors[,keep]
   xtilde.decomp$values <- xtilde.decomp$values[keep]
   
-  vgmd <- Rtilde.inv %*% xtilde.decomp$vectors
+  vgmd <- if (is.vector(Rtilde)) {
+    t(Rtilde.inv * xtilde.decomp$vectors)
+  } else {
+    Rtilde.inv %*% xtilde.decomp$vectors
+  }
+  
   dgmd <- sqrt(xtilde.decomp$values[1:k])
 
-  ugmd = matrix(nrow = n,ncol = k)
-  cumv = rep(0,k)
+  ugmd <- matrix(nrow = n,ncol = k)
+  cumv <- rep(0,k)
+  propv <- dgmd^2/sum(diag(as.matrix(inmat %*% R)))
 
 
-  propv = dgmd^2/sum(diag(as.matrix(inmat %*% R)))
-
-  normalizing.number = 1
-
-  XR = X %*% R
-  RnR = R %*% inmat %*% R
-  
-  k <- length(keep)
-
+  normalizing.number <- 1
   for( i in 1:k) {
     print(i)
     normalizing.number = sqrt(vgmd[,i] %*% RnR %*% vgmd[,i])
