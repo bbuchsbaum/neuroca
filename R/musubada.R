@@ -59,23 +59,12 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 
 
 
-### implement soft-thresholding that spans datasets...? similar to spls?
-### musu_bada is really a bada with block structure -- bada can be engine
-
-
-# hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, scale=FALSE, svd.method="svds", 
-#                            normalization=c("MFA", "RV", "None","DCor")) {
-#   
-#   assert_that(all(sapply(Xlist, function(x) is(x, "block_matrix"))))
-# }
-
 
 
 
 #' musu_bada
 #' 
 #' @importFrom assertthat assert_that 
-#' @importFrom energy dcor.ttest
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 #'        If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a list of X matrices, one per subject. 
@@ -85,7 +74,6 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 #' @param normalization the type of normalization
 #' @param rank_k use reduce data to k components per block
 #' @export
-
 musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
                      normalization=c("MFA", "RV", "None"), rank_k=NULL) {
 
@@ -187,7 +175,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   A <- rep(alpha, block_lengths(Xr))
 
-  pca_fit <- genpca(unclass(Xr), A=A, 
+  pca_fit <- genpca(Xr, A=A, 
                       ncomp=ncomp, 
                       center=FALSE, 
                       scale=FALSE)
