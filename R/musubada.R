@@ -28,64 +28,11 @@ corMat <- function(Xl) {
   
 }
 
-compute_sim_mat <- function(block_mat, FUN, ...) {
-  pairs <- combn(nblocks(block_mat),2)
-  M <- matrix(0, nblocks(block_mat), nblocks(block_mat))
-  for (i in 1:ncol(pairs)) {
-    p1 <- pairs[1,i]
-    p2 <- pairs[2,i]
-    sim <- FUN(get_block(block_mat, p1), get_block(block_mat, p2), ...)
-    M[p1,p2] <- sim
-    M[p2,p1] <- sim
-  }
-  
-  M
-}
 
 
-coefficientRV <- function(X, Y, center=TRUE, scale=FALSE) {
-  if (dim(X)[[1]] != dim(Y)[[1]]) 
-    stop("no the same dimension for X and Y")
-  if (dim(X)[[1]] == 1) {
-    print("1 configuration RV is  NA")
-    rv = NA
-  }
-  else {
-    if (center || scale) {
-      Y <- scale(Y, center=center, scale=scale)
-      X <- scale(X, center=center, scale=scale)
-    }
-    W1 <- X %*% t(X)
-    W2 <- Y %*% t(Y)
-    rv <- sum(diag(W1 %*% W2))/(sum(diag(W1 %*% W1)) * 
-                                  sum(diag(W2 %*% W2)))^0.5
-  }
-  return(rv)
-}
 
-normalization_factors <- function(block_mat, type=c("MFA", "RV", "DCor", "None", "RV_MFA")) {
-  type <- match.arg(type)
-  
-  message("normalization type:", type)
-  alpha <- if (type == "MFA") {
-    unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="svds")$d[1]^2)))
-  } else if (type == "RV" && nblocks(block_mat) > 2) {
-    message("rv normalization")
-    smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
-    diag(smat) <- 1
-    wts <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
-  } else if (type == "DCor" && nblocks(block_mat) > 2) {
-    message("dcor normalization")
-    smat <- compute_sim_mat(block_mat, function(x1,x2) energy::dcor.ttest(x1,x2)$estimate)
-    diag(smat) <- 1
-    wts <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
-  } else {
-    rep(1, nblocks(block_mat))
-  }
-}
+## take a new design and reduce original data?
 
-
-## take a new design and reduce original data
 #' @importFrom assertthat assert_that
 reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
   
@@ -115,11 +62,15 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 ### implement soft-thresholding that spans datasets...? similar to spls?
 ### musu_bada is really a bada with block structure -- bada can be engine
 
+
 # hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, scale=FALSE, svd.method="svds", 
 #                            normalization=c("MFA", "RV", "None","DCor")) {
 #   
 #   assert_that(all(sapply(Xlist, function(x) is(x, "block_matrix"))))
 # }
+
+
+
 
 #' musu_bada
 #' 
@@ -134,8 +85,11 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 #' @param normalization the type of normalization
 #' @param rank_k use reduce data to k components per block
 #' @export
+
 musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
-                     normalization=c("MFA", "RV", "None","DCor"), rank_k=NULL) {
+                     normalization=c("MFA", "RV", "None"), rank_k=NULL) {
+
+
   normalization <- normalization[1]
 
   assert_that(all(sapply(Xlist, is.matrix)))
@@ -162,11 +116,16 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     assert_that(length(unlist(Y)) == sum(sapply(Xlist, nrow)))
   }
   
-  Y_reps <- 
+  has_reps <- any(sapply(Yl, function(y) any(table(y) > 1)))
+  
+  Y_reps <- if (has_reps) {
     lapply(Yl, function(f) {
       m <- outer(f, unique(f), "==")
-      apply(m* apply(m,2,cumsum), 1, sum)
+      apply(m * apply(m,2,cumsum), 1, sum)
     })
+  } else {
+    lapply(Yl, function(y) rep(1, length(y)))
+  }
   
   YIndices <- rep(1:length(Xlist), sapply(Xlist, nrow))
   
@@ -191,7 +150,9 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     
   }
     
+
   ## average categories within block to get barycenters
+
   Xreduced <- reduce_rows(Xlist, Yl, center, scale)
   
   Xr <- if (!is.null(rank_k)) {
@@ -209,7 +170,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   ##Xr <- block_apply(Xr, function(x,i) x * alpha[i])
   bind <- attr(Xr, "block_ind")
-  
+
   reprocess <- function(newdat, table_index) {
     ## given a new observation(s), pre-process it in the same way the original observations were processed
     newdat <- Xreduced$pre_process_funs[[table_index]](newdat)
@@ -231,6 +192,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
                       center=FALSE, 
                       scale=FALSE)
   
+
   ncomp <- length(pca_fit$d)
   
  
@@ -278,7 +240,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     scale_vec=unlist(Xreduced$scales)
   )
   
-  class(result) <- c("musu_bada")
+  class(result) <- c("musu_bada", "list")
   result
 }
 

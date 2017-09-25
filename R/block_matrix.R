@@ -107,6 +107,9 @@ block_lengths.block_matrix <- function(object) {
   apply(bind, 1, diff)+1
 }
 
+block_index_list.block_matrix <- function(object) {
+  apply(attr(bm, "block_indices"), 1, function(x) seq(x[1], x[2]))
+}
 
 
 print.block_matrix <- function(object) {

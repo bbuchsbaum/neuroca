@@ -14,9 +14,11 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method=
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   
-  ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, scores=scores, ncomp=ncomp, 
-              svd.method=svd.method, pre_process=attr(X, "pre_process"), 
-              reverse_pre_process=attr(X, "reverse"))
+
+  ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, 
+              scores=scores, ncomp=ncomp, svd.method=svd.method, 
+              pre_process=attr(X, "pre_process"), reverse_pre_process=attr(X, "reverse"))
+
   
   class(ret) <- c("pca", "projector", "list")
   ret
@@ -25,6 +27,11 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method=
 #' @export
 loadings.pca <- function(x) {
   x$v
+}
+
+#' @export
+ncomp.pca <- function(x) {
+  length(x$d)
 }
 
 #' @export
@@ -68,8 +75,6 @@ truncate.pca <- function(obj, ncomp) {
 
 reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, reducer=pca_core, ...) {
   res <- reducer(x, k, center=center, scale=scale, ...)
-  
-  #ret <- list(
 }
 
 
