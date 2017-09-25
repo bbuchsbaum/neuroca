@@ -14,7 +14,7 @@
 #' @param scale
 #' @importFrom assertthat assert_that
 #' @export
-genpca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
+genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
@@ -37,6 +37,8 @@ genpca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   n = nrow(X)
   p = ncol(X)
   
+  X <- pre_processor(X, center=center,scale=scale)
+  
   if(n < p){
     ret = gmdLA(t(X), A,M, ncomp,p,n)
     svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
@@ -46,11 +48,21 @@ genpca <- function(X, A, M, ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
   scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
   
-  ret <- list(v=svdfit$v, u=svdfit$u, d=svdfit$d, scores=scores, ncomp=ncomp)
+  ret <- list(v=svdfit$v, u=svdfit$u, d=svdfit$d, scores=scores, ncomp=length(svdfit$d), 
+              A=A,
+              M=M,
+              pre_process=attr(X, "pre_process"), 
+              reverse_pre_process=attr(X, "reverse"))
 
-  class(ret) <- c("gpca")
+  class(ret) <- c("genpca", "list")
   ret
   
+}
+
+predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
+  browser()
+  Xsup <- x$pre_process(newdata)
+  Xsup %*% x$A %*% x$v[,1:ncomp]
 }
 
 gmdLA <- function(X,Q,R,k,n,p){
@@ -70,8 +82,6 @@ gmdLA <- function(X,Q,R,k,n,p){
   
   #inmat =  t(X) %*% Q %*% X
   
-  print(class(X))
-  print(class(Q))
   inmat <- Matrix::crossprod(X, Q) %*% X
 
   RtinRt = Rtilde %*% inmat %*% Rtilde
@@ -108,6 +118,7 @@ gmdLA <- function(X,Q,R,k,n,p){
   list(u=ugmd[,1:k],
        v=vgmd[,1:k],
        d=dgmd[1:k],
+       k=k,
        cumv=cumv,
        propv=propv)
   
