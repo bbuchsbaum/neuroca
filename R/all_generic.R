@@ -10,6 +10,8 @@ reduce <- function(x, Y, ...) UseMethod("reduce")
 #' @export
 loadings <- function(x,...) UseMethod("loadings")
 
+#' @export
+ncomp <- function(x) UseMethod("ncomp")
 
 #' @export
 correlations <- function(x,...) UseMethod("correlations")
@@ -88,6 +90,9 @@ procrusteanize <- function(x) UseMethod("procrusteanize")
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 
+#' @export
 block_lengths <- function(object) UseMethod("block_lengths")
 
+#' @export
+block_index_list <- function(object) UseMethod("block_index_list")
 
