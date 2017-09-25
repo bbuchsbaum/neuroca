@@ -8,7 +8,7 @@
 #' @export
 svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", "propack", "rsvd", "svds"), ...) {
   method <- match.arg(method)
-  
+
   res <- switch(method,
                 base=svd(X,...),
                 fast=corpcor:::fast.svd(X,...),
@@ -17,7 +17,9 @@ svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", 
                 propack=svd::propack.svd(X, neig=ncomp,...),
                 irlba=irlba:::irlba(X, nu=min(ncomp, min(dim(X)) -3), nv=min(ncomp, min(dim(X)) -3)), ...)
   
+ 
   
+  ncomp <- min(ncomp,length(res$d))
   res$d <- res$d[1:ncomp]
   res$u <- res$u[,1:ncomp, drop=FALSE]
   res$v <- res$v[,1:ncomp, drop=FALSE]
