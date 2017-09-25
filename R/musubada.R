@@ -115,14 +115,11 @@ reduce_rows <- function(Xlist, Ylist, center=TRUE, scale=FALSE) {
 ### implement soft-thresholding that spans datasets...? similar to spls?
 ### musu_bada is really a bada with block structure -- bada can be engine
 
-
-
-
-hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, scale=FALSE, svd.method="svds", 
-                           normalization=c("MFA", "RV", "None","DCor")) {
-  
-  assert_that(all(sapply(Xlist, function(x) is(x, "block_matrix"))))
-}
+# hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, scale=FALSE, svd.method="svds", 
+#                            normalization=c("MFA", "RV", "None","DCor")) {
+#   
+#   assert_that(all(sapply(Xlist, function(x) is(x, "block_matrix"))))
+# }
 
 #' musu_bada
 #' 
@@ -131,14 +128,13 @@ hier_musu_bada <- function(Y, Xlist, ncomp=rep(2, length(Xlist)), center=TRUE, s
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 #'        If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a list of X matrices, one per subject. 
-#' @param ncomp
-#' @param center
-#' @param scale
-#' @param svd.method
-#' @param normalization
+#' @param ncomp number of common components to estimate
+#' @param center center the variables
+#' @param scale scale the variable by 1/sd
+#' @param normalization the type of normalization
 #' @param rank_k use reduce data to k components per block
 #' @export
-musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="svds", 
+musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
                      normalization=c("MFA", "RV", "None","DCor"), rank_k=NULL) {
   normalization <- normalization[1]
 
@@ -178,7 +174,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
   blockInd <- blockIndices(Xlist)
   
   refit <- function(.Y, .Xlist, .ncomp=ncomp) { 
-    musu_bada(.Y, .Xlist, .ncomp, center, scale, svd.method, normalization, rank_k) 
+    musu_bada(.Y, .Xlist, .ncomp, center, scale, normalization, rank_k) 
   }
   
   permute_refit <- function(.ncomp=ncomp) {
@@ -195,7 +191,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
     
   }
     
-  ## average categories within block
+  ## average categories within block to get barycenters
   Xreduced <- reduce_rows(Xlist, Yl, center, scale)
   
   Xr <- if (!is.null(rank_k)) {
@@ -208,9 +204,10 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
     Xreduced$Xr
   }
   
+  
   alpha <- normalization_factors(Xr, type=normalization)
   
-  Xr <- block_apply(Xr, function(x,i) x * alpha[i])
+  ##Xr <- block_apply(Xr, function(x,i) x * alpha[i])
   bind <- attr(Xr, "block_ind")
   
   reprocess <- function(newdat, table_index) {
@@ -221,16 +218,18 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
       newdat <- project(reducer, newdat, table_index)
     }
     
-    newdat * alpha[table_index]
+    newdat
     
   }
   
   YB <- factor(levels(Yl[[1]]), levels=levels(Yl[[1]]))
   
-  pca_fit <- pca_core(as.matrix(Xr), ncomp=ncomp, 
+  A <- rep(alpha, block_lengths(Xr))
+
+  pca_fit <- genpca(unclass(Xr), A=A, 
+                      ncomp=ncomp, 
                       center=FALSE, 
-                      scale=FALSE, 
-                      svd.method=svd.method)
+                      scale=FALSE)
   
   ncomp <- length(pca_fit$d)
   
@@ -238,7 +237,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE, svd.method="s
   partial_fscores = 
     lapply(1:length(Xlist), function(i) {
       ind <- attr(Xr, "block_indices")[i,]
-      length(Xlist) * get_block(Xr, i) %*% pca_fit$v[ind[1]:ind[2],]
+      length(Xlist) * (get_block(Xr, i) * alpha[i]) %*% pca_fit$v[ind[1]:ind[2],]
     })
   
   sc <- pca_fit$scores
@@ -308,24 +307,24 @@ project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
 project_copy <- function(x, ...) UseMethod("project_copy")
 
-project_copy.musu_bada <- function(x, Ylist, Xlist) {
-  ## reduce but no centering or scaling
-  XB <- lapply(1:length(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
-  
-  XBlocks <- lapply(1:length(XB), function(i) x$reprocess(XB[[i]], i))
-  browser()
-  partial_scores = 
-    lapply(1:length(XBlocks), function(i) {
-      ind <- x$blockInd[i,1]:x$blockInd[i,2]
-      length(XBlocks) * XBlocks[[i]] %*% x$pca_fit$v[ind,]
-    })
-  
-  lds <- do.call(cbind, XBlocks %*% x$pca_fit$u)
-  
-  scores <- Reduce("+", partial_fscores)/length(partial_fscores)
-  list(scores=scores, partial_scores=partial_scores, loadings=lds)
-  
-}
+# project_copy.musu_bada <- function(x, Ylist, Xlist) {
+#   ## reduce but no centering or scaling
+#   XB <- lapply(1:length(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
+#   
+#   XBlocks <- lapply(1:length(XB), function(i) x$reprocess(XB[[i]], i))
+#   browser()
+#   partial_scores = 
+#     lapply(1:length(XBlocks), function(i) {
+#       ind <- x$blockInd[i,1]:x$blockInd[i,2]
+#       length(XBlocks) * XBlocks[[i]] %*% x$pca_fit$v[ind,]
+#     })
+#   
+#   lds <- do.call(cbind, XBlocks %*% x$pca_fit$u)
+#   
+#   scores <- Reduce("+", partial_fscores)/length(partial_fscores)
+#   list(scores=scores, partial_scores=partial_scores, loadings=lds)
+#   
+# }
 
 #' @importFrom assertthat assert_that 
 #' @export
@@ -442,12 +441,10 @@ project.musu_bada <- function(x, newX=NULL, ncomp=x$ncomp, table_index=1:x$ntabl
     
   ## project new data-point 
   res <- lapply(1:length(table_index), function(i) {
-    
     tbind <- table_index[i]
-    print(tbind)
     xnewdat <- x$reprocess(newX[[i]], tbind)
     ind <- x$blockIndices[tbind,]
-    xnewdat %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp] * x$ntables
+    (xnewdat * x$alpha[i]) %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp] * x$ntables
   })
   
   names(res) <- paste0("table_", table_index)
@@ -475,7 +472,7 @@ predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "cro
         newdata[, ind[1]:ind[2]]
       }
       
-      fscores <- Xp %*% x$pca_fit$v[ind[1]:ind[2],,drop=FALSE]
+      fscores <- (Xp * x$alpha[i]) %*% x$pca_fit$v[ind[1]:ind[2],,drop=FALSE]
     }))
   } else if (length(table_index) == 1) {
     ind <- x$blockIndices[table_index,]
@@ -486,7 +483,7 @@ predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "cro
       newdata[, ind[1]:ind[2]]
     }
     
-    Xp %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp, drop=FALSE] * x$ntables
+    (Xp * x$alpha[i]) %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp, drop=FALSE] * x$ntables
     
   }
   
@@ -606,5 +603,72 @@ performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "A
   
   
 }
+
+#' @importFrom procrustes vegan
+procrusteanize.musu_bada <- function(x, ncomp=2) {
+  F <- x$scores[,1:ncomp]
+  
+  res <- lapply(1:length(x$Xlist), function(i) {
+    xp <- x$Xlist[[i]] * x$alpha[i]
+    pres <- vegan::procrustes(F, xp)
+    list(H=pres$rotation,
+         scalef=pres$scale)
+  })
+  
+  ret <- list(rot_matrices=res, ncomp=ncomp, musufit=x)
+  class(ret) <- c("procrusteanized_musu_bada", "list")
+  ret
+}
+
+predict.procrusteanized_musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
+                              ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+  
+  
+  
+
+  type <- match.arg(type)
+  
+  mf <- x$musufit
+  assert_that(is.matrix(newdata))
+  assert_that(length(table_index) == 1 || length(table_index) == mf$ntables)
+  
+  
+  
+  fscores <- if (length(table_index) == mf$ntables) {
+    assert_that(ncol(newdata) == sum(sapply(mf$Xlist, ncol)))
+    Reduce("+", lapply(table_index, function(i) {
+      ind <- mf$blockIndices[i,]
+      
+      Xp <- if (pre_process) {
+        mf$reprocess(newdata[, ind[1]:ind[2]], i)
+      } else {
+        newdata[, ind[1]:ind[2]]
+      }
+      fscores <- (Xp * mf$alpha[i] * x$rot_matrices[[i]]$scalef) %*% x$rot_matrices[[i]]$H
+    
+      }))
+  } else if (length(table_index) == 1) {
+    
+    ind <- mf$blockIndices[table_index,]
+    
+    Xp <- if (pre_process) {
+      mf$reprocess(newdata, table_index)
+    } else {
+      newdata[, ind[1]:ind[2]]
+    }
+
+    (Xp * mf$alpha[table_index] * x$rot_matrices[[table_index]]$scalef) %*% x$rot_matrices[[table_index]]$H
+    
+    
+  }
+  
+  if (type == "scores") {
+    fscores[,1:ncomp]
+  } else {
+    scorepred(fscores[, 1:ncomp], mf$scores, type=type, ncomp=ncomp)
+  }
+  
+}
+  
 
 

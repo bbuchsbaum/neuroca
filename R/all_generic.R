@@ -82,6 +82,9 @@ reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 project <- function(x, newX, ...) UseMethod("project")
 
 #' @export
+procrusteanize <- function(x) UseMethod("procrusteanize")
+
+#' @export
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 

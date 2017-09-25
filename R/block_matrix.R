@@ -31,6 +31,28 @@ block_matrix_list <- function(Xs) {
   Xs
 }
 
+#' @export
+to_block_matrix <- function(X, block_lengths) {
+  if (is.data.frame(X)) {
+    X <- as.matrix(X)
+  }
+  
+  assertthat::assert_that(sum(block_lengths) == ncol(X))
+  
+  csum <- cumsum(block_lengths)
+  csum1 <- c(0, csum[-length(csum)])
+  m <- as.matrix(cbind(csum1+1, csum))
+  colnames(m) <- c("start", "end")
+  blockInd <- m
+  
+  attr(X, "block_indices") <- blockInd
+  attr(X, "nblock") <- length(block_lengths)
+  
+  class(X) <- c("block_matrix", "matrix") 
+  
+  X
+  
+}
 #' block_matrix
 #' 
 #' @param Xs a list of k matrices with N rows and M_k columns 
@@ -77,6 +99,8 @@ ncol.block_matrix_list <- function(x) {
 dim.block_matrix_list <- function(x) {
   c(attr(x, "nrow"), attr(x, "ncol"))
 }
+
+
 
 block_lengths.block_matrix <- function(object) {
   bind <- attr(object, "block_indices")
