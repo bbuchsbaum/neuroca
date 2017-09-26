@@ -49,7 +49,10 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "None")) {
 }
 
 #' @export
-mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, normalization=c("MFA", "RV", "None"), rank_k=NULL) {
+mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
+                normalization=c("MFA", "RV", "None"), 
+                rank_k=NULL) {
+  
   assertthat::assert_that(inherits(X, "block_matrix"))
   
   Xr <- if (!is.null(rank_k)) {
@@ -63,6 +66,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, normalization=c("MFA", "RV
   }
   
   alpha <- normalization_factors(Xr, type=normalization)
+  
   bind <- attr(Xr, "block_ind")
   
   reprocess <- function(newdat, table_index) {
@@ -97,6 +101,41 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, normalization=c("MFA", "RV
   
   sc <- pca_fit$scores
   row.names(sc) <- row.names(X)
+  
+  result <- list(
+    X=X,
+    Xr=Xr,
+
+    scores=sc,
+    partial_scores=partial_fscores,
+    
+    table_contr = do.call(cbind, lapply(1:ncomp, function(i) {
+      sapply(1:nblocks(Xr), function(j) {
+        ind <- bind[j,1]:bind[j,2]
+        sum(pca_fit$v[ind,i]^2 * alpha[j])
+      })
+    })),
+    
+    ntables=nblocks(X),
+    pca_fit=pca_fit,
+    center=center,
+    scale=scale,
+    ncomp=ncomp,
+    blockIndices=bind,
+    alpha=alpha,
+    normalization=normalization,
+    refit=refit,
+    table_names=table_names,
+    reprocess=reprocess,
+    rank_k=rank_k,
+    permute_refit=permute_refit,
+    center_vec=unlist(Xreduced$centroids),
+    scale_vec=unlist(Xreduced$scales)
+  )
+  
+  class(result) <- c("mfa", "list")
+  result
+}
   
   
 }
