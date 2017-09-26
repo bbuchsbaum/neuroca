@@ -25,8 +25,9 @@ pre_processor <- function(X, center=TRUE, scale=FALSE) {
     if (!center && !scale) {
       M
     } else if (center && scale) {
-      m1 <- sweep(M, 2, center_vec[subind], "+")
-      sweep(m1, 2, scale_vec, "*")
+      m1 <- sweep(M, 2, scale_vec[subind], "*")
+      sweep(m1, 2, center_vec[subind], "+")
+      
     } else if (!center && scale) {
       sweep(M, 2, scale_vec[subind], "*")
     } else if (center && !scale) {

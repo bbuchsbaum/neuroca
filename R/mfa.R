@@ -91,7 +91,8 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, normalization=c("MFA", "RV
   partial_fscores = 
     lapply(1:nblocks(X), function(i) {
       ind <- attr(Xr, "block_indices")[i,]
-      nblocks(X) * (get_block(Xr, i) * alpha[i]) %*% pca_fit$v[ind[1]:ind[2],]
+      #nblocks(X) * (get_block(Xr, i) * alpha[i]) %*% pca_fit$v[ind[1]:ind[2],]
+      project(pca_fit, get_block(Xr, i), subind=ind[1]:ind[2])
     })
   
   sc <- pca_fit$scores
