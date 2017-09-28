@@ -18,6 +18,10 @@ idatlist <- lapply(alldat$idat, function(x) x)
 bothmat <- do.call(cbind, lapply(1:length(vmatlist), function(i) rbind(vmatlist[[i]], ndatlist[[i]])))
 group <- sapply(vmatlist, ncol)
 
+bothmat_blocked <- to_block_matrix(bothmat, group)
+
+
+
 both_imp <- imputeMFA(as.data.frame(bothmat), group, ncp=10, method="EM", maxiter=100, threshold = 1e-05)
 both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
 both_xlist <- as.list(both_mat)

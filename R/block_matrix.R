@@ -26,6 +26,7 @@ block_matrix_list <- function(Xs) {
   attr(Xs, "nblock") <- length(Xs)
   attr(Xs, "nrow") <- nrow(Xs[[1]])
   attr(Xs, "ncol") <- P
+  attr(Xs, "block_names") <- names(Xs)
   class(Xs) <- c("block_matrix_list", "block_matrix", "list") 
   
   Xs
@@ -47,7 +48,7 @@ to_block_matrix <- function(X, block_lengths) {
   
   attr(X, "block_indices") <- blockInd
   attr(X, "nblock") <- length(block_lengths)
-  
+  attr(X, "block_names") <- paste0("B", 1:length(block_length))
   class(X) <- c("block_matrix", "matrix") 
   
   X
@@ -68,7 +69,7 @@ block_matrix <- function(Xs) {
   X <- do.call(cbind, Xs)
   attr(X, "block_indices") <- blockInd
   attr(X, "nblock") <- length(Xs)
-  
+  attr(X, "block_names") <- names(Xs)
   class(X) <- c("block_matrix", "matrix") 
   
   X
@@ -108,7 +109,7 @@ block_lengths.block_matrix <- function(object) {
 }
 
 block_index_list.block_matrix <- function(object) {
-  apply(attr(bm, "block_indices"), 1, function(x) seq(x[1], x[2]))
+  apply(attr(object, "block_indices"), 1, function(x) seq(x[1], x[2]))
 }
 
 
@@ -120,6 +121,7 @@ print.block_matrix <- function(object) {
   cat("  nrows: ", dim(object)[1], "\n")
   cat("  ncols: ", dim(object)[2], "\n")
   cat("  block cols: ", apply(bind, 1, diff)+1, "\n")
+  cat("  block names: ", attr(object, "block_names"))
 }
 
 #' get_block

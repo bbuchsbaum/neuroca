@@ -95,9 +95,16 @@ predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
   
 }
 
+#' @export
+reconstruct.genpca <- function(x, ncomp=x$ncomp) {
+  x$reverse_pre_process(x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE]))
+}
+
+
 contributions.genpca <- function(x) {
   coord.var <- t(t(as.matrix(x$v)) * x$d)
-  t(t(coord.var^2) %*% x$A)
+  eig <- x$d^2
+  (t(coord.var^2)/eig) %*% x$A
 }
 
 project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
@@ -139,7 +146,7 @@ project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=N
 #   }
 # }
 
-gmdLA <- function(X, Q, R, k, n, p) {
+gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
   
   
@@ -161,12 +168,11 @@ gmdLA <- function(X, Q, R, k, n, p) {
   XR <- X %*% R
   RnR <- R %*% inmat %*% R
   
-
-  xtilde.decomp <- eigen(RtinRt)
+  xtilde.decomp <- RSpectra::eigs_sym(RtinRt, k=k)
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
   k <- length(keep)
-  xtilde.decomp$vectors <- xtilde.decomp$vectors[, keep]
-  xtilde.decomp$values <- xtilde.decomp$values[keep]
+  xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
+  xtilde.decomp$values <- xtilde.decomp$values[1:k]
   
   Rtilde.inv %*% xtilde.decomp$vectors
   
