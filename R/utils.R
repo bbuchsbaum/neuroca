@@ -16,6 +16,22 @@ group_means <- function(Y, X) {
 }
 
 
+compute_sim_mat <- function(block_mat, FUN, ...) {
+  pairs <- combn(nblocks(block_mat),2)
+  M <- matrix(0, nblocks(block_mat), nblocks(block_mat))
+  for (i in 1:ncol(pairs)) {
+    p1 <- pairs[1,i]
+    p2 <- pairs[2,i]
+    sim <- FUN(get_block(block_mat, p1), get_block(block_mat, p2), ...)
+    M[p1,p2] <- sim
+    M[p2,p1] <- sim
+  }
+  
+  M
+}
+
+
+
 code_replications <- function(f) {
   m <- outer(f, unique(f), "==")
   ordered(apply(m* apply(m,2,cumsum), 1, sum))
