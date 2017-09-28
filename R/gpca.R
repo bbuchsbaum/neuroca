@@ -97,7 +97,7 @@ predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
 
 contributions.genpca <- function(x) {
   coord.var <- t(t(as.matrix(x$v)) * x$d)
-  t(coord.var^2) %*% x$M
+  t(t(coord.var^2) %*% x$A)
 }
 
 project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
