@@ -24,6 +24,8 @@ genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), cen
   #  M <- diag(M) 
   #}
   
+
+  
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
