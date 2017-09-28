@@ -16,17 +16,17 @@
 #' @export
 genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
-  if (!is.vector(A) && isDiagonal(A)) {
-    A <- diag(A) 
-  }
+  #if (!is.vector(A) && isDiagonal(A)) {
+  #  A <- diag(A) 
+  #}
   
-  if (!is.vector(M) && isDiagonal(M)) {
-    M <- diag(M) 
-  }
+  #if (!is.vector(M) && isDiagonal(M)) {
+  #  M <- diag(M) 
+  #}
   
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
-    #A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
+    A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
   } else {
     assert_that(nrow(A) == ncol(A))
     assert_that(nrow(A) == ncol(X))
