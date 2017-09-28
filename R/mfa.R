@@ -121,6 +121,27 @@ reconstruct.mfa <- function(x, ncomp=x$ncomp) {
   x$reverse_pre_process(recon)
 }
 
+contributions.mfa <- function(x, type=c("column", "row", "table")) {
+  contr <- contributions(x$pca_fit)
+  type <- match.arg(type)
+  
+  if (type == "table") {
+    out <- do.call(cbind, lapply(1:x$ncomp, function(i) {
+      sapply(1:x$ntables, function(j) {
+        ind <- x$blockIndices[j,1]:x$blockIndices[j,2]
+        sum(contr[i,ind])
+      })
+    }))
+      
+  } else if (type == "row") {
+    ### row contributions
+    
+  } else {
+    contr
+  }
+  
+}
+
 
 #' @export
 impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, 
