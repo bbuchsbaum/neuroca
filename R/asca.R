@@ -36,6 +36,7 @@ collapse <- function(form, X, design) {
 
 
 #' residualize
+#' 
 #' @param form the formula defining the model to fit for residuals
 #' @param X the response matrix
 #' @param design the \code{data.frame} containing the design variables specified in \code{form} argument.
