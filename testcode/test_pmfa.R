@@ -21,15 +21,17 @@ group <- sapply(vmatlist, ncol)
 bothmat_blocked <- to_block_matrix(bothmat, group)
 
 
+both_imp <- impute_mfa(bothmat_blocked, ncomp=25, normalization="MFA")
+#both_imp <- imputeMFA(as.data.frame(bothmat), group, ncp=10, method="EM", maxiter=100, threshold = 1e-05)
+#both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
+#both_mat <- to_block_matrix(both_imp, group)
 
-both_imp <- imputeMFA(as.data.frame(bothmat), group, ncp=10, method="EM", maxiter=100, threshold = 1e-05)
-both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
 both_xlist <- as.list(both_mat)
 both_xlist <- lapply(both_xlist, function(x) t(scale(t(x))))
 
 Y <- factor(c(zerostr(1:nrow(vmatlist[[1]])), as.character(alldat$ndat[[1]]$design$label)))
-mres <- musu_bada(Y, both_xlist, normalization="MFA")
-proc_mres <- procrusteanize.musu_bada(mres, ncomp=10)
+mres <- musu_bada(Y, both_xlist, ncomp=12, normalization="MFA")
+proc_mres <- procrusteanize.musu_bada(mres, ncomp=12)
 
 
 project_musu <- function(mfit, idatlist) {

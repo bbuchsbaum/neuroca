@@ -5,14 +5,21 @@
 \title{musu_bada}
 \usage{
 musu_bada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
-  svd.method = "svds", normalization = c("MFA", "RV", "None", "DCor"),
-  rank_k = NULL)
+  normalization = c("MFA", "RV", "None", "RV-MFA"), rank_k = NULL)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
-If there are a different nume rof rows (e..g different numbers of replications per subject), Y can be a list of factors.}
+If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.}
 
 \item{Xlist}{a list of X matrices, one per subject.}
+
+\item{ncomp}{number of common components to estimate}
+
+\item{center}{center the variables}
+
+\item{scale}{scale the variable by 1/sd}
+
+\item{normalization}{the type of normalization}
 
 \item{rank_k}{use reduce data to k components per block}
 }
