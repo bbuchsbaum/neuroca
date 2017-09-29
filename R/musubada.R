@@ -435,7 +435,7 @@ performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "A
   
 }
 
-#' @importFrom procrustes vegan
+#' @importFrom vegan procrustes 
 procrusteanize.musu_bada <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   

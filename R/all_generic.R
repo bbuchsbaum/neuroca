@@ -2,7 +2,7 @@
 
 
 #' @export
-# scores <- function(x,...) UseMethod("scores")
+scores <- function(x,...) UseMethod("scores")
 
 #' @export
 reduce <- function(x, Y, ...) UseMethod("reduce")
