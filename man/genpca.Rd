@@ -4,7 +4,8 @@
 \alias{genpca}
 \title{genpca}
 \usage{
-genpca(X, A, M, ncomp = min(dim(X)), center = FALSE, scale = FALSE)
+genpca(X, A = rep(1:ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
+  center = FALSE, scale = FALSE)
 }
 \arguments{
 \item{X}{the data matrix}
@@ -14,6 +15,10 @@ genpca(X, A, M, ncomp = min(dim(X)), center = FALSE, scale = FALSE)
 \item{M}{the row constraints. Can be a \code{vector}, \code{matrix}, or sparse matrix.}
 
 \item{ncomp}{the number of components to estimate}
+
+\item{center}{whether to center the columns}
+
+\item{scale}{whether to standardize the columns}
 }
 \description{
 genpca

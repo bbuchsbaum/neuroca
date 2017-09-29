@@ -6,11 +6,11 @@
 #' @param scale
 #' @param svd.method
 #' @export
-pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, svd.method="fast") {
+pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   
   X <- pre_processor(X, center=center,scale=scale)
   
-  svdres <- svd_wrapper(X, ncomp, method=svd.method)
+  svdres <- svd_wrapper(X, ncomp, method=svd.method, ...)
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   
@@ -60,6 +60,7 @@ reconstruct.pca <- function(x, ncomp=x$ncomp) {
 }
 
 
+#' @export
 truncate.pca <- function(obj, ncomp) {
   if (ncomp >= obj$ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
@@ -72,7 +73,7 @@ truncate.pca <- function(obj, ncomp) {
   ret
 }
 
-
+#' @export
 reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, reducer=pca_core, ...) {
   res <- reducer(x, k, center=center, scale=scale, ...)
 }

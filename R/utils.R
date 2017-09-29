@@ -30,6 +30,31 @@ compute_sim_mat <- function(block_mat, FUN, ...) {
   M
 }
 
+colCors <- function(x, y) { 
+  sqr = function(x) x*x
+  if (!is.matrix(x)||!is.matrix(y)||any(dim(x)!=dim(y))) {
+    stop("Please supply two matrices of equal size.")
+  }
+  
+  x   <- sweep(x, 2, colMeans(x))
+  y   <-  sweep(y, 2, colMeans(y))
+  cor <- colSums(x*y) /  sqrt(colSums(sqr(x))*colSums(sqr(y)))
+  return(cor)
+}
+
+corMat <- function(Xl) {
+  pairs <- combn(length(Xl),2)
+  M <- matrix(0, length(Xl), length(Xl))
+  for (i in 1:ncol(pairs)) {
+    p1 <- pairs[1,i]
+    p2 <- pairs[2,i]
+    rmean <- mean(colCors(t(Xl[[p1]]), t(Xl[[p2]])))
+    M[p1,p2] <- rmean
+    M[p2,p1] <- rmean
+  }
+  M
+  
+}
 
 
 code_replications <- function(f) {
