@@ -1,0 +1,7 @@
+#' neuroca - multiblock component analysis methods for neuroimaging data
+#'
+#' @author Bradley Buchsbaum <brad.buchsbaum@gmail.com>
+#' @docType package
+#' @import assertthat
+#' @name neuroca
+NULL
