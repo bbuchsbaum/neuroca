@@ -16,16 +16,7 @@
 #' @export
 genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
-  #if (!is.vector(A) && isDiagonal(A)) {
-  #  A <- diag(A) 
-  #}
-  
-  #if (!is.vector(M) && isDiagonal(M)) {
-  #  M <- diag(M) 
-  #}
-  
 
-  
   if (is.vector(A)) {
     assert_that(length(A) == ncol(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
@@ -127,30 +118,7 @@ project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=N
   }
 }
 
-# mmult <- function(X, q) {
-#   if (is.vector(q)) {
-#     t(t(X) * q)
-#   } else {
-#     X %*% q
-#   }
-# }
-# 
-# mmult2 <- function(q, X) {
-#   if (is.vector(q)) {
-#     t(q * t(X))
-#   } else {
-#     q %*% X
-#   }
-#   
-# }
-# 
-# cprod <- function(X, q) {
-#   if (is.vector(q)) {
-#     t(X * q)
-#   } else {
-#     Matrix::crossprod(X, q)
-#   }
-# }
+
 
 gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
@@ -205,3 +173,30 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   )
   
 }
+
+
+
+# mmult <- function(X, q) {
+#   if (is.vector(q)) {
+#     t(t(X) * q)
+#   } else {
+#     X %*% q
+#   }
+# }
+# 
+# mmult2 <- function(q, X) {
+#   if (is.vector(q)) {
+#     t(q * t(X))
+#   } else {
+#     q %*% X
+#   }
+#   
+# }
+# 
+# cprod <- function(X, q) {
+#   if (is.vector(q)) {
+#     t(X * q)
+#   } else {
+#     Matrix::crossprod(X, q)
+#   }
+# }
