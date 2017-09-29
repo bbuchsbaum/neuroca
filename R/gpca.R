@@ -102,9 +102,7 @@ reconstruct.genpca <- function(x, ncomp=x$ncomp) {
 
 
 contributions.genpca <- function(x) {
-  coord.var <- t(t(as.matrix(x$v)) * x$d)
-  eig <- x$d^2
-  (t(coord.var^2)/eig) %*% x$A
+  t(x$v^2) %*% x$A
 }
 
 project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
