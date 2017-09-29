@@ -48,12 +48,14 @@ to_block_matrix <- function(X, block_lengths) {
   
   attr(X, "block_indices") <- blockInd
   attr(X, "nblock") <- length(block_lengths)
-  attr(X, "block_names") <- paste0("B", 1:length(block_length))
+  attr(X, "block_names") <- paste0("B", 1:length(block_lengths))
   class(X) <- c("block_matrix", "matrix") 
   
   X
   
 }
+
+
 #' block_matrix
 #' 
 #' @param Xs a list of k matrices with N rows and M_k columns 
@@ -171,7 +173,7 @@ rbind.block_matrix <- function(...) {
   block_matrix(res)
 }
 
-
+#' @export
 block_apply.block_matrix <- function(x, f) {
   ret <- lapply(1:nblocks(x), function(i) {
     f(get_block(x,i), i)
@@ -179,6 +181,10 @@ block_apply.block_matrix <- function(x, f) {
   
   block_matrix_list(ret)
 }
+
+#' @export
+names.block_matrix <- function(x) attr(x, "block_names")
+
 
 split_matrix <- function(X, fac) {
   idx <- split(1:nrow(X), fac)
@@ -200,7 +206,6 @@ reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   assert_that(length(k) == nblocks(x))
   
 
-  
   pcres <- lapply(1:nblocks(x), function(i) {
     print(i)
     xb <- get_block(x, i)

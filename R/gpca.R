@@ -103,8 +103,14 @@ reconstruct.genpca <- function(x, ncomp=x$ncomp) {
 }
 
 
-contributions.genpca <- function(x) {
-  t(x$v^2) %*% x$A
+contributions.genpca <- function(x, type=c("column", "row")) {
+  type <- match.arg(type)
+  if (type == "column") {
+    t(x$v^2) %*% x$A
+  } else {
+    t(x$u^2) %*% x$M
+    
+  }
 }
 
 project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
@@ -117,7 +123,7 @@ project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=N
     } else {
       newdata
     }
-    project_xav(Xsup, x$A[subind,subind], x$v[,1:ncomp,drop=FALSE])
+    project_xav(Xsup, x$A[subind,subind], x$v[subind,1:ncomp,drop=FALSE])
   }
 }
 

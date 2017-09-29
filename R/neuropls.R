@@ -1,7 +1,7 @@
-#' neuropls - a multivariate analysis of neuroimaging data
+#' neuroca - multiblock component analysis methods for neuroimaging data
 #'
 #' @author Bradley Buchsbaum <brad.buchsbaum@gmail.com>
 #' @docType package
 #' @import assertthat
-#' @name neuropls
+#' @name neuroca
 NULL

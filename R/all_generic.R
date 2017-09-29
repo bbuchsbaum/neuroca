@@ -2,7 +2,7 @@
 
 
 #' @export
-scores <- function(x,...) UseMethod("scores")
+# scores <- function(x,...) UseMethod("scores")
 
 #' @export
 reduce <- function(x, Y, ...) UseMethod("reduce")
@@ -58,6 +58,10 @@ split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
 supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
 
 #' @export
+supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
+
+
+#' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
 
 #' @export
@@ -81,13 +85,17 @@ reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
 #' @export
-project <- function(x, newX, ...) UseMethod("project")
+project <- function(x, newdata, ...) UseMethod("project")
+
+#' @export
+project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
 #' @export
 procrusteanize <- function(x) UseMethod("procrusteanize")
 
 #' @export
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
+
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 
 #' @export
