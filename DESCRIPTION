@@ -1,21 +1,11 @@
-Package: neuropls
+Package: neuroca
 Imports:
     graphics,
     grid,
     stats,
-    assertthat
-License: GPL (>= 2)
-Maintainer: Bradley Buchsbaum <bbuchsbaum@rotman-baycrest.on.ca>
-Title: neuropls: partial least squares correlation for neuroimaging data
-Type: Package
-Author: Bradley Buchsbaum
-Description: neuropls is an implementation of partial least squares for
-    neuroimaging data.
-Version: 0.0.1
-Date: 2016-10-14
-Depends:
-    R (>= 2.15.0),
-    methods,
+    assertthat,
+    vegan,
+    RSpectra,
     irlba,
     corpcor,
     plyr,
@@ -24,4 +14,15 @@ Depends:
     caret,
     fields,
     sda
+License: GPL (>= 2)
+Maintainer: Bradley Buchsbaum <brad.buchsbaum@gmail.com>
+Title: neuroca: multiblock component analysis for neuroimaging data
+Type: Package
+Author: Bradley Buchsbaum
+Description: neuroca contains methods for multivariate analysis of neuroimaging data
+Version: 0.0.1
+Date: 2017-09-29
+Depends:
+    R (>= 3.3.0),
+    methods
 RoxygenNote: 6.0.1.9000
