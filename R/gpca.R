@@ -89,6 +89,17 @@ predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
 }
 
 #' @export
+ncomp.genpca <- function(x) {
+  length(x$d)
+}
+
+#' @export
+scores.genpca <- function(x) {
+  x$scores
+}
+
+
+#' @export
 reconstruct.genpca <- function(x, ncomp=x$ncomp) {
   x$reverse_pre_process(x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE]))
 }
@@ -103,6 +114,7 @@ contributions.genpca <- function(x, type=c("column", "row")) {
     
   }
 }
+
 
 project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
   if (is.null(subind)) {
@@ -174,6 +186,23 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   
 }
 
+#' @export
+truncate.genpca <- function(obj, ncomp) {
+  if (ncomp >= obj$ncomp) {
+    warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
+    ret <- obj
+  } else {
+    ret <- list(v=obj$v[,1:ncomp], 
+                u=obj$u[,1:ncomp], 
+                d=obj$d[1:ncomp], 
+                scores=obj$scores[,1:ncomp], 
+                ncomp=ncomp, svd.method=obj$svd.method, 
+                pre_process=obj$pre_process)
+    class(ret) <- c("pca", "projector", "list")
+  }
+  
+  ret
+}
 
 
 # mmult <- function(X, q) {
