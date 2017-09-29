@@ -14,7 +14,6 @@ pca_core <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   
-
   ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, 
               scores=scores, ncomp=ncomp, svd.method=svd.method, 
               pre_process=attr(X, "pre_process"), reverse_pre_process=attr(X, "reverse"))
