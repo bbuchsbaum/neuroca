@@ -210,7 +210,7 @@ reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
     print(i)
     xb <- get_block(x, i)
     k <- min(min(dim(xb)), k[i])
-    pca_core(get_block(x, i), k, center=center, scale=scale, svd.method="propack")
+    pca(get_block(x, i), k, center=center, scale=scale, svd.method="propack")
   })
   
   
