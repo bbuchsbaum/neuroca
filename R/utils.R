@@ -16,6 +16,13 @@ group_means <- function(Y, X) {
 }
 
 
+split_matrix <- function(X, fac) {
+  idx <- split(1:nrow(X), fac)
+  lapply(idx, function(i) X[i,])
+}
+
+
+
 compute_sim_mat <- function(block_mat, FUN, ...) {
   pairs <- combn(nblocks(block_mat),2)
   M <- matrix(0, nblocks(block_mat), nblocks(block_mat))
@@ -117,16 +124,6 @@ combinedAUC <- function(Pred, Obs) {
 }
 
 
-
-#group_means1 <- function(Y, X) {
-# G <- model.matrix(~ Y - 1)
-# colnames(G) <- levels(Y)
-# GW <- G/colSums(G)
-# R <- t(crossprod(X, GW))
-#centroid <-  rowMeans(R)
-#Rcent <- sweep(R, 1, centroid)
-#list(Rcent=Rcent, Ymat=G, centroid=centroid)
-#}\\
 
 
 

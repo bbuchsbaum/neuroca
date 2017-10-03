@@ -93,6 +93,12 @@ ncomp.genpca <- function(x) {
   length(x$d)
 }
 
+
+loadings.genpca <- function(x) {
+  x$v
+}
+
+
 #' @export
 scores.genpca <- function(x) {
   x$scores
@@ -104,7 +110,7 @@ reconstruct.genpca <- function(x, ncomp=x$ncomp) {
   x$reverse_pre_process(x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE]))
 }
 
-
+#' @export
 contributions.genpca <- function(x, type=c("column", "row")) {
   type <- match.arg(type)
   if (type == "column") {
@@ -142,12 +148,13 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   decomp$vectors <- decomp$vectors[, keep]
   decomp$values <- decomp$values[keep]
   
-  Rtilde <-
-    decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
+  Rtilde <- decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
   
   inv.values = 1 / sqrt(decomp$values)
   Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
-  inmat <- crossprod(X, Q) %*% X
+  
+ 
+  inmat <- Matrix::crossprod(X, Q) %*% X
   
   RtinRt <- Rtilde %*% inmat %*% Rtilde
   
