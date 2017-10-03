@@ -111,7 +111,8 @@ block_lengths.block_matrix <- function(object) {
 }
 
 block_index_list.block_matrix <- function(object) {
-  apply(attr(object, "block_indices"), 1, function(x) seq(x[1], x[2]))
+  bind <- attr(object, "block_indices")
+  lapply(1:nrow(bind), function(i) seq(bind[i,1], bind[i,2]))
 }
 
 
@@ -134,31 +135,40 @@ print.block_matrix <- function(object) {
 get_block <- function (x, i) { UseMethod("get_block") }
 
 
+#' @export
 get_block.block_matrix <- function(x, i) {
   ind <- attr(x, "block_indices")
   x[, seq(ind[i,1], ind[i,2]) ]
 }
 
+#' @export
 get_block.block_matrix_list <- function(x, i) {
   x[[i]]
 }
 
+#' @export
 as.list.block_matrix <- function(x) {
   lapply(1:attr(x, "nblock"), function(i) get_block(x, i))
 }
 
+#' @export
 as.list.block_matrix_list <- function(x) {
   x
 }
 
+#' @export
 as.matrix.block_matrix_list <- function(x) {
   block_matrix(x)
 }
 
+
+#' @export
 nblocks.block_matrix <- function(x) {
   attr(x, "nblock")
 }
 
+
+#' @export
 rbind.block_matrix <- function(...) {
   mlist <- list(...)
   nb <- unlist(lapply(mlist, nblocks))
@@ -186,14 +196,9 @@ block_apply.block_matrix <- function(x, f) {
 names.block_matrix <- function(x) attr(x, "block_names")
 
 
-split_matrix <- function(X, fac) {
-  idx <- split(1:nrow(X), fac)
-  lapply(idx, function(i) X[i,])
-}
 
 
-
-
+#' @export
 reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   
   nb <- nblocks(x)

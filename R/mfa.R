@@ -121,6 +121,16 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   result
 }
 
+#' @export
+loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), 
+                               comp=1:ncol(x$pca_fit$v)) {
+  
+  lds <- loadings(x$pca_fit)
+  block_matrix(lapply(table_index, function(i) {
+    ind <- x$block_indices[[i]]
+    lds[comp,ind]
+  }))
+}
 
 #' @export
 scores.mfa <- function(x) {
@@ -157,7 +167,9 @@ project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index
   res <- lapply(1:length(table_index), function(i) {
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
-    x$ntables * project(x$pca_fit, xnewdat, ncomp=ncomp, subind=x$block_indices[[i]])
+   
+    x$ntables * project(x$pca_fit, xnewdat, 
+                        ncomp=ncomp, subind=x$block_indices[[tbind]])
    
   })
   

@@ -21,8 +21,17 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   }
   
   Xl <- lapply(as.list(Xr), t)
+  bind <- block_index_list(X)
+  
+  
   
   sca_fit <- multiway::sca(Xl, nfac=ncomp, type=type, ...)
+  
+  Dmat <- do.call(rbind, sca_fit$D)
+  
+  v <- apply(Dmat,2, function(x) x/norm(x, "F"))
+  u <- sca_fit$B / sqrt(nrow(X))
+  
   
   reprocess <- function(newdat, table_index) {
     prep <- attr(X, "pre_process")
@@ -40,7 +49,10 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
     reprocess=reprocess,
     center=center,
     scale=scale,
+    u=u,
+    v=v,
     rank_k=rank_k,
+    ntables=length(block_lengths(X)),
     is_reduced=is_reduced)
   
   class(ret) <- c("sca", "list")
@@ -69,14 +81,18 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
   res <- lapply(1:length(table_index), function(i) {
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
-    x$ntables *  t(newdata[[i]]) %*% x$D[[tbind]] 
+    ind <- x$block_indices[[tbind]]
+    x$ntables *  newdata[[i]] %*% x$v[, ind] 
       
-    
   })
   
   names(res) <- paste0("table_", table_index)
   res
 } 
+
+scores.sca <- function(x) {
+  x$u
+}
 
 #' @export
 reconstruct.sca <- function(x, ncomp=x$ncomp) {
