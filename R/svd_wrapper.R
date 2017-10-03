@@ -6,7 +6,11 @@
 #' @param ncomp number of components to estimate
 #' @param method the svd method to use. One of: 'base', 'fast', 'irlba', 'propack'
 #' @export
-svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", "propack", "rsvd", "svds"), ...) {
+svd_wrapper <- function(X, ncomp=min(dim(X)), 
+                        method=c("base", "fast", "irlba", 
+                                 "propack", "rsvd", "svds"), 
+                        tol=.Machine$double.eps,
+                        ...) {
   method <- match.arg(method)
 
   res <- switch(method,
@@ -18,8 +22,9 @@ svd_wrapper <- function(X, ncomp=min(dim(X)), method=c("base", "fast", "irlba", 
                 irlba=irlba:::irlba(X, nu=min(ncomp, min(dim(X)) -3), nv=min(ncomp, min(dim(X)) -3)), ...)
   
  
+  keep <- which(res$d^2 > tol)
+  ncomp <- min(ncomp,length(keep))
   
-  ncomp <- min(ncomp,length(res$d))
   res$d <- res$d[1:ncomp]
   res$u <- res$u[,1:ncomp, drop=FALSE]
   res$v <- res$v[,1:ncomp, drop=FALSE]
