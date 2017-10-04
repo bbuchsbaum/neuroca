@@ -110,7 +110,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     normalization=normalization,
     refit=refit,
     permute_refit=permute_refit,
-    table_names=names(x),
+    table_names=names(X),
     reprocess=reprocess,
     reduced_rank=rank_k,
     is_reduced=is_reduced,
@@ -133,9 +133,19 @@ loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices),
 }
 
 #' @export
+singular_values.mfa <- function(x) x$pca_fit$d
+
+
+#' @export
 scores.mfa <- function(x) {
   x$scores
 }
+
+#' @export
+loadings <- function(x) {
+  loadings.genpca(x$pca_fit)
+}
+
 
 #' @export
 partial_scores.mfa <- function(x, table_index=x$ntables) {
@@ -204,6 +214,61 @@ contributions.mfa <- function(x, type=c("column", "row", "table")) {
   
 }
 
+#' @importFrom vegan procrustes 
+procrusteanize.mfa <- function(x, ncomp=2) {
+  F <- scores(x)[,1:ncomp]
+  
+  res <- lapply(1:length(x$Xlist), function(i) {
+    xcur <- get_block(x$Xr[[i]])
+    xp <- project(x, xcur, ncomp=ncomp, table_index=i)
+    pres <- vegan::procrustes(F, xp)
+    list(H=pres$rotation,
+         scalef=pres$scale)
+  })
+  
+  ret <- list(rot_matrices=res, ncomp=ncomp, musufit=x)
+  class(ret) <- c("procrusteanized_mfa", "list")
+  ret
+}
+
+
+
+## project from existing table
+#' @export
+predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+  type <- match.arg(type)
+  assert_that(is.matrix(newdata))
+  assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
+  
+  fscores <- if (length(table_index) == x$ntables) {
+    assert_that(ncol(newdata) == ncol(x$X))
+    Reduce("+", lapply(table_index, function(i) {
+      ind <- x$block_indices[[i]]
+      
+      Xp <- if (pre_process) {
+        x$reprocess(newdata[, ind], i)
+      } else {
+        newdata[, ind]
+      }
+      
+      project(x$pca_fit, Xp, ncomp=ncomp) * x$ntables
+    }))
+  } else if (length(table_index) == 1) {
+    ind <- x$block_indices[[table_index]]
+    
+    Xp <- if (pre_process) {
+      x$reprocess(newdata, table_index)
+    } else {
+      newdata[, ind]
+    }
+    
+    fscores <- project(x$pca_fit, Xp, ncomp=ncomp) * x$ntables
+
+  }
+  
+}
+
+
 
 #' @export
 impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, 
@@ -227,6 +292,7 @@ impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,
   }
   
   old <- Inf
+  criterion <- Inf
   iter <- 1
   
   while(iter < iter_max & criterion > threshold) {

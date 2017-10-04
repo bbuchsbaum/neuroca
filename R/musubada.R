@@ -290,39 +290,13 @@ project.musu_bada <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables
 predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
                                     ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
   type <- match.arg(type)
-  assert_that(is.matrix(newdata))
-  assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   
-  fscores <- if (length(table_index) == x$ntables) {
-    assert_that(ncol(newdata) == sum(sapply(x$Xlist, ncol)))
-    Reduce("+", lapply(table_index, function(i) {
-      ind <- x$blockIndices[i,]
-      
-      Xp <- if (pre_process) {
-        x$reprocess(newdata[, ind[1]:ind[2]], i)
-      } else {
-        newdata[, ind[1]:ind[2]]
-      }
-      
-      fscores <- (Xp * x$alpha[i]) %*% x$pca_fit$v[ind[1]:ind[2],,drop=FALSE]
-    }))
-  } else if (length(table_index) == 1) {
-    ind <- x$blockIndices[table_index,]
-    
-    Xp <- if (pre_process) {
-      x$reprocess(newdata, table_index)
-    } else {
-      newdata[, ind[1]:ind[2]]
-    }
-    
-    (Xp * x$alpha[i]) %*% x$pca_fit$v[ind[1]:ind[2], 1:ncomp, drop=FALSE] * x$ntables
-    
-  }
+  fscores <- predict(x$mfa_fit, newdata, ncomp=ncomp, table_index=table_index, pre_process=pre_process)
   
   if (type == "scores") {
     fscores
   } else {
-    scorepred(fscores, x$scores, type=type, ncomp=ncomp)
+    scorepred(fscores, scores(x), type=type, ncomp=ncomp)
   }
   
 }
@@ -463,8 +437,6 @@ predict.procrusteanized_musu_bada <- function(x, newdata, type=c("class", "prob"
   mf <- x$musufit
   assert_that(is.matrix(newdata))
   assert_that(length(table_index) == 1 || length(table_index) == mf$ntables)
-  
-  
   
   fscores <- if (length(table_index) == mf$ntables) {
     assert_that(ncol(newdata) == sum(sapply(mf$Xlist, ncol)))
