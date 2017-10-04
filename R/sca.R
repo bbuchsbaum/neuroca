@@ -29,9 +29,12 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   
   Dmat <- do.call(rbind, sca_fit$D)
   
-  v <- apply(Dmat,2, function(x) x/norm(x, "F"))
-  u <- sca_fit$B / sqrt(nrow(X))
+  vscale <- apply(Dmat, 2, function(x) sqrt(sum(x^2)))
   
+  
+  v <- sweep(Dmat, 2, vscale, "/")
+  u <- sca_fit$B / sqrt(nrow(X))
+  d <- vscale * sqrt(5)
   
   reprocess <- function(newdat, table_index) {
     prep <- attr(X, "pre_process")
@@ -51,7 +54,11 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
     scale=scale,
     u=u,
     v=v,
+    d=d,
+    ncomp=length(d),
+    scores= t(t(sres$u) * sres$d),
     rank_k=rank_k,
+    block_indices=bind,
     ntables=length(block_lengths(X)),
     is_reduced=is_reduced)
   
@@ -77,12 +84,13 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
     newdata <- list(newdata)
   }
   
+  #browser()
   ## project new data-point(s)
   res <- lapply(1:length(table_index), function(i) {
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
     ind <- x$block_indices[[tbind]]
-    x$ntables *  newdata[[i]] %*% x$v[, ind] 
+    x$ntables *  newdata[[i]] %*% x$v[ind,] 
       
   })
   
@@ -90,9 +98,22 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
   res
 } 
 
+#' @export
+singular_values.sca <- function(x) x$d
+
+
+#' @export
 scores.sca <- function(x) {
-  x$u
+  x$scores
 }
+
+#' @export
+loadings.sca <- function(x) {
+  x$v
+}
+
+#' @export
+ncomp.sca <- function(x) length(x$d)
 
 #' @export
 reconstruct.sca <- function(x, ncomp=x$ncomp) {
@@ -118,6 +139,38 @@ contributions.sca <- function(x, type=c("column", "row", "table")) {
     contributions(x$pca_fit, type="row")
   } else {
     contributions(x$pca_fit, type="column")
+  }
+  
+}
+
+predict.sca <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+  assert_that(is.matrix(newdata))
+  assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
+  
+  fscores <- if (length(table_index) == x$ntables) {
+    assert_that(ncol(newdata) == ncol(x$X))
+    Reduce("+", lapply(table_index, function(i) {
+      ind <- x$block_indices[[i]]
+      
+      Xp <- if (pre_process) {
+        x$reprocess(newdata[, ind], i)
+      } else {
+        newdata[, ind]
+      }
+      
+      project(x, Xp, ncomp=ncomp, table_index=i) 
+    }))
+  } else if (length(table_index) == 1) {
+    ind <- x$block_indices[[table_index]]
+    
+    Xp <- if (pre_process) {
+      x$reprocess(newdata, table_index)
+    } else {
+      newdata[, ind]
+    }
+    
+    fscores <- project(x, Xp, ncomp=ncomp, table_index=table_index) 
+    
   }
   
 }

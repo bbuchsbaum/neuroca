@@ -26,6 +26,8 @@ both_imp <- impute_mfa(bothmat_blocked, ncomp=25, normalization="MFA")
 #both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
 #both_mat <- to_block_matrix(both_imp, group)
 
+sres <- sca(both_imp, ncomp=12, type="sca-pf2")
+
 both_xlist <- as.list(both_mat)
 both_xlist <- lapply(both_xlist, function(x) t(scale(t(x))))
 
@@ -44,7 +46,7 @@ project_musu <- function(mfit, idatlist) {
   
     pres_cos <- lapply(1:length(Xim), function(i) {
       print(i)
-      pred <- predict(mfit, Xim[[i]], type="cosine", ncomp=mfit$ncomp, table_index=i)
+      pred <- predict(mfit, Xim[[i]], type="cosine", ncomp=ncomp(mfit), table_index=i)
       pred <- pred[,nback_ind]
   
     

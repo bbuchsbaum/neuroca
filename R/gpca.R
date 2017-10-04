@@ -13,6 +13,7 @@
 #' @param center whether to center the columns
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
+#' @importFRom Matrix sparseMatrix
 #' @export
 genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
   
@@ -97,7 +98,6 @@ ncomp.genpca <- function(x) {
 loadings.genpca <- function(x) {
   x$v
 }
-
 
 #' @export
 scores.genpca <- function(x) {
