@@ -76,6 +76,7 @@ eigen_values <- function(x) UseMethod("eigen_values")
 #' @export
 partial_scores <- function(x, ...) UseMethod("partial_scores")
 
+#' @export
 contributions <- function(x, ...) UseMethod("contributions")
 
 #' @export

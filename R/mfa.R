@@ -98,7 +98,6 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   result <- list(
     X=X,
     Xr=Xr,
-
     scores=sc,
     ntables=nblocks(X),
     pca_fit=pca_fit,
@@ -117,23 +116,26 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     permute_refit=permute_refit
   )
   
-  class(result) <- c("mfa", "list")
+  class(result) <- c("mfa", "multiblock", "list")
   result
 }
 
 #' @export
-loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), 
-                               comp=1:ncol(x$pca_fit$v)) {
-  
-  lds <- loadings(x$pca_fit)
-  block_matrix(lapply(table_index, function(i) {
-    ind <- x$block_indices[[i]]
-    lds[comp,ind]
-  }))
-}
+# loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), 
+#                                comp=1:ncol(x$pca_fit$v)) {
+#   
+#   lds <- loadings(x$pca_fit)
+#   block_matrix(lapply(table_index, function(i) {
+#     ind <- x$block_indices[[i]]
+#     lds[comp,ind]
+#   }))
+# }
 
 #' @export
 singular_values.mfa <- function(x) x$pca_fit$d
+
+#' @export 
+block_index_list.mfa <- function(x) x$block_indices
 
 
 #' @export
@@ -142,8 +144,8 @@ scores.mfa <- function(x) {
 }
 
 #' @export
-loadings <- function(x) {
-  loadings.genpca(x$pca_fit)
+loadings.mfa <- function(x) {
+  loadings(x$pca_fit)
 }
 
 
@@ -236,7 +238,6 @@ procrusteanize.mfa <- function(x, ncomp=2) {
 ## project from existing table
 #' @export
 predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
-  type <- match.arg(type)
   assert_that(is.matrix(newdata))
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   
@@ -259,10 +260,10 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
     Xp <- if (pre_process) {
       x$reprocess(newdata, table_index)
     } else {
-      newdata[, ind]
+      newdata
     }
-    
-    fscores <- project(x$pca_fit, Xp, ncomp=ncomp) * x$ntables
+
+    fscores <- project(x$pca_fit, Xp, ncomp=ncomp, subind=ind) * x$ntables
 
   }
   
