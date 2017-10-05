@@ -76,6 +76,7 @@ eigen_values <- function(x) UseMethod("eigen_values")
 #' @export
 partial_scores <- function(x, ...) UseMethod("partial_scores")
 
+#' @export
 contributions <- function(x, ...) UseMethod("contributions")
 
 #' @export
@@ -103,4 +104,9 @@ block_lengths <- function(object) UseMethod("block_lengths")
 
 #' @export
 block_index_list <- function(object) UseMethod("block_index_list")
+
+
+#' @export
+project_copy <- function(x, ...) UseMethod("project_copy")
+
 
