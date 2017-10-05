@@ -23,8 +23,6 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   Xl <- lapply(as.list(Xr), t)
   bind <- block_index_list(X)
   
-  
-  
   sca_fit <- multiway::sca(Xl, nfac=ncomp, type=type, ...)
   
   Dmat <- do.call(rbind, sca_fit$D)
@@ -34,7 +32,7 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   
   v <- sweep(Dmat, 2, vscale, "/")
   u <- sca_fit$B / sqrt(nrow(X))
-  d <- vscale * sqrt(5)
+  d <- vscale * sqrt(nrow(X))
   
   reprocess <- function(newdat, table_index) {
     prep <- attr(X, "pre_process")
@@ -56,16 +54,15 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
     v=v,
     d=d,
     ncomp=length(d),
-    scores= t(t(sres$u) * sres$d),
+    scores= t(t(u) * d),
     rank_k=rank_k,
     block_indices=bind,
     ntables=length(block_lengths(X)),
     is_reduced=is_reduced)
   
-  class(ret) <- c("sca", "list")
+  class(ret) <- c("sca", "multiblock", "list")
   ret  
 }
-
 
 
 project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, 
@@ -84,13 +81,13 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
     newdata <- list(newdata)
   }
   
-  #browser()
+
   ## project new data-point(s)
   res <- lapply(1:length(table_index), function(i) {
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
     ind <- x$block_indices[[tbind]]
-    x$ntables *  newdata[[i]] %*% x$v[ind,] 
+    x$ntables *  xnewdat %*% x$v[ind,1:ncomp] 
       
   })
   
@@ -111,6 +108,10 @@ scores.sca <- function(x) {
 loadings.sca <- function(x) {
   x$v
 }
+
+#' @export 
+block_index_list.sca <- function(x) x$block_indices
+
 
 #' @export
 ncomp.sca <- function(x) length(x$d)
@@ -161,15 +162,11 @@ predict.sca <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
       project(x, Xp, ncomp=ncomp, table_index=i) 
     }))
   } else if (length(table_index) == 1) {
+    
     ind <- x$block_indices[[table_index]]
+    assert_that(length(ind) == ncol(newdata))
     
-    Xp <- if (pre_process) {
-      x$reprocess(newdata, table_index)
-    } else {
-      newdata[, ind]
-    }
-    
-    fscores <- project(x, Xp, ncomp=ncomp, table_index=table_index) 
+    fscores <- project(x, newdata, ncomp=ncomp, table_index=table_index) 
     
   }
   
