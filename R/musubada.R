@@ -161,7 +161,6 @@ singular_values.musu_bada <- function(x) {
 }
 
 
-project_copy <- function(x, ...) UseMethod("project_copy")
 
 # project_copy.musu_bada <- function(x, Ylist, Xlist) {
 #   ## reduce but no centering or scaling
