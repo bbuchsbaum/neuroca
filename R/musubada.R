@@ -122,9 +122,9 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     mfa_fit=mfa_fit,
     center=center,
     scale=scale,
-    ncomp=ncomp,
+    ncomp=mfa_fit$ncomp,
     block_indices=mfa_fit$block_indices,
-    alpha=alpha,
+    alpha=mfa_fit$alpha,
     normalization=mfa_fit$normalization,
     refit=refit,
     table_names=table_names,
@@ -212,7 +212,7 @@ supplementary_loadings.musu_bada <- function(x, suptab, ncomp=x$ncomp) {
 #' @export
 loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$v)) {
   do.call(cbind, lapply(table_index, function(i) {
-    ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
+    ind <- x$block_indices[[i]]
     1/x$alpha[i] * x$pca_fit$v[ind, comp,drop=FALSE]
   }))
 }
@@ -290,13 +290,13 @@ project.musu_bada <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables
 predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
                                     ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
   type <- match.arg(type)
-  
+
   fscores <- predict(x$mfa_fit, newdata, ncomp=ncomp, table_index=table_index, pre_process=pre_process)
   
   if (type == "scores") {
     fscores
   } else {
-    scorepred(fscores, scores(x), type=type, ncomp=ncomp)
+    scorepred(as.matrix(fscores), scores(x), type=type, ncomp=ncomp)
   }
   
 }
@@ -414,9 +414,8 @@ procrusteanize.musu_bada <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   
   res <- lapply(1:length(x$Xlist), function(i) {
-    xp <- project(x, x$Xlist[[i]], ncomp=ncomp, table_index=i)
-    browser()
-    pres <- vegan::procrustes(F, xp)
+    xp <- x$Xlist[[i]] * x$alpha[i]
+    pres <- my_procrustes(F, xp)
     list(H=pres$rotation,
          scalef=pres$scale)
   })
@@ -448,20 +447,22 @@ predict.procrusteanized_musu_bada <- function(x, newdata, type=c("class", "prob"
       } else {
         newdata[, ind[1]:ind[2]]
       }
+      
+     
       fscores <- (Xp * mf$alpha[i] * x$rot_matrices[[i]]$scalef) %*% x$rot_matrices[[i]]$H
     
       }))
   } else if (length(table_index) == 1) {
     
-    ind <- mf$blockIndices[table_index,]
+    ind <- mf$block_indices[[table_index]]
     
     Xp <- if (pre_process) {
       mf$reprocess(newdata, table_index)
     } else {
-      newdata[, ind[1]:ind[2]]
+      newdata[, ind]
     }
 
-    (Xp * mf$alpha[table_index] * x$rot_matrices[[table_index]]$scalef) %*% x$rot_matrices[[table_index]]$H
+    (Xp * x$rot_matrices[[table_index]]$scalef) %*% x$rot_matrices[[table_index]]$H
     
     
   }
@@ -472,6 +473,50 @@ predict.procrusteanized_musu_bada <- function(x, newdata, type=c("class", "prob"
     scorepred(fscores[, 1:ncomp], mf$scores, type=type, ncomp=ncomp)
   }
   
+}
+
+
+my_procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE, scores = "sites", 
+          ...) 
+{
+
+  if (nrow(X) != nrow(Y)) 
+    stop("Matrices have different number of rows: ", nrow(X), 
+         " and ", nrow(Y))
+  if (ncol(X) < ncol(Y)) {
+    warning("X has fewer axes than Y: X adjusted to comform Y\n")
+    addcols <- ncol(Y) - ncol(X)
+    for (i in 1:addcols) X <- cbind(X, 0)
+  }
+  ctrace <- function(MAT) sum(MAT^2)
+  c <- 1
+  if (symmetric) {
+    X <- scale(X, scale = FALSE)
+    Y <- scale(Y, scale = FALSE)
+    X <- X/sqrt(ctrace(X))
+    Y <- Y/sqrt(ctrace(Y))
+  }
+  xmean <- apply(X, 2, mean)
+  ymean <- apply(Y, 2, mean)
+  if (!symmetric) {
+    X <- scale(X, scale = FALSE)
+    Y <- scale(Y, scale = FALSE)
+  }
+  XY <- crossprod(X, Y)
+  sol <- svd(XY)
+  A <- sol$v %*% t(sol$u)
+  if (scale) {
+    c <- sum(sol$d)/ctrace(Y)
+  }
+  Yrot <- c * Y %*% A
+  b <- xmean - c * ymean %*% A
+  R2 <- ctrace(X) + c * c * ctrace(Y) - 2 * c * sum(sol$d)
+  reslt <- list(Yrot = Yrot, X = X, ss = R2, rotation = A, 
+                translation = b, scale = c, xmean = xmean, symmetric = symmetric, 
+                call = match.call())
+  reslt$svd <- sol
+  class(reslt) <- "procrustes"
+  reslt
 }
   
 

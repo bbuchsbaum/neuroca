@@ -10,7 +10,7 @@ zerostr <- function(vals) {
 
 
 alldat <- readRDS("/Users/bbuchsbaum/analysis/hyper/ventral_surface/ROI_11121_alldat.RDS")
-
+sids <- sapply(alldat$vdat, function(x) x$sid)
 vmatlist <- lapply(alldat$vdat, function(x) x$mat)
 ndatlist <- lapply(alldat$ndat, function(x) x$mat)
 idatlist <- lapply(alldat$idat, function(x) x)
@@ -18,25 +18,47 @@ idatlist <- lapply(alldat$idat, function(x) x)
 bothmat <- do.call(cbind, lapply(1:length(vmatlist), function(i) rbind(vmatlist[[i]], ndatlist[[i]])))
 group <- sapply(vmatlist, ncol)
 
-bothmat_blocked <- to_block_matrix(bothmat, group)
-
-
-both_imp <- impute_mfa(bothmat_blocked, ncomp=25, normalization="MFA")
-#both_imp <- imputeMFA(as.data.frame(bothmat), group, ncp=10, method="EM", maxiter=100, threshold = 1e-05)
-#both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
+#bothmat_blocked <- to_block_matrix(bothmat, group)
+#both_imp <- impute_mfa(bothmat_blocked, ncomp=25, normalization="MFA")
+both_imp <- imputeMFA(as.data.frame(bothmat), group, ncp=12, method="Regularized", maxiter=100, threshold = 1e-05)
+both_mat <- to_block_matrix(as.matrix(both_imp$completeObs), group)
 #both_mat <- to_block_matrix(both_imp, group)
 
-sres <- sca(both_imp, ncomp=12, type="sca-pf2")
 
 both_xlist <- as.list(both_mat)
 both_xlist <- lapply(both_xlist, function(x) t(scale(t(x))))
 
 Y <- factor(c(zerostr(1:nrow(vmatlist[[1]])), as.character(alldat$ndat[[1]]$design$label)))
-mres <- musu_bada(Y, both_xlist, ncomp=12, normalization="MFA")
-proc_mres <- procrusteanize.musu_bada(mres, ncomp=12)
+
+mres1 <- musu_bada(Y, both_xlist, ncomp=12, normalization="MFA")
+mres2 <- procrusteanize.musu_bada(mres1, ncomp=12)
+mres3 <-  musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="MFA")
+mres4 <- procrusteanize.musu_bada(mres3, ncomp=12)
+mres5 <- musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="None")
+mres6 <- musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="RV")
+
+sres1 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-p")
+sres2 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-ind")
+sres3 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-pf2")
+sres4 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-ecp")
 
 
-project_musu <- function(mfit, idatlist) {
+
+get_predictions <- function(fit, Xim, nback_ind, nc,i) {
+
+  if (class(fit)[1] == "sca") {
+    pred <- predict(fit, Xim, ncomp=nc, table_index=i)[[1]]
+    cpred <- scorepred(pred, scores(fit), type="cosine")
+    cpred[,nback_ind]
+  } else {
+    
+    cpred <- predict(fit, Xim, type="cosine", ncomp=nc, table_index=i)
+    cpred <- cpred[,nback_ind]
+  }
+}
+
+
+do_projection <- function(mfit, idatlist, nc=6) {
   nback_ind <- 274:453
   
   tvals <- sort(unique(idatlist[[1]]$design$time))
@@ -46,21 +68,19 @@ project_musu <- function(mfit, idatlist) {
   
     pres_cos <- lapply(1:length(Xim), function(i) {
       print(i)
-      pred <- predict(mfit, Xim[[i]], type="cosine", ncomp=ncomp(mfit), table_index=i)
-      pred <- pred[,nback_ind]
-  
-    
+      cpred <- get_predictions(mfit, Xim[[i]], nback_ind, nc, i)
+      
       des <- subset(idatlist[[i]]$design, time==tvals[tind])
       lver <- des$LabelVersion
-      ind <- match(as.character(lver), mres$Y[[1]][nback_ind])
+      ind <- match(as.character(lver), Y[nback_ind])
   
-      react <- pred[cbind(1:length(lver), ind)]
+      react <- cpred[cbind(1:length(lver), ind)]
     
       other_version <- ifelse(des$version == 1, 2, 1)
       other_label <- paste0(des$label, "_", other_version)
-      ind_other <- match(as.character(other_label), mfit$musufit$Y[[1]][nback_ind])
+      ind_other <- match(as.character(other_label), Y[nback_ind])
     
-      react_other <- pred[cbind(1:length(lver), ind_other)]
+      react_other <- cpred[cbind(1:length(lver), ind_other)]
     
     
       dfx1 <- do.call(rbind, replicate(3, data.frame(time = tvals[tind],
@@ -81,9 +101,54 @@ project_musu <- function(mfit, idatlist) {
   }))
 }
 
-pres_cos = project_musu(proc_mres, idatlist)
+allfits <- list(mres1, mres3, mres4, sres2, sres3, sres4)
+names(allfits) <- c("mfa", "mfa-scaled", "pmfa-scaled", "sca-ind", "sca-pf2", "sca-ecp")
+
+pres_cos <- lapply(1:length(allfits), function(i) {
+  pres_cos = do_projection(allfits[[i]], idatlist, nc=8)
+  pres_cos$model <- names(allfits)[i]
+  pres_cos
+})
+
+pres_cos <- do.call(rbind, pres_cos)
+
+pres_cos_comp <- do.call(rbind, lapply(2:12, function(i) {
+  pres_cos = do_projection(allfits[[4]], idatlist, nc=i)
+  pres_cos$model <- names(allfits)[4]
+  pres_cos$ncomp <- i
+  pres_cos
+}))
+
 library(dplyr)
 library(ggplot2)
+
+reac_by_time_model <- pres_cos %>% group_by(time, type, model) %>% summarize(react=mean(react, na.rm=TRUE))
+reac_by_acc_model <- pres_cos %>% group_by(time, acc, type,model) %>% summarize(react=mean(react, na.rm=TRUE))
+
+qplot(time, react, colour=model, data=subset(reac_by_time_model), colour=model, geom=c("point", "line")) + facet_wrap( ~ type)
+qplot(time, react, colour=factor(acc), data=subset(reac_by_acc_model,type=="react"), geom=c("point", "line")) + facet_wrap( ~ model)
+
+reac_by_time_comp <- pres_cos_comp %>% group_by(time, type, ncomp) %>% summarize(react=mean(react, na.rm=TRUE))
+reac_by_acc_comp <- pres_cos_comp %>% group_by(time, acc, type,ncomp) %>% summarize(react=mean(react, na.rm=TRUE))
+reac_by_viv_comp <- pres_cos_comp %>% filter(acc==1) %>% group_by(sid) %>% mutate(qvivid=ntile(zvivid, 4)) %>% ungroup() %>% group_by(time, qvivid, type,ncomp) %>% 
+  summarize(react=mean(react, na.rm=TRUE))
+
+reac_by_cond_comp <- pres_cos_comp %>%  group_by(time, cond, type,ncomp) %>% summarize(react=mean(react, na.rm=TRUE)) 
+reac_by_conf_comp <- pres_cos_comp %>%  group_by(sid) %>% mutate(qconf=ntile(zconf, 4)) %>% ungroup() %>% group_by(time, qconf, type,ncomp) %>% 
+  summarize(react=mean(react, na.rm=TRUE))
+
+
+
+qplot(time, react, colour=factor(ncomp), data=subset(reac_by_time_comp), colour=model, geom=c("point", "line")) + facet_wrap( ~ type)
+qplot(time, react, colour=factor(acc), data=subset(reac_by_acc_comp,type=="react"), geom=c("point", "line")) + facet_wrap( ~ ncomp)
+qplot(time, react, colour=factor(qvivid), data=subset(reac_by_viv_comp,type=="react" & !is.na(qvivid)), geom=c("point", "line")) + facet_wrap( ~ ncomp)
+qplot(time, react, colour=factor(qconf), data=subset(reac_by_conf_comp,type=="react" & !is.na(qconf)), geom=c("point", "line")) + facet_wrap( ~ ncomp)
+
+
+qplot(time, react, colour=factor(cond), data=subset(reac_by_cond_comp, type=="react_diff"), geom=c("point", "line")) + facet_wrap(~ ncomp)
+
+
+
 
 
 # 
