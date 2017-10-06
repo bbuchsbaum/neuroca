@@ -177,9 +177,7 @@ rbind.block_matrix <- function(...) {
   res <- lapply(1:nb[1], function(bnum) {
     do.call(rbind, lapply(mlist, function(x) get_block(x, bnum)))
   })
-  
-  
-  
+
   block_matrix(res)
 }
 
@@ -211,7 +209,6 @@ reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   
   assert_that(length(k) == nblocks(x))
   
-
   pcres <- lapply(1:nblocks(x), function(i) {
     print(i)
     xb <- get_block(x, i)
