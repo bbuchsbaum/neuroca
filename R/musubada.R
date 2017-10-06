@@ -157,7 +157,7 @@ permute_refit.musu_bada <- function(x) {
 
 #' @export
 singular_values.musu_bada <- function(x) {
-  x$mfa_fit$pca_fit
+  x$mfa_fit$pca_fit$d
 }
 
 
