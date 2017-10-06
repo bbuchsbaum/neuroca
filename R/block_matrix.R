@@ -132,7 +132,7 @@ print.block_matrix <- function(object) {
 #' @export
 #' @param x the object to retrive the block of variables from.
 #' @param i the index of the block.
-get_block <- function (x, i) { UseMethod("get_block") }
+get_block <- function (x, i,...) { UseMethod("get_block") }
 
 
 #' @export
@@ -195,7 +195,8 @@ block_apply.block_matrix <- function(x, f) {
 #' @export
 names.block_matrix <- function(x) attr(x, "block_names")
 
-
+#' @export
+is.block_matrix <- function(x) { inherits(x, "block_matrix") }
 
 
 #' @export
