@@ -60,7 +60,6 @@ supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
 #' @export
 supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
-
 #' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
 

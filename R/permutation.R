@@ -59,6 +59,15 @@ permutation.musu_asca <- function(x, nperms=100, threshold=.05, ncomp=1, verbose
   res
 }
 
+
+permutation.sca <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+}
+
+permutation.mfa <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+}
+
 permutation.musu_bada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
   permutation_(x,nperms,threshold, ncomp, verbose, seed)
 }
