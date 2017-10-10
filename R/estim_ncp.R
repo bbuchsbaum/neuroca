@@ -6,7 +6,7 @@
 #' @param ncp.max
 #' @param scale
 #' @export
-fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=FALSE) {
+fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, center=FALSE, scale=FALSE) {
   
   p=ncol(X)
   n=nrow(X)
@@ -18,11 +18,11 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=FALSE) {
   
   crit <- NULL
   
-  X <- scale(X,scale)
+  X <- scale(X,center, scale)
   
-  if (ncp.min==0)  crit0 = mean(X^2, na.rm = TRUE)*(n*p)/(p*(n-1))
+  crit0 <- mean(X^2, na.rm = TRUE)*(n*p)/(p*(n-1))
   
-  rr <- svd(X)
+  rr <- RSpectra::svds(X, ncp.max)
   
   chash <- list()
   chash[["0"]] <- crit0
@@ -60,6 +60,8 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=FALSE) {
     cand <- sort(unique(round(c(seq(ncp.min, ncp.max, by=sqrt(ncp.max)), ncp.max))))
   }
   
+  
+  
   if (length(cand) < 10) {
     for (i in cand) {
       if (i == 0) {
@@ -67,9 +69,15 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, scale=FALSE) {
       }
       chash[[as.character(i)]] <- compute_gcv(i)
     }
+    
+    cnames <- names(chash)
+    
+    opt <- as.integer(cnames[which.min(unlist(chash))])
+
   } else {
     
     while (TRUE) {
+     
       crit <- run_gcv(cand)
       wmin <- which.min(crit[,2])
       opt <-crit[wmin,1]
