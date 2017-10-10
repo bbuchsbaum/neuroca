@@ -3,6 +3,7 @@
 nblocks.multiblock <- function(x) length(block_index_list(x))
 
 
+
 # predict.multiblock <- function(x, newdata, ncomp=ncomp(x), table_index=1:nblocks(x), pre_process=TRUE) {
 #   assert_that(is.matrix(newdata))
 #   assert_that(length(table_index) == 1 || length(table_index) == nblocks(x))
