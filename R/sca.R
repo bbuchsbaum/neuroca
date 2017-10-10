@@ -45,16 +45,15 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
     newdat
   }
   
+  fit <- pseudo_pca(u, v, d)
+  
   ret <- list(
     sca_fit=sca_fit,
+    projector=fit,
     reprocess=reprocess,
     center=center,
     scale=scale,
-    u=u,
-    v=v,
-    d=d,
     ncomp=length(d),
-    scores= t(t(u) * d),
     rank_k=rank_k,
     block_indices=bind,
     ntables=length(block_lengths(X)),
@@ -87,7 +86,7 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
     ind <- x$block_indices[[tbind]]
-    x$ntables *  xnewdat %*% x$v[ind,1:ncomp] 
+    x$ntables *  project(x$fit, xnewdat, 1:ncomp) 
       
   })
   
@@ -96,17 +95,17 @@ project.sca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE,
 } 
 
 #' @export
-singular_values.sca <- function(x) x$d
+singular_values.sca <- function(x) x$fit$d
 
 
 #' @export
 scores.sca <- function(x) {
-  x$scores
+  x$fit$scores
 }
 
 #' @export
 loadings.sca <- function(x) {
-  x$v
+  x$fit$v
 }
 
 #' @export 
@@ -125,7 +124,7 @@ reconstruct.sca <- function(x, ncomp=x$ncomp) {
 
 #' @export
 contributions.sca <- function(x, type=c("column", "row", "table")) {
-  contr <- contributions(x$pca_fit)
+  contr <- contributions(x$fit)
   type <- match.arg(type)
   
   if (type == "table") {
@@ -137,9 +136,9 @@ contributions.sca <- function(x, type=c("column", "row", "table")) {
     }))
     
   } else if (type == "row") {
-    contributions(x$pca_fit, type="row")
+    contributions(x$fit, type="row")
   } else {
-    contributions(x$pca_fit, type="column")
+    contributions(x$fit, type="column")
   }
   
 }

@@ -51,18 +51,25 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   bind <- block_index_list(X)
   
-  reprocess <- function(newdat, table_index) {
+  reprocess <- function(newdat, table_index=NULL) {
     ## given a new observation(s), pre-process it in the same way the original observations were processed
     
     prep <- attr(X, "pre_process")
-    newdat <- prep(newdat, bind[[table_index]])
     
-    if (is_reduced) {
-      newdat <- project(reducer, newdat, table_index)
+    newdat <- if (is.null(table_index)) {
+      prep(newdata)
+    } else {
+      prep(newdat, bind[[table_index]])
     }
     
-    newdat
-    
+    if (is_reduced && !is.null(table_index)) {
+      project(reducer, newdat, table_index)
+    } else if (is_reduced & is.null(table_index)) {
+      project(reducer, newdat)
+    } else {
+      newdat
+    }
+
   }
   
   refit <- function(.X, .ncomp=ncomp) { 
@@ -82,28 +89,20 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   A <- rep(alpha, block_lengths(Xr))
   
-  pca_fit <- genpca(unclass(Xr), 
+  fit <- genpca(unclass(Xr), 
                     A=A, 
                     ncomp=ncomp, 
                     center=FALSE, 
                     scale=FALSE)
   
   
-  ncomp <- length(pca_fit$d)
-  
-  
-  sc <- pca_fit$scores
-  row.names(sc) <- row.names(X)
-  
   result <- list(
     X=X,
     Xr=Xr,
-    scores=sc,
     ntables=nblocks(X),
-    pca_fit=pca_fit,
+    fit=fit,
     center=center,
     scale=scale,
-    ncomp=ncomp,
     block_indices=bind,
     alpha=alpha,
     normalization=normalization,
@@ -120,40 +119,32 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   result
 }
 
-#' @export
-# loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), 
-#                                comp=1:ncol(x$pca_fit$v)) {
-#   
-#   lds <- loadings(x$pca_fit)
-#   block_matrix(lapply(table_index, function(i) {
-#     ind <- x$block_indices[[i]]
-#     lds[comp,ind]
-#   }))
-# }
 
 #' @export
-singular_values.mfa <- function(x) x$pca_fit$d
+singular_values.mfa <- function(x) x$fit$d
 
 #' @export 
 block_index_list.mfa <- function(x) x$block_indices
 
+#' @export
+ncomp.mfa <- function(x) ncomp(x$fit)
 
 #' @export
 scores.mfa <- function(x) {
-  x$scores
+  scores(x$fit)
 }
 
 #' @export
 loadings.mfa <- function(x) {
-  loadings(x$pca_fit)
+  loadings(x$fit)
 }
 
 
 #' @export
 partial_scores.mfa <- function(x, table_index=x$ntables) {
+  bind <- block_indices(x)
   res <- lapply(table_index, function(i) {
-    ind <- attr(Xr, "block_indices")[i,]
-    x$ntables * project(pca_fit, get_block(Xr, i), subind=ind[1]:ind[2])
+    x$ntables * project(x$fit, get_block(Xr, i), subind=bind[[i]])
   })
   
   names(res) <- paste0("Block_", table_index)
@@ -161,18 +152,15 @@ partial_scores.mfa <- function(x, table_index=x$ntables) {
 }
 
 project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index=1:x$ntables) {
-  if (length(table_index) > 1) {
-    assert_that(is.list(newdata) && length(newdata) == length(table_index))
-  }
-  
   if (is.vector(newdata)) {
-    assert_that(length(table_index) == 1)
-    newdata <- list(matrix(newdata, 1, length(newdata)))
+    newdata <- matrix(newdata, ncol=length(newdata))
   }
   
+  assert_that(is.matrix(newdata))
+  if (length(table_index) == x$ntables) {
+    
   if (is.matrix(newdata)) {
-    assert_that(length(table_index) == 1)
-    newdata <- list(newdata)
+    assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   }
   
   ## project new data-point(s)
@@ -180,7 +168,7 @@ project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index
     tbind <- table_index[i]
     xnewdat <- x$reprocess(newdata[[i]], tbind)
    
-    x$ntables * project(x$pca_fit, xnewdat, 
+    x$ntables * project(x$fit, xnewdat, 
                         ncomp=ncomp, subind=x$block_indices[[tbind]])
    
   })
@@ -190,14 +178,14 @@ project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index
 } 
 
 #' @export
-reconstruct.mfa <- function(x, ncomp=x$ncomp) {
-  recon <- reconstruct(x$pca_fit, ncomp)
+reconstruct.mfa <- function(x, comp=1:x$ncomp) {
+  recon <- reconstruct(x$fit, comp)
 }
 
 
 #' @export
 contributions.mfa <- function(x, type=c("column", "row", "table")) {
-  contr <- contributions(x$pca_fit)
+  contr <- contributions(x$fit)
   type <- match.arg(type)
   
   if (type == "table") {
@@ -209,9 +197,9 @@ contributions.mfa <- function(x, type=c("column", "row", "table")) {
     }))
       
   } else if (type == "row") {
-    contributions(x$pca_fit, type="row")
+    contributions(x$fit, type="row")
   } else {
-    contributions(x$pca_fit, type="column")
+    contributions(x$fit, type="column")
   }
   
 }
@@ -252,7 +240,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
         newdata[, ind]
       }
       
-      project(x$pca_fit, Xp, ncomp=ncomp) * x$ntables
+      project(x$fit, Xp, ncomp=ncomp) * x$ntables
     }))
   } else if (length(table_index) == 1) {
     ind <- x$block_indices[[table_index]]
@@ -263,7 +251,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
       newdata
     }
 
-    fscores <- project(x$pca_fit, Xp, ncomp=ncomp, subind=ind) * x$ntables
+    fscores <- project(x$fit, Xp, ncomp=ncomp, subind=ind) * x$ntables
 
   }
   

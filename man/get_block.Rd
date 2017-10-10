@@ -4,7 +4,7 @@
 \alias{get_block}
 \title{get_block}
 \usage{
-get_block(x, i)
+get_block(x, i, ...)
 }
 \arguments{
 \item{x}{the object to retrive the block of variables from.}
@@ -14,3 +14,4 @@ get_block(x, i)
 \description{
 get_block
 }
+

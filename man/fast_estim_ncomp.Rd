@@ -9,3 +9,4 @@ fast_estim_ncomp(X, ncp.min = 0, ncp.max = NULL, scale = FALSE)
 \description{
 fast_estim_ncomp
 }
+

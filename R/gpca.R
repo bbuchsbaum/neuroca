@@ -13,9 +13,10 @@
 #' @param center whether to center the columns
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
-#' @importFRom Matrix sparseMatrix
+#' @importFrom Matrix sparseMatrix
 #' @export
-genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), center=FALSE, scale=FALSE) {
+genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
+                   center=TRUE, scale=FALSE) {
   
 
   if (is.vector(A)) {
@@ -50,6 +51,7 @@ genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), cen
   }
   
   scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
+  row.names(scores) <- row.names(X)
   #norm_loadings <- t(t(as.matrix(svdfit$v)) * svdfit$d)
   
   ret <- list(v=svdfit$v, 
@@ -63,7 +65,7 @@ genpca <- function(X, A=rep(1:ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), cen
               pre_process=attr(X, "pre_process"), 
               reverse_pre_process=attr(X, "reverse"))
 
-  class(ret) <- c("genpca", "list")
+  class(ret) <- c("genpca", "projector", "list")
   ret
   
 }
@@ -78,37 +80,19 @@ project_xav <- function(X, A, V) {
   
   
   
-predict.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE) {
+predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   Xsup <- if (pre_process) {
     x$pre_process(newdata)
   } else {
     newdata
   }
   
-  project_xav(Xsup, x$A, x$v[,1:ncomp,drop=FALSE])
+  project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
   
 }
 
-#' @export
-ncomp.genpca <- function(x) {
-  length(x$d)
-}
 
 
-loadings.genpca <- function(x) {
-  x$v
-}
-
-#' @export
-scores.genpca <- function(x) {
-  x$scores
-}
-
-
-#' @export
-reconstruct.genpca <- function(x, ncomp=x$ncomp) {
-  x$reverse_pre_process(x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE]))
-}
 
 #' @export
 contributions.genpca <- function(x, type=c("column", "row")) {
@@ -121,10 +105,17 @@ contributions.genpca <- function(x, type=c("column", "row")) {
   }
 }
 
+#' @export
+singular_values.genpca <- function(x) {
+  x$d
+}
 
-project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=NULL) {
+project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=NULL) {
+  if (is.vector(newdata)) {
+    newdata <- matrix(newdata,nrow=1)
+  }
   if (is.null(subind)) {
-    predict(x, newdata, ncomp, pre_process)
+    predict(x, newdata, comp, pre_process)
   } else {
     assertthat::assert_that(length(subind) == ncol(newdata))
     Xsup <- if (pre_process) {
@@ -132,7 +123,7 @@ project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=N
     } else {
       newdata
     }
-    project_xav(Xsup, x$A[subind,subind], x$v[subind,1:ncomp,drop=FALSE])
+    project_xav(Xsup, x$A[subind,subind], x$v[subind,comp,drop=FALSE])
   }
 }
 
@@ -140,8 +131,7 @@ project.genpca <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, subind=N
 
 gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
-  
-  
+
   decomp <- eigen(R)
   keep <- which(abs(decomp$values) > 1e-7)
   
@@ -161,7 +151,12 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   XR <- X %*% R
   RnR <- R %*% inmat %*% R
   
-  xtilde.decomp <- RSpectra::eigs_sym(RtinRt, k=k)
+  xtilde.decomp <- if (k == min(n,p)) {
+    eigen(RtinRt)
+  } else {
+    RSpectra::eigs_sym(RtinRt, k=k)
+  }
+
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
   k <- length(keep)
   xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
@@ -205,7 +200,7 @@ truncate.genpca <- function(obj, ncomp) {
                 scores=obj$scores[,1:ncomp], 
                 ncomp=ncomp, svd.method=obj$svd.method, 
                 pre_process=obj$pre_process)
-    class(ret) <- c("pca", "projector", "list")
+    class(ret) <- c("genpca", "projector", "list")
   }
   
   ret

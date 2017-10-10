@@ -1,39 +1,68 @@
 
-
-
+#' scores
+#' 
+#' extract the factor score matrix for a multivariate model
+#' @param ... extra args
+#' @param x the model fit
 #' @export
 scores <- function(x,...) UseMethod("scores")
 
-#' @export
-reduce <- function(x, Y, ...) UseMethod("reduce")
 
+#reduce <- function(x, Y, ...) UseMethod("reduce")
+
+#' loadings
+#' 
+#' extract the loadings matrix (the variable coefficients) for a multivariate model.
+#' @param x the model fit
+#' @param ... extra args
 #' @export
 loadings <- function(x,...) UseMethod("loadings")
 
+#' ncomp get the number of components in the estimated model
+#' 
+#' @param x the model fit
 #' @export
 ncomp <- function(x) UseMethod("ncomp")
 
 #' @export
 correlations <- function(x,...) UseMethod("correlations")
 
+#' cross_validate a model
+#' 
+#' @param the model fit
+#' @param ... extra args
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")
 
 #' @export
 nested_cv <- function(x, ...) UseMethod("nested_cv")
 
+#' bootstrap a model
+#' @param x the model fit
+#' @param nboot the number of bootstrap resamples
+#' @param ... extra args
 #' @export
-bootstrap <- function(x, niter, ...) UseMethod("bootstrap")
+bootstrap <- function(x, nboot, ...) UseMethod("bootstrap")
 
+#' resample data from a model fit
+#' @param x the model fit
+#' @param ... extra args
 #' @export
 resample <- function(x, ...) UseMethod("resample")
 
+#' block_apply
+#' apply a function to each block of a multi-block data structure.
+#' @param x the multi-block data
+#' @param f the function to apply
+#' @param ... extra args
 #' @export
 block_apply <- function(x, f, ...) UseMethod("block_apply")
 
+#' nblocks
+#' extract the number of blocks in a mutli-block data structure or model
+#' @param x the object
 #' @export
 nblocks <- function(x) UseMethod("nblocks")
-
 
 
 #' @export
@@ -72,35 +101,87 @@ truncate <- function(x, ncomp) UseMethod("truncate")
 #' @export
 eigen_values <- function(x) UseMethod("eigen_values")
 
+#' partial_scores
+#' 
+#' compute the partial scores from a multivariate model using a subset of the input
+#' @param x the model fit
 #' @export
 partial_scores <- function(x, ...) UseMethod("partial_scores")
 
+#' contributions
+#' 
+#' compute the contributions (of observations, variables, tables) to a model. 
+#' @param x the model fit
+#' @param ... extra args
 #' @export
 contributions <- function(x, ...) UseMethod("contributions")
 
+#' reproducibility
+#' 
+#' compute a measure of the reproducibility of a model under replication.
+#' @param x the model fit
+#' @param folds
+#' @param metric
+#' @param ...
 #' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 
+#' reconstruct the original data with some number of components
+#' 
+#' @param x the model fit
+#' @param ncomp the number of components to use
 #' @export
 reconstruct <- function(x, ncomp) UseMethod("reconstruct")
 
+#' get the residuals of a model, after removing the first \code{ncomp} components
+#' 
+#' @param x the model fit
+#' @param ncomp the number of components
+#' @param ... extra arguments
+residuals <- function(x, ncomp, ...) UseMethod("residuals")
+
+#' project
+#' 
+#' project supplementary observations in to the subspace defined by the model
+#' 
+#' @param x the model fit
+#' @param newdata a matrix or vector of new obervations(s)
+#' @param ... extra args
 #' @export
 project <- function(x, newdata, ...) UseMethod("project")
 
+#' project_table
+#' 
+#' project a block of data into the subspace defined by the model.
+#' 
 #' @export
 project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
 #' @export
 procrusteanize <- function(x) UseMethod("procrusteanize")
 
+#' reduce_rank
+#' 
+#' reduce the rank of a data set to from m variables to k components
+#' 
+#' @param x the data matrix with m columns
+#' @param k the desired number of components
 #' @export
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 
 # pre_process <- function(obj, X, ...) UseMethod("pre_process")
 
+#' block_lengths
+#' 
+#' extract the vector of lengths of each block in a multi-block object
+#' @param object the object
 #' @export
 block_lengths <- function(object) UseMethod("block_lengths")
 
+#' block_index_list
+#' 
+#' extract the list of indices associated with each block in a multi-block object
+#' @param object the object
 #' @export
 block_index_list <- function(object) UseMethod("block_index_list")
 
