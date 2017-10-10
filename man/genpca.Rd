@@ -23,3 +23,4 @@ genpca(X, A = rep(1:ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
 \description{
 genpca
 }
+
