@@ -158,6 +158,8 @@ project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index
   
   assert_that(is.matrix(newdata))
   if (length(table_index) == x$ntables) {
+    ##todo?
+  }
     
   if (is.matrix(newdata)) {
     assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
@@ -302,5 +304,6 @@ impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,
   
   Ximp
 }
+
 
   

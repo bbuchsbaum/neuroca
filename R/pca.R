@@ -1,4 +1,50 @@
 
+
+#' shrink_pca
+#' 
+#' adaptive shrinakge pca from the \code{denoiseR} package
+#' 
+#'   
+#' @param X
+#' @param center
+#' @param scale
+#' @export
+shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", "SURE"), ...) {
+  X <- pre_processor(X, center,scale)
+  res <- adashrink(X, method=method, center=FALSE, ...)
+  
+  keep <- res$singval > 1e-06
+  if (sum(keep) == 0) {
+    warning("all singular values are zero, computing rank-1 svd")
+    res <- RSpectra::svds(X, k=1)
+    v <- res$v
+    u <- res$u
+    d <- res$d
+  } else {
+    v=res$low.rank$v[,keep,drop=FALSE]
+    u=res$low.rank$u[,keep,drop=FALSE]
+    d=res$low.rank$d[keep]
+  }
+  
+  ret <- list(v=v, 
+              u=u,
+              d=d,
+              scores=t(t(as.matrix(u)) * d),
+              ncomp=length(d), 
+              pre_process=attr(X, "pre_process"), 
+              reverse_pre_process=attr(X, "reverse_pre_process"))
+  
+  
+  class(ret) <- c("shrink_pca", "pseudo_pca", "projector", "list")
+  ret
+  
+  
+}
+                       
+  
+
+
+
 #' pseudo_pca
 #' 
 #' @export
