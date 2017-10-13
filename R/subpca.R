@@ -1,6 +1,13 @@
 
-
-subpca <- function(X, groups, method=c("gcv", "fixed"), 
+#' @param X
+#' @param groups
+#' @param method
+#' @param ncomp
+#' @param min_k
+#' @param max_k
+#' @param center
+#' @param scale
+blocked_pca <- function(X, groups, method=c("gcv", "shrink", "fixed"), 
                    ncomp=2, min_k=1, max_k=3, 
                    center=TRUE, scale=FALSE, ...) {
   
@@ -38,8 +45,7 @@ subpca <- function(X, groups, method=c("gcv", "fixed"),
   } else {
     lapply(1:nblocks(Xblock), function(i) {
       xb <- get_block(Xblock, i)
-      denoiseR::adashrink(xb)
-      #pca(xb, ncomp=ncomp[i], center=center, scale=scale)
+      shrink_pca(xb, ncomp=ncomp[i], center=center, scale=scale, ...)
     })
   }
   
@@ -57,12 +63,13 @@ subpca <- function(X, groups, method=c("gcv", "fixed"),
       projector(xi,i)
     })
     
+    names(out) <- paste0("G_", 1:ngroup)
     ## need to reorder
     block_matrix_list(out)
   }
   
   ret <- list(x=bm, block_projector=projector, global_projector=global_projector)
-  class(ret) <- c("subpca", "projector", "list")
+  class(ret) <- c("blocked_pca", "projector", "list")
   ret
   
 }
