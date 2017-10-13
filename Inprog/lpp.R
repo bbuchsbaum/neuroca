@@ -91,7 +91,6 @@ lge <- function(X, W, D=NULL, ndim=3, regularize=FALSE, alpha=.1, pca_ratio=1) {
     
     eigvector <- edecomp$vectors[,1:ndim]
     
-      
     if (do_pca) {
        eigvector = eigvector_PCA %*% eigvector
     }
@@ -112,7 +111,9 @@ lsda <- function(X, labels, k=5, sigma=.7, beta=.1, regularize=FALSE, alpha=.1) 
   Wb <- label_matrix(labels, labels, type="d")
   
   if (k > 0) {
-    W <- construct_weight_matrix(X, neighbor_mode = "knn", weight_mode="normalized", k=k, sigma=sigma, labels=labels)
+    W <- construct_weight_matrix(X, neighbor_mode = "knn", 
+                                 weight_mode="normalized", 
+                                 k=k, sigma=sigma, labels=labels)
     Ww <- Ww * W
     Wb <- Wb * W
   }
