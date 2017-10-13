@@ -57,7 +57,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     prep <- attr(X, "pre_process")
     
     newdat <- if (is.null(table_index)) {
-      prep(newdata)
+      prep(newdat)
     } else {
       prep(newdat, bind[[table_index]])
     }
@@ -151,36 +151,33 @@ partial_scores.mfa <- function(x, table_index=x$ntables) {
   res
 }
 
-project.mfa <- function(x, newdata, ncomp=x$ncomp, pre_process=TRUE, table_index=1:x$ntables) {
+project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, table_index=NULL) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
   
   assert_that(is.matrix(newdata))
-  if (length(table_index) == x$ntables) {
-    ##todo?
-  }
-    
-  if (is.matrix(newdata)) {
-    assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
-  }
   
-  ## project new data-point(s)
-  res <- lapply(1:length(table_index), function(i) {
-    tbind <- table_index[i]
-    xnewdat <- x$reprocess(newdata[[i]], tbind)
-   
+  if (is.null(table_index)) {
+    # new data must have same number of columns as original data
+    assert_that(ncol(newdata) == ncol(x$X))
+    xnewdat <- x$reprocess(newdata)
+    project(x$fit, xnewdat, comp=comp)
+  } else if (length(table_index) == 1) {
+    ind <- x$block_indices[[table_index]]
+    assert_that(length(ind) == ncol(newdata))
+    xnewdat <- x$reprocess(newdata, table_index)
     x$ntables * project(x$fit, xnewdat, 
-                        ncomp=ncomp, subind=x$block_indices[[tbind]])
+                        comp=comp, subind=x$block_indices[[table_index]])
    
-  })
+  } else {
+    stop("table_index must have length of 1")
+  }
   
-  names(res) <- paste0("table_", table_index)
-  res
 } 
 
 #' @export
-reconstruct.mfa <- function(x, comp=1:x$ncomp) {
+reconstruct.mfa <- function(x, comp=1:ncomp(x)) {
   recon <- reconstruct(x$fit, comp)
 }
 
@@ -191,7 +188,7 @@ contributions.mfa <- function(x, type=c("column", "row", "table")) {
   type <- match.arg(type)
   
   if (type == "table") {
-    out <- do.call(cbind, lapply(1:x$ncomp, function(i) {
+    out <- do.call(cbind, lapply(1:ncomp(x), function(i) {
       sapply(1:x$ntables, function(j) {
         ind <- x$block_indices[[j]]
         sum(contr[i,ind])
@@ -212,7 +209,7 @@ procrusteanize.mfa <- function(x, ncomp=2) {
   
   res <- lapply(1:length(x$Xlist), function(i) {
     xcur <- get_block(x$Xr[[i]])
-    xp <- project(x, xcur, ncomp=ncomp, table_index=i)
+    xp <- project(x, xcur, comp=1:ncomp, table_index=i)
     pres <- vegan::procrustes(F, xp)
     list(H=pres$rotation,
          scalef=pres$scale)
