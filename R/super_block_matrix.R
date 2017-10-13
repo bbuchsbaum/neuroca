@@ -1,5 +1,5 @@
 
-
+#' @export
 super_block_matrix <- function(bxlist) {
   assertthat::assert_that(all(sapply(bxlist, is.block_matrix)))
   assertthat::assert_that(all(sapply(bxlist, nrow) == nrow(bxlist[[1]])))
@@ -79,7 +79,7 @@ as.matrix.super_block_matrix <- function(x) {
 print.super_block_matrix <- function(object) {
   bind <- attr(object, "block_indices")
   
-  cat("block_matrix", "\n")
+  cat("super_block_matrix", "\n")
   cat("  n super blocks: ", attr(object, "nblock"), "\n")
   cat("  n sub blocks: ", attr(object, "nsub_block"), "\n")
   cat("  nrows: ", dim(object)[1], "\n")
