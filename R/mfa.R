@@ -164,8 +164,9 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, table_ind
     xnewdat <- x$reprocess(newdata)
     project(x$fit, xnewdat, comp=comp)
   } else if (length(table_index) == 1) {
-
-    xnewdat <- x$reprocess(newdata[[i]], table_index)
+    ind <- x$block_indices[[table_index]]
+    assert_that(length(ind) == ncol(newdata))
+    xnewdat <- x$reprocess(newdata, table_index)
     x$ntables * project(x$fit, xnewdat, 
                         comp=comp, subind=x$block_indices[[table_index]])
    
