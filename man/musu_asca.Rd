@@ -23,4 +23,3 @@ musu_asca(Xlist, formula, ncomp = 2, design, center = TRUE, scale = FALSE,
 \description{
 musu_asca
 }
-
