@@ -12,4 +12,3 @@ partial_scores(x, ...)
 \description{
 compute the partial scores from a multivariate model using a subset of the input
 }
-

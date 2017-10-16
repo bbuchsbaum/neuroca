@@ -12,4 +12,3 @@ reproducibility(x, folds, metric, ...)
 \description{
 compute a measure of the reproducibility of a model under replication.
 }
-

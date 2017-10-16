@@ -4,9 +4,9 @@
 \alias{fast_estim_ncomp}
 \title{fast_estim_ncomp}
 \usage{
-fast_estim_ncomp(X, ncp.min = 0, ncp.max = NULL, scale = FALSE)
+fast_estim_ncomp(X, ncp.min = 0, ncp.max = NULL, center = FALSE,
+  scale = FALSE)
 }
 \description{
 fast_estim_ncomp
 }
-
