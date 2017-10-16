@@ -16,4 +16,3 @@ residualize(form, X, design)
 \description{
 residualize
 }
-

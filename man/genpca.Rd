@@ -4,8 +4,8 @@
 \alias{genpca}
 \title{genpca}
 \usage{
-genpca(X, A = rep(1:ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
-  center = FALSE, scale = FALSE)
+genpca(X, A = rep(1, ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
+  center = TRUE, scale = FALSE)
 }
 \arguments{
 \item{X}{the data matrix}
@@ -23,4 +23,3 @@ genpca(X, A = rep(1:ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
 \description{
 genpca
 }
-

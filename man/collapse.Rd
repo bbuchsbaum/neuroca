@@ -16,4 +16,3 @@ collapse(form, X, design)
 \description{
 collapse
 }
-

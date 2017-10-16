@@ -14,4 +14,3 @@ reconstruct(x, ncomp)
 \description{
 reconstruct the original data with some number of components
 }
-

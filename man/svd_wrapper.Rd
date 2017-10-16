@@ -17,4 +17,3 @@ svd_wrapper(X, ncomp = min(dim(X)), method = c("base", "fast", "irlba",
 \description{
 svd_wrapper
 }
-
