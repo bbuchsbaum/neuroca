@@ -457,7 +457,7 @@ get_nback_fscores_video <- function(vdat, ndat, rnum) {
   groups <- rep(1:length(blens), unlist(blens))
   Xl <- as.list(b1)
   Y <- factor(c(zerostr(1:nrow(b1))))
-  mres <- musu_bada(Y, Xl, ncomp=rmax, normalization="None")
+  mres <- mubada(Y, Xl, ncomp=rmax, normalization="None")
   
   fset <- lapply(1:length(ndat), function(i) {
     valid <- which(!is.na(ndat[[i]]$mat[,1]))
@@ -522,7 +522,7 @@ get_musu_preds <- function(rnum) {
   }
   
   
-  mres <- musu_bada(Y, Xl, ncomp=rmax, normalization="None")
+  mres <- mubada(Y, Xl, ncomp=rmax, normalization="None")
   
   pres <- do.call(rbind, lapply(1:16, function(ti) {
     print(ti)

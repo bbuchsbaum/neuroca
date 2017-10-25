@@ -48,7 +48,7 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   fit <- pseudo_pca(u, v, d)
   
   ret <- list(
-    sca_fit=sca_fit,
+    fit=sca_fit,
     projector=fit,
     reprocess=reprocess,
     center=center,

@@ -68,7 +68,7 @@ permutation.mfa <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE,
   permutation_(x,nperms,threshold, ncomp, verbose, seed)
 }
 
-permutation.musu_bada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
+permutation.mubada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
   permutation_(x,nperms,threshold, ncomp, verbose, seed)
 }
 
