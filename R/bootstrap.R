@@ -9,7 +9,7 @@ resampleXY <- function(X, Y) {
   
 }
 
-resample.musu_bada <- function(x) {
+resample.mubada <- function(x) {
   ## check for multiple repetitions per Y levels per block
   Xresam <- x$Xlist
   Yresam <- x$Y
@@ -25,7 +25,7 @@ resample.musu_bada <- function(x) {
 
 
 #' @export
-bootstrap.musu_bada <- function(x, niter, ncomp=x$ncomp) {
+bootstrap.mubada <- function(x, niter, ncomp=x$ncomp) {
   if (ncomp > x$ncomp) {
     ncomp <- x$ncomp
   }
@@ -40,7 +40,7 @@ bootstrap.musu_bada <- function(x, niter, ncomp=x$ncomp) {
   
   do_boot <- function() {
     ## resample original data with replacement, generating a new dataset
-    resam <- resample.musu_bada(x)
+    resam <- resample.mubada(x)
     
     ## calculate barycenters of pre-processed data
     XBary <- do.call(cbind, lapply(1:length(resam$X), function(i) {

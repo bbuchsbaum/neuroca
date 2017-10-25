@@ -239,7 +239,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
         newdata[, ind]
       }
       
-      project(x$fit, Xp, ncomp=ncomp) * x$ntables
+      project(x$fit, Xp, comp=1:ncomp) * x$ntables
     }))
   } else if (length(table_index) == 1) {
     ind <- x$block_indices[[table_index]]
@@ -250,7 +250,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_
       newdata
     }
 
-    fscores <- project(x$fit, Xp, ncomp=ncomp, subind=ind) * x$ntables
+    fscores <- project(x$fit, Xp, comp=1:ncomp, subind=ind) * x$ntables
 
   }
   

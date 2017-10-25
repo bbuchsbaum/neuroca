@@ -30,12 +30,12 @@ both_xlist <- lapply(both_xlist, function(x) t(scale(t(x))))
 
 Y <- factor(c(zerostr(1:nrow(vmatlist[[1]])), as.character(alldat$ndat[[1]]$design$label)))
 
-mres1 <- musu_bada(Y, both_xlist, ncomp=12, normalization="MFA")
-mres2 <- procrusteanize.musu_bada(mres1, ncomp=12)
-mres3 <-  musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="MFA")
-mres4 <- procrusteanize.musu_bada(mres3, ncomp=12)
-mres5 <- musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="None")
-mres6 <- musu_bada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="RV")
+mres1 <- mubada(Y, both_xlist, ncomp=12, normalization="MFA")
+mres2 <- procrusteanize.mubada(mres1, ncomp=12)
+mres3 <-  mubada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="MFA")
+mres4 <- procrusteanize.mubada(mres3, ncomp=12)
+mres5 <- mubada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="None")
+mres6 <- mubada(Y, both_xlist, ncomp=12, scale=TRUE, normalization="RV")
 
 sres1 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-p")
 sres2 <- sca(block_matrix(both_xlist), scale=TRUE, ncomp=12, type="sca-ind")

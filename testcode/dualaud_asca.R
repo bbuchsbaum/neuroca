@@ -98,7 +98,7 @@ run_asca <- function(dlist, rnum,nc=2, deslist, form = ~ vowel * consonant) {
   sapply(1:length(res$results), function(i) {
     print(names(res$results)[i])
     xx <- res$results[[i]]$bada_result
-    class(xx) <- "musu_bada"
+    class(xx) <- "mubada"
     n <- length(levels(xx$Y[[1]]))
     chance <- 1/n
     p <- performance(xx, folds=folds, ncomp=ncomp)
