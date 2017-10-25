@@ -16,7 +16,7 @@ reduce_rows <- function(Xlist, Ylist) {
 
 
 
-#' musu_bada
+#' mubada
 #' 
 #' @importFrom assertthat assert_that 
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
@@ -28,7 +28,7 @@ reduce_rows <- function(Xlist, Ylist) {
 #' @param normalization the type of normalization
 #' @param rank_k use reduce data to k components per block
 #' @export
-musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
+mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
                      normalization=c("MFA", "RV", "None", "RV-MFA"), rank_k=NULL) {
 
 
@@ -37,7 +37,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   assertthat::assert_that(all(sapply(Xlist, is.matrix)))
   
   if (is.null(names(Xlist))) {
-    names(Xlist) <- paste0(1:length(Xlist))
+    names(Xlist) <- paste0("B", 1:length(Xlist))
   }
    
   table_names <- names(Xlist)
@@ -77,7 +77,7 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   blockInd <- blockIndices(Xlist)
   
   refit <- function(.Y, .Xlist, .ncomp=ncomp) { 
-    musu_bada(.Y, .Xlist, .ncomp, center, scale, normalization, rank_k) 
+    mubada(.Y, .Xlist, .ncomp, center, scale, normalization, rank_k) 
   }
   
   permute_refit <- function(.ncomp=ncomp) {
@@ -94,21 +94,16 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     
   }
     
-
-
   conditions <- factor(levels(Yl[[1]]), levels=levels(Yl[[1]]))
   
   ## average categories within block to get barycenters
   Xr <- reduce_rows(Xlist, Yl)
   
-  mfa_fit <- mfa(Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, rank_k=rank_k)
-  ncomp <- length(mfa_fit$ncomp)
+  fit <- mfa(Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, rank_k=rank_k)
+  ncomp <- fit$ncomp
   
+  sc <- scores(fit)
  
-  sc <- scores(mfa_fit)
-  row.names(sc) <- levels(Yl[[1]])
-  
-
   result <- list(
     Xlist=Xlist,
     Y=Yl,
@@ -119,50 +114,50 @@ musu_bada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
    
     ntables=length(Xlist),
     ncond=nrow(Xr),
-    mfa_fit=mfa_fit,
+    fit=fit,
     center=center,
     scale=scale,
-    ncomp=mfa_fit$ncomp,
-    block_indices=mfa_fit$block_indices,
-    alpha=mfa_fit$alpha,
-    normalization=mfa_fit$normalization,
+    ncomp=fit$ncomp,
+    block_indices=fit$block_indices,
+    normalization=normalization,
     refit=refit,
     table_names=table_names,
-    reprocess=mfa_fit$reprocess,
+    reprocess=fit$reprocess,
     rank_k=rank_k,
     permute_refit=permute_refit
   )
   
-  class(result) <- c("musu_bada", "list")
+  class(result) <- c("mubada", "list")
   result
 }
 
 #' @export
-scores.musu_bada <- function(x) {
+scores.mubada <- function(x) {
   x$scores
 }
 
 
 #' @export
-contributions.musu_bada <- function(x, type=c("table", "column", "row")) {
-  contributions(x$mfa_fit, type)
+contributions.mubada <- function(x, type=c("table", "column", "row")) {
+  type <- match.arg(type)
+  contributions(x$fit, type)
 }
 
 
 #' @export
-permute_refit.musu_bada <- function(x) {
+permute_refit.mubada <- function(x) {
   x$permute_refit()
 }
 
 
 #' @export
-singular_values.musu_bada <- function(x) {
-  x$mfa_fit$pca_fit$d
+singular_values.mubada <- function(x) {
+  singular_values(x$fit)
 }
 
 
 
-# project_copy.musu_bada <- function(x, Ylist, Xlist) {
+# project_copy.mubada <- function(x, Ylist, Xlist) {
 #   ## reduce but no centering or scaling
 #   XB <- lapply(1:length(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
 #   
@@ -183,7 +178,7 @@ singular_values.musu_bada <- function(x) {
 
 #' @importFrom assertthat assert_that 
 #' @export
-# project_table.musu_bada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=NULL, table_name = NULL) {
+# project_table.mubada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=NULL, table_name = NULL) {
 #   assert_that(ncomp >= 1)
 #   assert_that(is.factor(supY))
 #   assert_that(length(levels(supY)) == x$ncond)
@@ -202,34 +197,34 @@ singular_values.musu_bada <- function(x) {
 # }
 
 #' @export
-supplementary_loadings.musu_bada <- function(x, suptab, ncomp=x$ncomp) {
+supplementary_loadings.mubada <- function(x, suptab, ncomp=x$ncomp) {
   suptab <- x$reprocess(suptab)
   Qsup <- t(suptab) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$pca_fit$d[1:ncomp])
 }
 
 
 #' @export
-loadings.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$v)) {
-  do.call(cbind, lapply(table_index, function(i) {
-    ind <- x$block_indices[[i]]
-    1/x$alpha[i] * x$pca_fit$v[ind, comp,drop=FALSE]
-  }))
+loadings.mubada <- function(x) {
+  loadings(x$fit)
 }
 
-#' @export
-correlations.musu_bada <- function(x, table_index=1:nrow(x$blockIndices), comp=1:ncol(x$pca_fit$u)) {
-  do.call(cbind, lapply(table_index, function(i) {
-    ind <- x$blockIndices[i,1]:x$blockIndices[i,2]
-    cor(x$XB[,ind,drop=FALSE], x$pca_fit$u[, comp])
-  }))
-}
+# @export
+# correlations.mubada <-
+#   function(x,
+#            table_index = 1:nrow(x$blockIndices),
+#            comp = 1:ncol(x$pca_fit$u)) {
+#     do.call(cbind, lapply(table_index, function(i) {
+#       ind <- x$blockIndices[i, 1]:x$blockIndices[i, 2]
+#       cor(x$XB[, ind, drop = FALSE], x$pca_fit$u[, comp])
+#     }))
+#   }
 
 
 # rename "embed_table"?
 
 #' @export
 #' @importFrom assertthat assert_that
-supplementary_predictor.musu_bada <- function(x, supX, supY, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
+supplementary_predictor.mubada <- function(x, supX, supY, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
                                              ncomp=x$ncomp) {
   assert_that(length(supY) == nrow(supX))
   type <- match.arg(type)
@@ -257,7 +252,7 @@ supplementary_predictor.musu_bada <- function(x, supX, supY, type=c("class", "pr
 
  
 #' @importFrom abind abind
-project.musu_bada <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables) {
+project.mubada <- function(x, newdata, comp=1:x$ncomp, table_index=1:x$ntables) {
  
   # if (is.null(newX)) {
   #   ## project each replication onto the subject's components
@@ -278,7 +273,7 @@ project.musu_bada <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables
   #   
   # } else {
   
-  project(x$mfa_fit, newdata, ncomp=ncomp, table_index=table_index)
+  project(x$fit, newdata, comp=comp, table_index=table_index)
 
 }
   
@@ -286,11 +281,13 @@ project.musu_bada <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables
 
 ## project from existing table
 #' @export
-predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
-                                    ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+predict.mubada <- function(x, newdata, ncomp=x$ncomp, 
+                           table_index=1:x$ntables, pre_process=TRUE,
+                           type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
+  
   type <- match.arg(type)
 
-  fscores <- predict(x$mfa_fit, newdata, ncomp=ncomp, table_index=table_index, pre_process=pre_process)
+  fscores <- predict(x$fit, newdata, ncomp=ncomp, table_index=table_index, pre_process=pre_process)
   
   if (type == "scores") {
     fscores
@@ -302,16 +299,16 @@ predict.musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "cro
 
 
 #' @export
-reconstruct.musu_bada <- function(x, ncomp=x$ncomp) {
-  reconstruct(x$mfa_fit, ncomp=ncomp)
+reconstruct.mubada <- function(x, comp=1:x$ncomp) {
+  reconstruct(x$fit, comp=comp)
 }
 
-reproducibility.musu_bada <- function(x, blocks, nrepeats=5, metric=c("norm-2", "norm-1", "avg_cor")) {
+reproducibility.mubada <- function(x, blocks, nrepeats=5, metric=c("norm-2", "norm-1", "avg_cor")) {
   
   metric <- match.arg(metric)
   
   recon_error <- lapply(1:nrepeats, function(fnum) {
-    message("musu_bada: reproducibility fold: ", fnum)
+    message("mubada: reproducibility fold: ", fnum)
     fidx <- lapply(blocks, function(bind) {
       buniq <- unique(bind)
       bsam <- sample(buniq, length(buniq)/2)
@@ -373,43 +370,72 @@ musu_subset <- function(x, fidx) {
   
 }
 
-performance.musu_bada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "AUC")) {
+performance.mubada <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "AUC")) {
   if (length(folds) == 1) {
     folds <- lapply(1:length(x$Y), function(i) caret::createFolds(x$Y[[i]], folds))
-  } else {
+  } else if (is.list(folds)) {
     ## folds must be a list of blocking variables
     folds <- lapply(folds, function(bind) split(1:length(bind), bind))
+    
+  } else {
+    stop("'folds' variable must be an integer scalar or a list of block ids (one list element per data block)")
   }
   
   ncomp <- min(x$ncomp, ncomp)
   
   yobs <- x$Y
   
-  res <- lapply(seq_along(folds[[1]]), function(fnum) {
-    message("musu_bada: performance fold: ", fnum)
+  predlist <- lapply(seq_along(folds[[1]]), function(fnum) {
+    message("mubada: performance fold: ", fnum)
     fidx <- lapply(folds, "[[", fnum)
+    
+    ## subset the original data
     xsub <- musu_subset(x, lapply(fidx, "*", -1))
     
+    ## refit on susbet
     rfit <- x$refit(xsub$y,xsub$x, ncomp) 
     
+    ## extract test data set
     xsubout <- musu_subset(x, fidx)
     
     preds <- lapply(1:rfit$ntables, function(i) {
-      predict.musu_bada(rfit, xsubout$x[[i]], type="class", ncomp=ncomp, table_index=i)
+      predict.mubada(rfit, xsubout$x[[i]], type=type, ncomp=ncomp, table_index=i)
     })
     
   })
   
-  perf <- lapply(1:x$ntables, function(tind) {
-    p <- unlist(lapply(res, "[[", tind))
-    p == yobs[[tind]][unlist(folds[[tind]])]
-  })
+  pfun <- if (metric == "ACC") {
+    combinedACC
+  } else {
+    combinedAUC
+  }
   
+  if (type == "class") {
+    perf <- lapply(1:x$ntables, function(tind) {
+      ## TODO check this
+      p <- unlist(lapply(predlist, "[[", tind))
+      y <- yobs[[tind]]
+      y_reord <- y[unlist(folds[[tind]])]
+      sum(y_reord == p)/length(p)
+    })
+    
+  } else {
+    perf <- lapply(1:x$ntables, function(tind) {
+      p <- lapply(predlist, "[[", tind)
+      p <- do.call(rbind, p)
+      y <- yobs[[tind]]
+      y_reord <- y[unlist(folds[[tind]])]
+      pfun(p, y_reord)
+    })
+  }
+  
+  names(perf) <- x$table_names
+  perf
   
 }
 
 #' @importFrom vegan procrustes 
-procrusteanize.musu_bada <- function(x, ncomp=2) {
+procrusteanize.mubada <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   
   res <- lapply(1:length(x$Xlist), function(i) {
@@ -420,11 +446,11 @@ procrusteanize.musu_bada <- function(x, ncomp=2) {
   })
   
   ret <- list(rot_matrices=res, ncomp=ncomp, musufit=x)
-  class(ret) <- c("procrusteanized_musu_bada", "list")
+  class(ret) <- c("procrusteanized_mubada", "list")
   ret
 }
 
-predict.procrusteanized_musu_bada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
+predict.procrusteanized_mubada <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
                               ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
   
   

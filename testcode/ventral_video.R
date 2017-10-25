@@ -255,7 +255,7 @@ get_musu_preds <- function(rnum) {
   start <- nrow(b1) + 1
   nback_ind <- start:(start+nrow(b2)-1)
   
-  mres <- musu_bada(Y, Xl, ncomp=rmax, normalization="None")
+  mres <- mubada(Y, Xl, ncomp=rmax, normalization="None")
   ret <- project_musu(mres, bind, rnum, roi_wts[j])
   rm(mres)
   ret
@@ -287,7 +287,7 @@ musu_preds <- lapply(1:length(best_rois), function(j) {
     start <- nrow(b1) + 1
     nback_ind <- start:(start+nrow(b2)-1)
     
-    mres <- musu_bada(Y, Xl, ncomp=rmax, normalization="None")
+    mres <- mubada(Y, Xl, ncomp=rmax, normalization="None")
     ret <- project_musu(mres, bind, rnum, roi_wts[j])
     rm(mres)
     ret
@@ -403,8 +403,8 @@ reac_by_conf <- pres_cos %>% mutate(qconf=ntile(zconf, 4)) %>% filter(!is.na(qco
 
 
 
-## musu_bada on full data set
-mbres <- musu_bada(Y, Xl, ncomp=20, normalization="MFA", rank_k=200)
+## mubada on full data set
+mbres <- mubada(Y, Xl, ncomp=20, normalization="MFA", rank_k=200)
 library(ggrepel)
 df1 <- data.frame(pc1=mbres$scores[nback_ind,1], pc2=mbres$scores[nback_ind,2], pc3=mbres$scores[nback_ind,3], 
                   pc4=mbres$scores[nback_ind,4], pc5=mbres$scores[nback_ind,5], labels=row.names(mbres$scores)[nback_ind])
@@ -418,7 +418,7 @@ ggplot(subset(df1, group==3), aes(pc1,pc2)) +
 ### train on video
 Xl2 <- as.list(matrix_to_block_matrix(Xvideo, groups))
 Y2 <- factor(c(zerostr(1:1092)))
-mbres <- musu_bada(Y2, Xl2, ncomp=200, normalization="MFA", rank_k=200)
+mbres <- mubada(Y2, Xl2, ncomp=200, normalization="MFA", rank_k=200)
 
 ## complete nback
 imp_fit <- softImpute(Xnback, rank.max=50, type="als", trace.it=TRUE)
@@ -474,4 +474,4 @@ Xbm <- matrix_to_block_matrix(Xcomplete, groups)
 Xl <- as.list(Xbm)
 Y <- factor(c(zerostr(1:1092), as.character(ndat[[1]]$design$label)))
 nback_ind <- 1093:(1093+179)
-mbres <- musu_bada(Y, Xl, ncomp=200, normalization="MFA", rank_k=200)
+mbres <- mubada(Y, Xl, ncomp=200, normalization="MFA", rank_k=200)

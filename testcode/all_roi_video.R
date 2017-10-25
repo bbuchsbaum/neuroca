@@ -410,7 +410,7 @@ get_musu_preds <- function(rnum) {
   }
   
   
-  mres <- musu_bada(Y, Xl, ncomp=rmax, normalization="None")
+  mres <- mubada(Y, Xl, ncomp=rmax, normalization="None")
   
   pres <- do.call(rbind, lapply(1:16, function(ti) {
     print(ti)
@@ -547,8 +547,8 @@ qplot(time, react, colour=factor(qconf), data=subset(reac_by_viv_conf, !is.na(qv
 
 
 
-## musu_bada on full data set
-# mbres <- musu_bada(Y, Xl, ncomp=20, normalization="MFA", rank_k=200)
+## mubada on full data set
+# mbres <- mubada(Y, Xl, ncomp=20, normalization="MFA", rank_k=200)
 # library(ggrepel)
 # df1 <- data.frame(pc1=mbres$scores[nback_ind,1], pc2=mbres$scores[nback_ind,2], pc3=mbres$scores[nback_ind,3], 
 #                   pc4=mbres$scores[nback_ind,4], pc5=mbres$scores[nback_ind,5], labels=row.names(mbres$scores)[nback_ind])

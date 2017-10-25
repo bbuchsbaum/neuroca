@@ -171,7 +171,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
       
       Yl <- Yfacl[[i]]
       
-      bres <- musu_bada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
+      bres <- mubada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
       
       list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
     } else {
@@ -191,7 +191,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
    
       Yl <- Yfacl[[i]]
       
-      bres <- musu_bada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
+      bres <- mubada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
       list(G=Gl, Y=Yl, form=form, lower_form = lower_form, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
     }
   })
