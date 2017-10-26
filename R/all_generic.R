@@ -78,6 +78,12 @@ performance <- function(x, yobs, ncomp, folds, metric, ...) UseMethod("performan
 permute_refit <- function(x, ...) UseMethod("permute_refit")
 
 #' @export
+refit <- function(x, ...) UseMethod("refit")
+
+#' @export
+reprocess <- function(x, ...) UseMethod("reprocess")
+
+#' @export
 project_cols <- function(x, ncomp,...) UseMethod("project_cols")
 
 #' @export
@@ -100,6 +106,9 @@ truncate <- function(x, ncomp) UseMethod("truncate")
 
 #' @export
 eigen_values <- function(x) UseMethod("eigen_values")
+
+#' @export 
+subset_rows <- function(x, idx) UseMethod("subset_rows")
 
 #' partial_scores
 #' 
