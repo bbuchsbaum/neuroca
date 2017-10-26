@@ -35,8 +35,10 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   normalization <- match.arg(normalization)
   
+  ## pre-preocess full data matrix
   X <- pre_processor(X, center=center,scale=scale)
   
+  ## if required, compute low-rank matrix
   Xr <- if (!is.null(rank_k)) {
     is_reduced <- TRUE
     reducer <- reduce_rank(X, rank_k)
@@ -47,48 +49,17 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     X
   }
   
+  ## compute nblock normalization factors
   alpha <- normalization_factors(Xr, type=normalization)
   
-  bind <- block_index_list(X)
-  
-  reprocess <- function(newdat, table_index=NULL) {
-    ## given a new observation(s), pre-process it in the same way the original observations were processed
-    
-    prep <- attr(X, "pre_process")
-    
-    newdat <- if (is.null(table_index)) {
-      prep(newdat)
-    } else {
-      prep(newdat, bind[[table_index]])
-    }
-    
-    if (is_reduced && !is.null(table_index)) {
-      project(reducer, newdat, table_index)
-    } else if (is_reduced & is.null(table_index)) {
-      project(reducer, newdat)
-    } else {
-      newdat
-    }
-
-  }
-  
-  refit <- function(.X, .ncomp=ncomp) { 
-    mfa(.X, .ncomp, center=center, scale=scale, normalization=normalization, rank_k=rank_k) 
-  }
-  
-  permute_refit <- function(.ncomp=ncomp) {
-    Xperm <- block_apply(X, function(x) {
-      sidx <- sample(1:nrow(x))
-      x[sidx,]
-    })
-    
-    refit(Xperm, .ncomp)
-    
-    
-  }
-  
+  ## construct vector of nomalization weights expanded over variables per block
   A <- rep(alpha, block_lengths(Xr))
   
+  ## get the block indices 
+  bind <- block_index_list(X)
+
+ 
+  ## compute generalized pca
   fit <- genpca(unclass(Xr), 
                     A=A, 
                     ncomp=ncomp, 
@@ -97,8 +68,11 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   
   result <- list(
+    ## original data matrix
     X=X,
+    ## reduced data matrix (equal to X if no data reduction)
     Xr=Xr,
+    nvars=ncol(X),
     ntables=nblocks(X),
     fit=fit,
     center=center,
@@ -106,13 +80,10 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     block_indices=bind,
     alpha=alpha,
     normalization=normalization,
-    refit=refit,
-    permute_refit=permute_refit,
     table_names=names(X),
-    reprocess=reprocess,
     reduced_rank=rank_k,
     is_reduced=is_reduced,
-    permute_refit=permute_refit
+    reducer=reducer
   )
   
   class(result) <- c("mfa", "multiblock", "list")
@@ -120,87 +91,26 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
 }
 
 
-#' @export
-singular_values.mfa <- function(x) x$fit$d
-
-#' @export 
-block_index_list.mfa <- function(x) x$block_indices
-
-#' @export
-ncomp.mfa <- function(x) ncomp(x$fit)
-
-#' @export
-scores.mfa <- function(x) {
-  scores(x$fit)
+refit.mfa <- function(x, X, ncomp=x$ncomp) { 
+  mfa(X, ncomp, center=x$center, scale=x$scale, normalization=x$normalization, rank_k=x$rank_k) 
 }
 
-#' @export
-loadings.mfa <- function(x) {
-  loadings(x$fit)
-}
-
-
-#' @export
-partial_scores.mfa <- function(x, table_index=x$ntables) {
-  bind <- block_indices(x)
-  res <- lapply(table_index, function(i) {
-    x$ntables * project(x$fit, get_block(Xr, i), subind=bind[[i]])
+permute_refit.mfa <- function(ncomp=x$ncomp) {
+  Xperm <- block_apply(x$X, function(x) {
+    sidx <- sample(1:nrow(x))
+    x[sidx,]
   })
   
-  names(res) <- paste0("Block_", table_index)
-  res
+  refit(x, Xperm, ncomp)
 }
 
-project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, table_index=NULL) {
-  if (is.vector(newdata)) {
-    newdata <- matrix(newdata, ncol=length(newdata))
-  }
-  
-  assert_that(is.matrix(newdata))
-  
-  if (is.null(table_index)) {
-    # new data must have same number of columns as original data
-    assert_that(ncol(newdata) == ncol(x$X))
-    xnewdat <- x$reprocess(newdata)
-    project(x$fit, xnewdat, comp=comp)
-  } else if (length(table_index) == 1) {
-    ind <- x$block_indices[[table_index]]
-    assert_that(length(ind) == ncol(newdata))
-    xnewdat <- x$reprocess(newdata, table_index)
-    x$ntables * project(x$fit, xnewdat, 
-                        comp=comp, subind=x$block_indices[[table_index]])
-   
-  } else {
-    stop("table_index must have length of 1")
-  }
-  
-} 
+
+#' @export
+singular_values.mfa <- function(x) x$fit$d
 
 #' @export
 reconstruct.mfa <- function(x, comp=1:ncomp(x)) {
   recon <- reconstruct(x$fit, comp)
-}
-
-
-#' @export
-contributions.mfa <- function(x, type=c("column", "row", "table")) {
-  contr <- contributions(x$fit)
-  type <- match.arg(type)
-  
-  if (type == "table") {
-    out <- do.call(cbind, lapply(1:ncomp(x), function(i) {
-      sapply(1:x$ntables, function(j) {
-        ind <- x$block_indices[[j]]
-        sum(contr[i,ind])
-      })
-    }))
-      
-  } else if (type == "row") {
-    contributions(x$fit, type="row")
-  } else {
-    contributions(x$fit, type="column")
-  }
-  
 }
 
 #' @importFrom vegan procrustes 
@@ -219,43 +129,6 @@ procrusteanize.mfa <- function(x, ncomp=2) {
   class(ret) <- c("procrusteanized_mfa", "list")
   ret
 }
-
-
-
-## project from existing table
-#' @export
-predict.mfa <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
-  assert_that(is.matrix(newdata))
-  assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
-  
-  fscores <- if (length(table_index) == x$ntables) {
-    assert_that(ncol(newdata) == ncol(x$X))
-    Reduce("+", lapply(table_index, function(i) {
-      ind <- x$block_indices[[i]]
-      
-      Xp <- if (pre_process) {
-        x$reprocess(newdata[, ind], i)
-      } else {
-        newdata[, ind]
-      }
-      
-      project(x$fit, Xp, comp=1:ncomp) * x$ntables
-    }))
-  } else if (length(table_index) == 1) {
-    ind <- x$block_indices[[table_index]]
-    
-    Xp <- if (pre_process) {
-      x$reprocess(newdata, table_index)
-    } else {
-      newdata
-    }
-
-    fscores <- project(x$fit, Xp, comp=1:ncomp, subind=ind) * x$ntables
-
-  }
-  
-}
-
 
 
 #' @export
