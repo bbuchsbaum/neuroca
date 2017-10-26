@@ -14,12 +14,12 @@ project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, ta
   if (is.null(table_index)) {
     # new data must have same number of columns as original data
     assert_that(ncol(newdata) == x$nvars)
-    xnewdat <- x$reprocess(newdata)
+    xnewdat <- reprocess(x, newdata)
     project(x$fit, xnewdat, comp=comp)
   } else if (length(table_index) == 1) {
     ind <- x$block_indices[[table_index]]
     assert_that(length(ind) == ncol(newdata))
-    xnewdat <- x$reprocess(newdata, table_index)
+    xnewdat <- reprocess(x, newdata, table_index)
     x$ntables * project(x$fit, xnewdat, comp=comp, subind=x$block_indices[[table_index]])
     
   } else {
@@ -41,7 +41,7 @@ predict.multiblock <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntable
       ind <- x$block_indices[[i]]
       
       Xp <- if (pre_process) {
-        x$reprocess(newdata[, ind], i)
+        reprocess(x, newdata[, ind], i)
       } else {
         newdata[, ind]
       }
@@ -52,7 +52,7 @@ predict.multiblock <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntable
     ind <- x$block_indices[[table_index]]
     
     Xp <- if (pre_process) {
-      x$reprocess(newdata, table_index)
+      reprocess(x, newdata, table_index)
     } else {
       newdata
     }
@@ -109,7 +109,7 @@ partial_scores.multiblock <- function(x, table_index=1:x$ntables) {
 
 reprocess.multiblock <- function(x, newdat, table_index=NULL) {
   ## given a new observation(s), pre-process it in the same way the original observations were processed
-  
+  #browser()
   prep <- attr(x$X, "pre_process")
   
   newdat <- if (is.null(table_index)) {

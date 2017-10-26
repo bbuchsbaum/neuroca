@@ -38,6 +38,8 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   fit <- pseudo_pca(u, v, d)
   
   ret <- list(
+    X=X,
+    Xr=Xr,
     sca_fit=sca_fit,
     fit=fit,
     center=center,
