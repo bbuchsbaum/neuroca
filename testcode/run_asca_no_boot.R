@@ -150,7 +150,7 @@ run_asca <- function(dlist, rnum,nc=2, deslist, fac = "syllable") {
   folds <- lapply(deslist, "[[", "block")
   Yl <- lapply(deslist, "[[", fac)
   
-  res <- mubada(Xlist, Yl, ncomp=nc, center=TRUE, scale=TRUE, normalization="MFA")
+  res <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-ind") #normalization="MFA")
   attr(res, "indices") <- lapply(Xret, "[[", "indices")
   res
   

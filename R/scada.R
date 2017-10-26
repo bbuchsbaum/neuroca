@@ -21,11 +21,11 @@ scada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,rank_k=NULL,
                   type=c("sca-p","sca-pf2","sca-ind","sca-ecp")) {
 
 
-  normalization <- match.arg(normalization)
+  type <- match.arg(type)
 
   assertthat::assert_that(all(sapply(Xlist, is.matrix)))
   
-  cstruc <- category_structure(Y, Xlist)
+  cstruc <- prep_multiblock_da(Y, Xlist)
   Yl <- cstruc$Yl
   Xlist <- cstruc$Xlist
   conditions <- cstruc$conditions
@@ -38,7 +38,7 @@ scada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,rank_k=NULL,
     Y=Yl,
     Y_reps=Y_reps,
     conditions=conditions,
-    XB=Xr,
+    Xr=Xr,
     scores=scores(fit),
     ntables=length(Xlist),
     ncond=nrow(Xr),
@@ -61,8 +61,8 @@ scada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,rank_k=NULL,
 
 
 #' @export
-refit.scada <- function(x, .Y, .Xlist, .ncomp=ncomp) { 
-  scada(.Y, .Xlist, .ncomp, x$center, x$scale, x$normalization, x$rank_k) 
+refit.scada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
+  scada(Y, Xlist, ncomp=ncomp, center=x$center, scale=x$scale, type=x$type, rank_k=x$rank_k) 
 }
 
 

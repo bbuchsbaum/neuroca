@@ -44,7 +44,7 @@ bootstrap.mubada <- function(x, niter, ncomp=x$ncomp) {
     
     ## calculate barycenters of pre-processed data
     XBary <- do.call(cbind, lapply(1:length(resam$X), function(i) {
-      group_means(resam$Y[[i]], x$reprocess(resam$X[[i]], i))
+      group_means(resam$Y[[i]], reprocess(x, resam$X[[i]], i))
     }))
     
     ## project rows and columns of barycenters

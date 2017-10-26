@@ -73,6 +73,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     ## reduced data matrix (equal to X if no data reduction)
     Xr=Xr,
     nvars=ncol(X),
+    ncomp=ncomp,
     ntables=nblocks(X),
     fit=fit,
     center=center,
