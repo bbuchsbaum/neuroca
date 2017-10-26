@@ -313,7 +313,7 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
     fidx <- lapply(folds, "[[", fnum)
     xsub <- asca_subset(x, lapply(fidx, "*", -1))
     
-    rfit <- x$refit(xsub$x, .design=xsub$design,.ncomp=ncomp) 
+    rfit <- refit(x, xsub$x, .design=xsub$design,.ncomp=ncomp) 
     
     xsubout <- asca_subset(x, fidx)
     

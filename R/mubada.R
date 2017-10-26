@@ -86,7 +86,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     Y=cstruc$Yl,
     Y_reps=cstruc$Y_reps,
     conditions=cstruc$conditions,
-    XB=cstruc$Xr,
+    Xr=cstruc$Xr,
     scores=scores(fit),
    
     ntables=length(cstruc$Xlist),
@@ -106,8 +106,8 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
 }
 
 #' @export
-refit.mubada <- function(x, .Y, .Xlist, .ncomp=ncomp) { 
-  mubada(.Y, .Xlist, .ncomp, x$center, x$scale, x$normalization, x$rank_k) 
+refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
+  mubada(Y, Xlist, ncomp=ncomp, x$center, x$scale, x$normalization, x$rank_k) 
 }
 
 #' @export
@@ -189,7 +189,7 @@ reproducibility.multiblock_da <- function(x, blocks, nrepeats=5, metric=c("norm-
     })
     
     xsub <- subset_rows(x, lapply(fidx, "*", -1))
-    rfit <- x$refit(xsub$y,xsub$x, x$ncomp) 
+    rfit <- refit(x, xsub$y,xsub$x, x$ncomp) 
     xsubout <- subset_rows(x, fidx)
     
     xb <- lapply(1:length(xsubout$x), function(i) {
@@ -262,20 +262,20 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC"
   yobs <- x$Y
   
   predlist <- lapply(seq_along(folds[[1]]), function(fnum) {
-    message("mubada: performance fold: ", fnum)
+    message("performance fold: ", fnum)
     fidx <- lapply(folds, "[[", fnum)
     
     ## subset the original data
     xsub <- subset_rows(x, lapply(fidx, "*", -1))
     
     ## refit on susbet
-    rfit <- x$refit(xsub$y,xsub$x, ncomp) 
+    rfit <- refit(x, xsub$y,xsub$x, ncomp=ncomp) 
     
     ## extract test data set
-    xsubout <- musu_subset(x, fidx)
+    xsubout <- subset_rows(x, fidx)
     
     preds <- lapply(1:rfit$ntables, function(i) {
-      predict.mubada(rfit, xsubout$x[[i]], type=type, ncomp=ncomp, table_index=i)
+      predict(rfit, xsubout$x[[i]], type=type, ncomp=ncomp, table_index=i)
     })
     
   })
