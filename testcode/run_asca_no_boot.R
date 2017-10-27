@@ -19,9 +19,14 @@ combine_mats <- function(l1, l2) {
     
     out <- rbind(d1,d2)
     out$task <- factor(out$task)
+    
     out$block2 <- rep(rep(1:4, each=6), length.out=nrow(out))
     
     mred <- neuroca:::collapse(~ task + vowel + consonant + block2, m3, out)
+    mred$design$syllable <- paste0(mred$design$consonant, mred$design$vowel)
+    mred$design$task_syllable <- paste0(mred$design$task, "_", mred$design$consonant, mred$design$vowel)
+    mred$design$task_vowel <- paste0(mred$design$task, "_", mred$design$vowel)
+    
     mred2 <- residualize(~ task, mred$X, mred$design)
     list(mat=mred2, design=mred$design, roi=l1[[i]]$roi)
     
@@ -149,8 +154,25 @@ run_asca <- function(dlist, rnum,nc=2, deslist, fac = "syllable") {
   Xlist <- lapply(Xret, "[[", "mat")
   folds <- lapply(deslist, "[[", "block")
   Yl <- lapply(deslist, "[[", fac)
+  Yl <- lapply(Yl, as.factor)
   
-  res <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-ind") #normalization="MFA")
+  res1 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-p") #normalization="MFA")
+  res2 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-ind") #normalization="MFA")
+  res3 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-pf2") #normalization="MFA")
+  res4 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, type="sca-ecp") #normalization="MFA")
+  res5 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=FALSE, type="sca-pf2") #normalization="MFA")
+  res6 <- scada(Yl, Xlist, ncomp=nc, center=TRUE, scale=FALSE, type="sca-ind") #normalization="MFA")
+  res7 <- mubada(Yl, Xlist, ncomp=nc, center=TRUE, scale=FALSE, normalization="MFA")
+  res8 <- mubada(Yl, Xlist, ncomp=nc, center=TRUE, scale=FALSE, normalization="RV")
+  res9 <- mubada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, normalization="RV")
+  res10 <- mubada(Yl, Xlist, ncomp=nc, center=TRUE, scale=TRUE, normalization="MFA")
+  res11 <- procrusteanize(res10, ncomp=5)
+  rlist <- list(res1,res2,res3,res4, res5, res6,res7,res8,res9,res10)
+  tstats <- lapply(rlist, function(el) {
+    p <- performance(el, folds=folds, ncomp=nc, type="cosine")
+    t.test(unlist(p))$statistic
+  })
+  
   attr(res, "indices") <- lapply(Xret, "[[", "indices")
   res
   

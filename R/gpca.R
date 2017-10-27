@@ -82,7 +82,7 @@ project_xav <- function(X, A, V) {
   
 predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   Xsup <- if (pre_process) {
-    x$pre_process(newdata)
+    reprocess(x, newdata)
   } else {
     newdata
   }
@@ -111,18 +111,22 @@ singular_values.genpca <- function(x) {
 }
 
 project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=NULL) {
+  
   if (is.vector(newdata)) {
     newdata <- matrix(newdata,nrow=1)
   }
   if (is.null(subind)) {
-    predict(x, newdata, comp, pre_process)
+    Xsup <- if (pre_process) reprocess(x, newdata) else newdata
+    project_xav(Xsup, x$A, x$v)
   } else {
     assertthat::assert_that(length(subind) == ncol(newdata))
     Xsup <- if (pre_process) {
-      x$pre_process(newdata, subind)
+      reprocess(x, newdata, subind)
     } else {
       newdata
     }
+    
+    comp <- comp[which(comp <= x$ncomp)]
     project_xav(Xsup, x$A[subind,subind], x$v[subind,comp,drop=FALSE])
   }
 }

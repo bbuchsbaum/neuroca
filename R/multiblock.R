@@ -14,50 +14,37 @@ project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, ta
   if (is.null(table_index)) {
     # new data must have same number of columns as original data
     assert_that(ncol(newdata) == x$nvars)
-    xnewdat <- reprocess(x, newdata)
+    xnewdat <- if (pre_process) reprocess(x, newdata) else newdata
     project(x$fit, xnewdat, comp=comp)
   } else if (length(table_index) == 1) {
     ind <- x$block_indices[[table_index]]
     assert_that(length(ind) == ncol(newdata))
-    xnewdat <- reprocess(x, newdata, table_index)
-    x$ntables * project(x$fit, xnewdat, comp=comp, subind=x$block_indices[[table_index]])
+    xnewdat <- if (pre_process) reprocess(x, newdata, table_index) else newdata
+    x$ntables * project(x$fit, xnewdat, comp=comp, subind=ind)
     
   } else {
-    stop("table_index must have length of 1")
+    stop("table_index must have length of 1 or length equal to ntables")
   }
   
 }
 
 
-## project from existing table
 #' @export
 predict.multiblock <- function(x, newdata, ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+  if (is.vector(newdata)) {
+    newdata <- matrix(newdata, ncol=length(newdata))
+  }
+  
   assert_that(is.matrix(newdata))
   assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
   
   fscores <- if (length(table_index) == x$ntables) {
     assert_that(ncol(newdata) == ncol(x$X))
     Reduce("+", lapply(table_index, function(i) {
-      ind <- x$block_indices[[i]]
-      
-      Xp <- if (pre_process) {
-        reprocess(x, newdata[, ind], i)
-      } else {
-        newdata[, ind]
-      }
-      
-      project(x, Xp, comp=1:ncomp) * x$ntables
+      project(x, newdata[,ind,drop=FALSE], comp=1:ncomp, pre_process=pre_process, table_index=i) 
     }))
   } else if (length(table_index) == 1) {
-    ind <- x$block_indices[[table_index]]
-    
-    Xp <- if (pre_process) {
-      reprocess(x, newdata, table_index)
-    } else {
-      newdata
-    }
-    
-    fscores <- project(x, Xp, comp=1:ncomp, subind=ind) * x$ntables
+    fscores <- project(x, newdata, comp=1:ncomp, table_index=table_index)
     
   }
   
@@ -115,12 +102,12 @@ reprocess.multiblock <- function(x, newdat, table_index=NULL) {
   newdat <- if (is.null(table_index)) {
     prep(newdat)
   } else {
-    prep(newdat, bind[[table_index]])
+    prep(newdat, x$block_indices[[table_index]])
   }
   
   if (x$is_reduced && !is.null(table_index)) {
     project(x$reducer, newdat, table_index)
-  } else if (is_reduced & is.null(table_index)) {
+  } else if (x$is_reduced & is.null(table_index)) {
     project(x$reducer, newdat)
   } else {
     newdat

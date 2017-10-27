@@ -167,7 +167,7 @@ project <- function(x, newdata, ...) UseMethod("project")
 project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
 #' @export
-procrusteanize <- function(x) UseMethod("procrusteanize")
+procrusteanize <- function(x,...) UseMethod("procrusteanize")
 
 #' reduce_rank
 #' 

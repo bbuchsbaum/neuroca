@@ -97,7 +97,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     ncomp=fit$ncomp,
     block_indices=fit$block_indices,
     normalization=normalization,
-    table_names=table_names,
+    table_names=cstruc$table_names,
     rank_k=rank_k
   )
   
@@ -155,6 +155,7 @@ project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, table_index=1:x$nt
 predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp, 
                            table_index=1:x$ntables, pre_process=TRUE,
                            type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
+  
   
   type <- match.arg(type)
 
@@ -233,12 +234,12 @@ reproducibility.multiblock_da <- function(x, blocks, nrepeats=5, metric=c("norm-
 subset_rows.multiblock_da <- function(x, idx) {
   .Xlist <- lapply(1:length(x$Xlist), function(i) {
     xi <- x$Xlist[[i]]
-    xi[fidx[[i]],,drop=FALSE]
+    xi[idx[[i]],,drop=FALSE]
   })
   
   .Y <- lapply(1:length(x$Xlist), function(i) {
     yi <- x$Y[[i]]
-    yi[fidx[[i]]]
+    yi[idx[[i]]]
   })
   
   list(x=.Xlist, y=.Y)
@@ -246,7 +247,10 @@ subset_rows.multiblock_da <- function(x, idx) {
 
 
 #' @export
-performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC", "AUC")) {
+performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC", "ACC"), 
+                                      type=c("class", "prob", "scores", "cosine", "distance", "r2")) {
+  type <- match.arg(type)
+  metric <- match.arg(metric)
   if (length(folds) == 1) {
     folds <- lapply(1:length(x$Y), function(i) caret::createFolds(x$Y[[i]], folds))
   } else if (is.list(folds)) {
@@ -268,7 +272,7 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC"
     ## subset the original data
     xsub <- subset_rows(x, lapply(fidx, "*", -1))
     
-    ## refit on susbet
+    ## refit on subset
     rfit <- refit(x, xsub$y,xsub$x, ncomp=ncomp) 
     
     ## extract test data set
@@ -280,9 +284,13 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("ACC"
     
   })
   
+
+  
   pfun <- if (metric == "ACC") {
+    print("ACC")
     combinedACC
   } else {
+    print("AUC")
     combinedAUC
   }
   
@@ -315,7 +323,7 @@ procrusteanize.multiblock_da <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   
   res <- lapply(1:length(x$Xlist), function(i) {
-    xp <- x$Xlist[[i]] * x$alpha[i]
+    xp <- get_block(x$Xr,i)
     pres <- my_procrustes(F, xp)
     list(H=pres$rotation,
          scalef=pres$scale)
