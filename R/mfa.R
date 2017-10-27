@@ -35,7 +35,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   normalization <- match.arg(normalization)
   
-  ## pre-preocess full data matrix
+  ## pre-process full data matrix
   X <- pre_processor(X, center=center,scale=scale)
   
   ## if required, compute low-rank matrix

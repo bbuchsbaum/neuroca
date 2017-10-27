@@ -54,7 +54,9 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
 #' @param pre_process the function to pre_process the data
 #' @param reverse_pre_process the function to reverse pre_process the data
 #' @param row names of observations
-pseudo_pca <- function(u, v, d, pre_process=identity, reverse_pre_process=identity, rnames=NULL) {
+pseudo_pca <- function(u, v, d, 
+                       pre_process=function(x, subind) x, 
+                       reverse_pre_process=function(x, subind) x, rnames=NULL) {
   
   scores <- t(t(as.matrix(u)) * d)
   
@@ -64,7 +66,8 @@ pseudo_pca <- function(u, v, d, pre_process=identity, reverse_pre_process=identi
   
   ret <- list(v=v, u=u, d=d, 
               scores=scores, ncomp=length(d), 
-              pre_process=pre_process, reverse_pre_process=reverse_pre_process)
+              pre_process=pre_process, 
+              reverse_pre_process=reverse_pre_process)
   
   
   class(ret) <- c("pseudo_pca", "projector", "list")
@@ -111,6 +114,10 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   ret
 }
 
+reprocess.projector <- function(x, newdata, subind=NULL) {
+  x$pre_process(newdata, subind)
+}
+
 #' @export
 singular_values.pseduo_pca <- function(x) {
   x$d
@@ -138,13 +145,31 @@ scores.projector <- function(x) {
 }
 
 #' @export
-project.projector <- function(x, newdata, comp=1:ncomp(x)) {
-  x$pre_process(newdata) %*% x$v[,comp]
+project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
+  if (is.vector(newdata)) {
+    newdata <- matrix(newdata,nrow=1)
+  }
+  if (is.null(subind)) {
+    if (pre_process) {
+      reprocess(x, newdata) %*% x$v[,comp]
+    } else {
+      newdata %*% x$v[,comp]
+    }
+  } else {
+    assertthat::assert_that(length(subind) == ncol(newdata))
+    Xsup <- if (pre_process) {
+      #browser()
+      reprocess(x, newdata, subind)
+    } else {
+      newdata
+    }
+    Xsup %*% x$v[subind, comp]
+  }
 }
 
 #' @export
-predict.projector <- function(x, newdata, comp=1:ncomp(x)) {
-  x$pre_process(newdata) %*% x$v[,comp]
+predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
+  project(x, newdata, comp=1:ncomp)
 }
 
 #' @export

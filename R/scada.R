@@ -36,7 +36,7 @@ scada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,rank_k=NULL,
   result <- list(
     Xlist=Xlist,
     Y=Yl,
-    Y_reps=Y_reps,
+    Y_reps=cstruc$Y_reps,
     conditions=conditions,
     Xr=Xr,
     scores=scores(fit),
@@ -47,11 +47,11 @@ scada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,rank_k=NULL,
     scale=scale,
     ncomp=fit$ncomp,
     block_indices=fit$block_indices,
-    normalization=normalization,
     refit=refit,
-    table_names=table_names,
+    table_names=cstruc$table_names,
     reprocess=fit$reprocess,
     rank_k=rank_k,
+    type=type,
     permute_refit=permute_refit
   )
   

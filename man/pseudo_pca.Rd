@@ -4,8 +4,8 @@
 \alias{pseudo_pca}
 \title{pseudo_pca}
 \usage{
-pseudo_pca(u, v, d, pre_process = identity, reverse_pre_process = identity,
-  rnames = NULL)
+pseudo_pca(u, v, d, pre_process = function(x, subind) x,
+  reverse_pre_process = function(x, subind) x, rnames = NULL)
 }
 \arguments{
 \item{u}{the row weights}

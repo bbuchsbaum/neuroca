@@ -35,7 +35,7 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
   u <- sca_fit$B / sqrt(nrow(X))
   d <- vscale * sqrt(nrow(X))
   
-  fit <- pseudo_pca(u, v, d)
+  fit <- pseudo_pca(u, v, d, rnames=row.names(X))
   
   ret <- list(
     X=X,
