@@ -114,6 +114,8 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   ret
 }
 
+
+#' @export
 reprocess.projector <- function(x, newdata, subind=NULL) {
   x$pre_process(newdata, subind)
 }
@@ -202,6 +204,8 @@ truncate.pca <- function(obj, ncomp) {
   ret
 }
 
+
+#' @export
 contributions.projector <- function(x, type=c("column", "row")) {
   type <- match.arg(type)
   if (type == "column") {
