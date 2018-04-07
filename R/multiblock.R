@@ -5,6 +5,14 @@ nblocks.multiblock <- function(x) length(block_index_list(x))
 
 #' @export
 project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, table_index=NULL) {
+  if (missing(newdata)) {
+    if (is.null(table_index)) {
+      return(scores(x)[,comp])
+    } else {
+      return(partial_scores(x,table_index=table_index)[,comp])
+    }
+  }
+  
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }

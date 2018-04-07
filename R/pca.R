@@ -1,5 +1,8 @@
 
 
+
+
+
 #' shrink_pca
 #' 
 #' adaptive shrinakge pca from the \code{denoiseR} package
@@ -37,12 +40,8 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
   
   class(ret) <- c("shrink_pca", "pseudo_pca", "projector", "list")
   ret
-  
-  
 }
                        
-  
-
 
 
 #' pseudo_pca
@@ -148,9 +147,14 @@ scores.projector <- function(x) {
 
 #' @export
 project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
+  if (missing(newdata)) {
+    return(scores(x)[,comp])
+  }
+  
   if (is.vector(newdata)) {
     newdata <- matrix(newdata,nrow=1)
   }
+  
   if (is.null(subind)) {
     if (pre_process) {
       reprocess(x, newdata) %*% x$v[,comp]
@@ -160,11 +164,11 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, sub
   } else {
     assertthat::assert_that(length(subind) == ncol(newdata))
     Xsup <- if (pre_process) {
-      #browser()
       reprocess(x, newdata, subind)
     } else {
       newdata
     }
+    
     Xsup %*% x$v[subind, comp]
   }
 }
@@ -185,6 +189,16 @@ residuals.projector <- function(x, ncomp=1, xorig) {
 #' @export
 reconstruct.projector <- function(x, comp=1:x$ncomp) {
   x$reverse_pre_process(x$scores[,comp,drop=FALSE] %*% t(x$v[,comp,drop=FALSE]))
+}
+
+#' @export
+nrow.projector <- function(x) {
+  nrow(x$scores)
+}
+
+#' @export
+ncol.projector <- function(x) {
+  ncol(x$v)
 }
 
 
