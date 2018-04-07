@@ -111,6 +111,9 @@ singular_values.genpca <- function(x) {
 }
 
 project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=NULL) {
+  if (is.null(newdata)) {
+    return(scores(x)[,comp])
+  }
   
   if (is.vector(newdata)) {
     newdata <- matrix(newdata,nrow=1)
