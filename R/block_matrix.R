@@ -1,5 +1,5 @@
 
-blockIndices <- function(Xlist) {
+block_indices <- function(Xlist) {
   ncols <- sapply(Xlist, ncol)
   csum <- cumsum(ncols)
   csum1 <- c(0, csum[-length(csum)])
@@ -7,6 +7,7 @@ blockIndices <- function(Xlist) {
   colnames(m) <- c("start", "end")
   m
 }
+
 
 
 
@@ -19,7 +20,7 @@ block_matrix_list <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
   
-  blockInd <- blockIndices(Xs)
+  blockInd <- block_indices(Xs)
   P <- sum(sapply(Xs, ncol))
   
   attr(Xs, "block_indices") <- blockInd
@@ -65,7 +66,7 @@ block_matrix <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
   
-  blockInd <- blockIndices(Xs)
+  blockInd <- block_indices(Xs)
   P <- sum(sapply(Xs, ncol))
   
   X <- do.call(cbind, Xs)
@@ -90,26 +91,45 @@ matrix_to_block_matrix <- function(X, groups) {
   block_matrix(Xlist)
 }
 
+#' @export
 nrow.block_matrix_list <- function(x) {
   attr(x, "nrow")
   
 }
 
+#' @export
 ncol.block_matrix_list <- function(x) {
   attr(x, "ncol")
 }
 
+#' @export
+nrow.block_projection_matrix <- function(x) {
+  attr(x, "nrow")
+}
+
+#' @export
+ncol.block_projection_matrix <- function(x) {
+  attr(x, "ncol")
+}
+
+#' @export
+ncomp.block_projection_matrix <- function(x) {
+  attr(x, "proj_ncol") 
+}
+
+#' @export
 dim.block_matrix_list <- function(x) {
   c(attr(x, "nrow"), attr(x, "ncol"))
 }
 
 
-
+#' @export
 block_lengths.block_matrix <- function(object) {
   bind <- attr(object, "block_indices")
   apply(bind, 1, diff)+1
 }
 
+#' @export
 block_index_list.block_matrix <- function(object) {
   bind <- attr(object, "block_indices")
   lapply(1:nrow(bind), function(i) seq(bind[i,1], bind[i,2]))
@@ -121,8 +141,8 @@ print.block_matrix <- function(object) {
   
   cat("block_matrix", "\n")
   cat("  nblocks: ", attr(object, "nblock"), "\n")
-  cat("  nrows: ", dim(object)[1], "\n")
-  cat("  ncols: ", dim(object)[2], "\n")
+  cat("  nrows: ", nrow(object), "\n")
+  cat("  ncols: ", ncol(object), "\n")
   cat("  block cols: ", apply(bind, 1, diff)+1, "\n")
   cat("  block names: ", attr(object, "block_names"))
 }
@@ -147,6 +167,11 @@ get_block.block_matrix_list <- function(x, i) {
 }
 
 #' @export
+get_block.block_projection_matrix <- function(x, i) {
+  attr(x, "block_data")[[i]]
+}
+
+#' @export
 as.list.block_matrix <- function(x) {
   lapply(1:attr(x, "nblock"), function(i) get_block(x, i))
 }
@@ -159,6 +184,11 @@ as.list.block_matrix_list <- function(x) {
 #' @export
 as.matrix.block_matrix_list <- function(x) {
   block_matrix(x)
+}
+
+#' @export
+as.matrix.block_projection_matrix <- function(x) {
+  attr(x, "block_data")
 }
 
 
@@ -195,6 +225,67 @@ names.block_matrix <- function(x) attr(x, "block_names")
 
 #' @export
 is.block_matrix <- function(x) { inherits(x, "block_matrix") }
+
+
+#' block_projection_matrix 
+#' 
+#' @param Xs a list of \code{projector} objects.
+#' 
+block_projection_matrix <- function(Xs) {
+  assertthat::assert_that(all(sapply(Xs, function(x) inherits(x, "projector"))))
+  assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
+  
+  ## get the projections
+  Xproj <- lapply(Xs, project)
+  
+  ## the projected blocks
+  proj_ind <- block_indices(Xproj)
+  
+  ## the original blocks
+  block_ind <- block_indices(Xs)
+  
+  P <- sum(sapply(Xs, ncol))
+  projP <- sum(sapply(Xproj, ncol))
+  
+  attr(Xs, "block_data") <- block_matrix(Xproj)
+  attr(Xs, "block_indices") <- block_ind
+  attr(Xs, "proj_indices") <- proj_ind
+  attr(Xs, "nblock") <- length(Xs)
+  attr(Xs, "nrow") <- nrow(Xs[[1]])
+  attr(Xs, "ncol") <- P
+  attr(Xs, "proj_ncol") <- projP
+  attr(Xs, "block_names") <- names(Xs)
+  class(Xs) <- c("block_projection_matrix", "projector", "block_matrix", "list") 
+  Xs
+  
+}
+
+#' @export
+project.block_projection_matrix <- function(x, newdata=NULL, block_index=NULL, ...) {
+  if (is.null(newdata)) {
+    if (is.null(block_index)) {
+      return(attr(x, "block_data"))
+    } else {
+      return(block_matrix(lapply(block_index, function(i) get_block(x,i))))
+    }
+  } else {
+    if (is.null(block_index)) {
+      block_index <- 1:nblocks(x)
+    }
+    
+    oind <- attr(x, "block_indices")
+    len <- sum(sapply(block_index, function(i) diff(oind[i,])+1))
+    
+    ## newdat must have same number of cols as input blocks
+    assert_that(ncol(newdata) == len)
+      
+    block_matrix(lapply(block_index, function(i) {
+      ind <- seq(oind[i,1], oind[i,2])
+      project(x[[i]], newdata=newdata[,ind],...)
+    }))
+  }
+      
+}
 
 
 #' @export
@@ -238,6 +329,8 @@ reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   ret
 }
 
+
+#' @export
 nblocks.reduced_rank_block_matrix <- function(x) {
   nblocks(x$x)
 }

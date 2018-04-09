@@ -24,6 +24,18 @@ loadings <- function(x,...) UseMethod("loadings")
 #' @export
 ncomp <- function(x) UseMethod("ncomp")
 
+
+ncol          <- function(x) UseMethod("ncol") 
+ncol.default  <- base::ncol
+
+nrow          <- function(x) UseMethod("nrow") 
+nrow.default  <- base::nrow
+
+dim          <- function(x) UseMethod("dim") 
+dim.default  <- base::dim
+
+
+
 #' @export
 correlations <- function(x,...) UseMethod("correlations")
 
@@ -158,6 +170,28 @@ residuals <- function(x, ncomp, ...) UseMethod("residuals")
 #' @param ... extra args
 #' @export
 project <- function(x, newdata, ...) UseMethod("project")
+
+
+#' as.projector
+#' 
+#' convert object to a \code{projector}
+#' 
+#' @param x the object
+#' @param ... extra args
+#' @export
+as.projector <- function(x, ...) UseMethod("as.projector")
+
+#' @export
+as.projector.default  <- function(x,...) {
+  if (inherits(x, "projector")) {
+    x
+  } else {
+    as.projector.matrix(as.matrix(x))
+  }
+}
+
+#' @export
+projection_fun <- function(x, ...) UseMethod("projection_fun")
 
 #' project_table
 #' 

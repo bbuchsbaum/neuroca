@@ -72,6 +72,10 @@ block_index_list.sca <- function(x) x$block_indices
 #' @export
 ncomp.sca <- function(x) x$ncomp
 
+ncol.sca <- function(x) ncol(x$fit)
+
+nrow.sca <- function(x) nrow(x$fit)
+
 #' @export
 reconstruct.sca <- function(x, ncomp=x$ncomp) {
   ret <- block_matrix(lapply(x$D, function(d) {

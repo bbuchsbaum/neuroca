@@ -26,7 +26,7 @@ test_that("can project a row vector", {
 test_that("can project a matrix for a single table", {
   res1 <- mfa(block_mat, center=TRUE, ncomp=5, normalization="None")
   x <- matrix(rnorm(10*10), 10, 10)
-  proj <- project(res1, x, comp=1:3, table_index=1)
+  proj <- project(res1, x, comp=1:3, block_index=1)
   expect_equal(ncol(proj), 3)
   expect_equal(nrow(proj), nrow(x))
 })
