@@ -15,16 +15,16 @@
 #' @importFrom assertthat assert_that
 #' @importFrom Matrix sparseMatrix
 #' @export
-genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
+genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
                    center=TRUE, scale=FALSE) {
   
 
   if (is.vector(A)) {
-    assert_that(length(A) == ncol(X))
+    assert_that(length(A) == ncomp(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
   } else {
     assert_that(nrow(A) == ncol(A))
-    assert_that(nrow(A) == ncol(X))
+    assert_that(nrow(A) == ncomp(X))
   }
   
   if (is.vector(M)) {
@@ -35,13 +35,13 @@ genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
     assert_that(nrow(M) == nrow(X))
   }
   
+  X <- pre_processor(project(X), center=center,scale=scale)
+  
   assert_that(ncomp > 0)
   ncomp <- min(min(dim(X)), ncomp)
   
   n = nrow(X)
   p = ncol(X)
-  
-  X <- pre_processor(X, center=center,scale=scale)
   
   if(n < p){
     ret = gmdLA(t(X), A,M, ncomp,p,n)
@@ -65,7 +65,7 @@ genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
               pre_process=attr(X, "pre_process"), 
               reverse_pre_process=attr(X, "reverse"))
 
-  class(ret) <- c("genpca", "projector", "list")
+  class(ret) <- c("genpca", "pca", "projector", "list")
   ret
   
 }
@@ -78,8 +78,7 @@ project_xav <- function(X, A, V) {
   }
 }
   
-  
-  
+#' @export
 predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   Xsup <- if (pre_process) {
     reprocess(x, newdata)
@@ -90,8 +89,6 @@ predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
   
 }
-
-
 
 
 #' @export
@@ -110,6 +107,7 @@ singular_values.genpca <- function(x) {
   x$d
 }
 
+#' @export
 project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=NULL) {
   if (is.null(newdata)) {
     return(scores(x)[,comp])
@@ -207,7 +205,7 @@ truncate.genpca <- function(obj, ncomp) {
                 scores=obj$scores[,1:ncomp], 
                 ncomp=ncomp, svd.method=obj$svd.method, 
                 pre_process=obj$pre_process)
-    class(ret) <- c("genpca", "projector", "list")
+    class(ret) <- c("genpca", "pca", "projector", "list")
   }
   
   ret

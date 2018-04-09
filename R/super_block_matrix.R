@@ -4,7 +4,7 @@ super_block_matrix <- function(bxlist) {
   assertthat::assert_that(all(sapply(bxlist, is.block_matrix)))
   assertthat::assert_that(all(sapply(bxlist, nrow) == nrow(bxlist[[1]])))
   
-  blockInd <- blockIndices(bxlist)
+  blockInd <- block_indices(bxlist)
   P <- sum(sapply(bxlist, ncol))
   
   if (is.null(bxlist)) {

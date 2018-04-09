@@ -1,8 +1,5 @@
 
 
-
-
-
 #' shrink_pca
 #' 
 #' adaptive shrinakge pca from the \code{denoiseR} package
@@ -11,15 +8,20 @@
 #' @param X
 #' @param center
 #' @param scale
+#' @importFrom denoiseR adashrink
 #' @export
 shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", "SURE"), ...) {
-  X <- pre_processor(X, center,scale)
-  res <- adashrink(X, method=method, center=FALSE, ...)
+  xdim <- dim(X)
+  proj_fun <- projection_fun(X)
+  
+  Xp <- pre_processor(project(X), center,scale)
+  res <- adashrink(Xp, method=method, center=FALSE, ...)
   
   keep <- res$singval > 1e-06
+  
   if (sum(keep) == 0) {
     warning("all singular values are zero, computing rank-1 svd")
-    res <- RSpectra::svds(X, k=1)
+    res <- RSpectra::svds(Xp, k=1)
     v <- res$v
     u <- res$u
     d <- res$d
@@ -29,16 +31,18 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
     d=res$low.rank$d[keep]
   }
   
-  ret <- list(v=v, 
+  ret <- list(proj_fun=proj_fun,
+              xdim=xdim,
+              v=v, 
               u=u,
               d=d,
               scores=t(t(as.matrix(u)) * d),
               ncomp=length(d), 
-              pre_process=attr(X, "pre_process"), 
-              reverse_pre_process=attr(X, "reverse_pre_process"))
+              pre_process=attr(Xp, "pre_process"), 
+              reverse_pre_process=attr(Xp, "reverse_pre_process"))
   
   
-  class(ret) <- c("shrink_pca", "pseudo_pca", "projector", "list")
+  class(ret) <- c("shrink_pca", "pca", "projector", "list")
   ret
 }
                        
@@ -63,50 +67,48 @@ pseudo_pca <- function(u, v, d,
     row.names(scores) <- rnames
   }
   
-  ret <- list(v=v, u=u, d=d, 
+  assert_that(length(d) == nrow(u))
+  
+  ret <- list(xdim=c(length(d), nrow(v)),
+              proj_fun=identity,
+              v=v, 
+              u=u, 
+              d=d, 
               scores=scores, ncomp=length(d), 
               pre_process=pre_process, 
               reverse_pre_process=reverse_pre_process)
   
   
-  class(ret) <- c("pseudo_pca", "projector", "list")
+  class(ret) <- c("pseudo_pca", "pca", "projector", "list")
   ret
 }
 
-#' @export
-truncate.pseudo_pca <- function(obj, ncomp) {
-  if (ncomp >= obj$ncomp) {
-    warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
-    ret <- obj
-  } else {
-    ret <- list(v=obj$v[,1:ncomp], u=obj$u[,1:ncomp], d=obj$d[1:ncomp], 
-                scores=obj$scores[,1:ncomp], ncomp=ncomp, 
-                pre_process=obj$pre_process)
-    class(ret) <- c("pseudo_pca", "projector", "list")
-  }
-  
-  ret
-}
-  
-  
-  
+
 #' @param X
 #' @param ncomp
 #' @param center
 #' @param scale
 #' @export
 pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
+  xdim <- dim(X)
+  proj_fun <- projection_fun(X)
   
-  X <- pre_processor(X, center=center,scale=scale)
+  Xp <- pre_processor(project(X), center=center,scale=scale)
   
-  svdres <- svd_wrapper(X, ncomp, ...)
+  svdres <- svd_wrapper(Xp, ncomp, ...)
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
-  row.names(scores) <- row.names(X)
   
-  ret <- list(v=svdres$v, u=svdres$u, d=svdres$d, 
-              scores=scores, ncomp=ncomp, 
-              pre_process=attr(X, "pre_process"), reverse_pre_process=attr(X, "reverse"))
+  if (!is.null(row.names(scores))) {
+    row.names(scores) <- row.names(Xp)[seq_along(svdres$d)]
+  }
+  
+  ret <- list(xdim=xdim,
+              proj_fun=proj_fun,
+              v=svdres$v, u=svdres$u, d=svdres$d, 
+              scores=scores, ncomp=length(svdres$d), 
+              pre_process=attr(Xp, "pre_process"), 
+              reverse_pre_process=attr(Xp, "reverse"))
 
   
   class(ret) <- c("pca", "projector", "list")
@@ -115,15 +117,9 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
 
 
 #' @export
-reprocess.projector <- function(x, newdata, subind=NULL) {
-  x$pre_process(newdata, subind)
+reprocess.pca <- function(x, newdata, subind=1:ncol(newdata)) {
+  x$pre_process(x$proj_fun(newdata[,subind,drop=FALSE]))
 }
-
-#' @export
-singular_values.pseduo_pca <- function(x) {
-  x$d
-}
-
 
 #' @export
 singular_values.pca <- function(x) {
@@ -131,22 +127,19 @@ singular_values.pca <- function(x) {
 }
 
 #' @export
-loadings.projector <- function(x) {
+loadings.pca <- function(x) {
   x$v
 }
 
 #' @export
-ncomp.projector <- function(x) {
-  length(x$d)
+projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE, subind=NULL, ...) {
+  function(newdata, .comp=comp, .pre_process=pre_process, .subind=subind) {
+    project(x, newdata, comp=.comp, pre_process=.pre_process, subind=.subind)
+  }
 }
 
 #' @export
-scores.projector <- function(x) {
-  x$scores
-}
-
-#' @export
-project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
+project.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
   if (missing(newdata)) {
     return(scores(x)[,comp])
   }
@@ -156,51 +149,59 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, sub
   }
   
   if (is.null(subind)) {
+    ## subind must be in the input space
     if (pre_process) {
-      reprocess(x, newdata) %*% x$v[,comp]
+      reprocess(x, newdata) %*% loadings(x)[,comp]
     } else {
-      newdata %*% x$v[,comp]
+      x$proj_fun(newdata) %*% loadings(x)[,comp]
     }
   } else {
-    assertthat::assert_that(length(subind) == ncol(newdata))
+    assertthat::assert_that(length(subind) < ncol(newdata))
+    
     Xsup <- if (pre_process) {
-      reprocess(x, newdata, subind)
+      reprocess(x, newdata, subind=subind)
     } else {
-      newdata
+      x$proj_fun(newdata, subind=subind)
     }
     
-    Xsup %*% x$v[subind, comp]
+    Xsup %*% (loadings(x)[, comp])
   }
 }
 
-#' @export
-predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
-  project(x, newdata, comp=1:ncomp)
-}
 
 #' @export
-residuals.projector <- function(x, ncomp=1, xorig) {
-  recon <- x$scores[,1:ncomp,drop=FALSE] %*% t(x$v[,1:ncomp,drop=FALSE])
+residuals.pca <- function(x, ncomp=1, xorig) {
+  recon <- scores(x)[,1:ncomp,drop=FALSE] %*% t(loadings(x)[,1:ncomp,drop=FALSE])
   newdat <- x$pre_process(xorig)
   newdat - recon
 }
 
 
 #' @export
-reconstruct.projector <- function(x, comp=1:x$ncomp) {
-  x$reverse_pre_process(x$scores[,comp,drop=FALSE] %*% t(x$v[,comp,drop=FALSE]))
+reconstruct.pca <- function(x, comp=1:x$ncomp) {
+  x$reverse_pre_process(scores(x)[,comp,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+}
+
+
+#' @export
+ncol.pca <- function(x) {
+  x$xdim[2]
 }
 
 #' @export
-nrow.projector <- function(x) {
-  nrow(x$scores)
+nrow.pca <- function(x) {
+  x$xdim[1]
 }
 
 #' @export
-ncol.projector <- function(x) {
-  ncol(x$v)
+ncomp.pca <- function(x) {
+  x$ncomp
 }
 
+#' @export
+scores.pca <- function(x) {
+  x$scores
+}
 
 
 #' @export
@@ -211,7 +212,8 @@ truncate.pca <- function(obj, ncomp) {
   } else {
     ret <- list(v=obj$v[,1:ncomp], u=obj$u[,1:ncomp], d=obj$d[1:ncomp], 
                 scores=obj$scores[,1:ncomp], ncomp=ncomp, 
-                pre_process=obj$pre_process)
+                pre_process=obj$pre_process,
+                reverse_pre_process=obj$pre_process)
     class(ret) <- c("pca", "projector", "list")
   }
   
@@ -220,10 +222,10 @@ truncate.pca <- function(obj, ncomp) {
 
 
 #' @export
-contributions.projector <- function(x, type=c("column", "row")) {
+contributions.pca <- function(x, type=c("column", "row")) {
   type <- match.arg(type)
   if (type == "column") {
-    x$v^2
+    loadings(x)^2
   } else {
     x$u^2
   }
@@ -234,6 +236,9 @@ reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE,
                                reducer=pca, ...) {
   res <- reducer(x, k, center=center, scale=scale, ...)
 }
+
+
+
 
 
 # 
