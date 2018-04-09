@@ -87,7 +87,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   assert_that(length(designL) == length(Xlist))
   assert_that(all(sapply(1:length(Xlist), function(i) nrow(Xlist[[i]]) == nrow(designL[[i]]))))
   
-  blockInd <- blockIndices(Xlist)
+  blockInd <- block_indices(Xlist)
   
   
   
@@ -253,12 +253,12 @@ bootstrap.musu_asca <- function(x, niter=100, term=res$terms[1], ncomp=x$ncomp[1
 
 #' @export
 predict.musu_asca <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
-                              table_index=1:x$ntables) {
+                              block_index=1:x$ntables) {
   type <- match.arg(type)
   assert_that(is.matrix(newdata))
-  assert_that(length(table_index) == 1 || length(table_index) == x$ntables)
+  assert_that(length(block_index) == 1 || length(block_index) == x$ntables)
   
-  if (length(table_index) == x$ntables) {
+  if (length(block_index) == x$ntables) {
     assert_that(ncol(newdata) == sum(sapply(x$Xlist, ncol)))
   }
   
@@ -266,7 +266,7 @@ predict.musu_asca <- function(x, newdata, type=c("class", "prob", "scores", "cro
   
   fscores <- do.call(cbind, lapply(terms, function(tname) {
       xres <- x$results[[tname]]
-      predict(xres$bada_result, newdata, type="scores",table_index=table_index)
+      predict(xres$bada_result, newdata, type="scores",block_index=block_index)
   }))
   
   preds <- scorepred(fscores, x$scores, type=type, class_name=FALSE)
@@ -319,9 +319,9 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
     
     preds <- lapply(1:rfit$ntables, function(i) {
       if (metric == "ACC") {
-        predict.musu_asca(rfit, xsubout$x[[i]], type="class", table_index=i)
+        predict.musu_asca(rfit, xsubout$x[[i]], type="class", block_index=i)
       } else {
-        predict.musu_asca(rfit, xsubout$x[[i]], type="prob", table_index=i)
+        predict.musu_asca(rfit, xsubout$x[[i]], type="prob", block_index=i)
       }
     })
     
@@ -333,7 +333,7 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
       p <- unlist(lapply(ptabs, function(x) x[, term]))
       
       ord <- unlist(folds[[tind]])
-      data.frame(table_index=tind, pred=p, observed=yobs[[tind]][ord])
+      data.frame(block_index=tind, pred=p, observed=yobs[[tind]][ord])
     })
     
     acc <- sapply(perf, function(x) sum(as.character(x$pred)==as.character(x$observed))/nrow(x))
@@ -350,7 +350,7 @@ performance.musu_asca <- function(x, ncomp=x$ncomp, blocks, term=names(x$fac_des
       
       ord <- unlist(folds[[tind]])
       auc <- .combinedAUC(ptab, yobs[[tind]][ord], rowlabs)
-      list(table_index=tind, pred=ptab, observed=yobs[[tind]][ord])
+      list(block_index=tind, pred=ptab, observed=yobs[[tind]][ord])
     })
    
     auc <- sapply(perf, function(x) .combinedAUC(x$pred, x$observed, colnames(x$pred)))
