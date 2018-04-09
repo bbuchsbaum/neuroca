@@ -38,7 +38,10 @@ pre_processor <- function(X, center=TRUE, scale=FALSE) {
   }
   
   f <- function(M, subind=1:ncol(X)) {
-
+    if (is.null(subind)) {
+      subind <- 1:ncol(X)
+    }
+    
     if (!center && !scale) {
       M
     } else if (center && scale) {

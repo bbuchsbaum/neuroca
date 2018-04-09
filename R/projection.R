@@ -1,19 +1,40 @@
 #' @export
+ncomp.projector <- function(x) {
+  ncol(x)
+}
+
+#' @export
+nrow.projector <- function(x) {
+  nrow(scores(x))
+}
+
+dim.projector <- function(x) {
+  c(nrow(x), ncol(x))
+}
+
+
+#' @export
+as.projector.matrix <- function(x,...) {
+  identity_projector(x)
+}
+
+#' @export
+projection_fun.identity_projector <- function(x) {
+  function(x) x
+}
+
+#' @export
+projection_fun.matrix <- function(x) {
+  function(x) x
+}
+
+#' @export
 identity_projector <- function(mat) {
   assert_that(is.matrix(mat))
   class(mat) <- c("identity_projector", "projector", "matrix")
   mat
 }
 
-#' @export
-loadings.identity_projector <- function(x) {
-  rep(1:ncol(x))/ncol(x)
-}
-
-#' @export
-ncomp.projector <- function(x) {
-  ncol(x)
-}
 
 #' @export
 project.identity_projector <- function(x, newdata=NULL, comp=1:ncomp(x), pre_process=FALSE, subind=NULL) {
@@ -38,8 +59,14 @@ project.identity_projector <- function(x, newdata=NULL, comp=1:ncomp(x), pre_pro
 
 #' @export
 scores.identity_projector <- function(x) {
-  rep(1:nrow(x))/nrow(x)
+  x
 }
+
+
+#' @export
+#' 
+ncomp.matrix <- function(x) ncol(x)
+
 
 #' @export
 project.matrix <- function(x, newdata=NULL, subind=NULL) {
@@ -57,3 +84,34 @@ project.matrix <- function(x, newdata=NULL, subind=NULL) {
     }
   }
 }
+
+#' @export
+project.block_matrix <- function(x, newdata=NULL) {
+  if (is.null(newdata)) {
+    as.matrix(x)
+  } else {
+    as.matrix(newdata)
+  }
+}
+
+
+#' @export
+ncol.identity_projector <- function(x) {
+  ncol(x)
+}
+
+#' @export
+ncomp.identity_projector <- function(x) {
+  ncol(x)
+}
+
+#' @export
+reprocess.identity_projector <- function(x) {
+  x
+}
+
+#' @export
+predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
+  project(x, newdata, comp=1:ncomp)
+}
+

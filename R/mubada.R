@@ -47,8 +47,9 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' @importFrom assertthat assert_that
 reduce_rows <- function(Xlist, Ylist) {
   assert_that(length(Xlist) == length(Ylist))
+  
   ## compute barycenters for each table, averaging over replications
-  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
+  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], project(Xlist[[i]])))
   Xr <- block_matrix(XB)
 }
 
@@ -146,20 +147,20 @@ loadings.multiblock_da <- function(x) loadings(x$fit)
 
  
 #' @importFrom abind abind
-project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, table_index=1:x$ntables) {
-  project(x$fit, newdata, comp=comp, table_index=table_index)
+project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, block_index=1:x$ntables) {
+  project(x$fit, newdata, comp=comp, block_index=block_index)
 }
   
 ## project from existing table
 #' @export
 predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp, 
-                           table_index=1:x$ntables, pre_process=TRUE,
+                           block_index=1:x$ntables, pre_process=TRUE,
                            type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
   
   
   type <- match.arg(type)
 
-  fscores <- predict(x$fit, newdata, ncomp=ncomp, table_index=table_index, pre_process=pre_process)
+  fscores <- predict(x$fit, newdata, ncomp=ncomp, block_index=block_index, pre_process=pre_process)
   
   if (type == "scores") {
     fscores
@@ -279,7 +280,7 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC"
     xsubout <- subset_rows(x, fidx)
     
     preds <- lapply(1:rfit$ntables, function(i) {
-      predict(rfit, xsubout$x[[i]], type=type, ncomp=ncomp, table_index=i)
+      predict(rfit, xsubout$x[[i]], type=type, ncomp=ncomp, block_index=i)
     })
     
   })
@@ -337,7 +338,7 @@ procrusteanize.multiblock_da <- function(x, ncomp=2) {
 
 #' @export
 predict.procrusteanized_da <- function(x, newdata, type=c("class", "prob", "scores", "crossprod", "distance", "cosine"), 
-                              ncomp=x$ncomp, table_index=1:x$ntables, pre_process=TRUE) {
+                              ncomp=x$ncomp, block_index=1:x$ntables, pre_process=TRUE) {
   
   
   
@@ -346,12 +347,12 @@ predict.procrusteanized_da <- function(x, newdata, type=c("class", "prob", "scor
   
   mf <- x$musufit
   assert_that(is.matrix(newdata))
-  assert_that(length(table_index) == 1 || length(table_index) == mf$ntables)
+  assert_that(length(block_index) == 1 || length(block_index) == mf$ntables)
   
-  fscores <- if (length(table_index) == mf$ntables) {
+  fscores <- if (length(block_index) == mf$ntables) {
     assert_that(ncol(newdata) == sum(sapply(mf$Xlist, ncol)))
-    Reduce("+", lapply(table_index, function(i) {
-      ind <- mf$block_indices[[table_index]]
+    Reduce("+", lapply(block_index, function(i) {
+      ind <- mf$block_indices[[block_index]]
       
       Xp <- if (pre_process) {
         mf$reprocess(newdata[, ind[1]:ind[2]], i)
@@ -363,17 +364,17 @@ predict.procrusteanized_da <- function(x, newdata, type=c("class", "prob", "scor
       fscores <- (Xp * mf$alpha[i] * x$rot_matrices[[i]]$scalef) %*% x$rot_matrices[[i]]$H
     
       }))
-  } else if (length(table_index) == 1) {
+  } else if (length(block_index) == 1) {
     
-    ind <- mf$block_indices[[table_index]]
+    ind <- mf$block_indices[[block_index]]
     
     Xp <- if (pre_process) {
-      mf$reprocess(newdata, table_index)
+      mf$reprocess(newdata, block_index)
     } else {
       newdata[, ind]
     }
 
-    (Xp * x$rot_matrices[[table_index]]$scalef) %*% x$rot_matrices[[table_index]]$H
+    (Xp * x$rot_matrices[[block_index]]$scalef) %*% x$rot_matrices[[block_index]]$H
     
     
   }
@@ -452,7 +453,7 @@ my_procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE, scores = "site
 
 # @importFrom assertthat assert_that 
 # @export
-# project_table.mubada <- function(x, supY, supX, ncomp=x$ncomp) { #table_index=NULL, table_name = NULL) {
+# project_table.mubada <- function(x, supY, supX, ncomp=x$ncomp) { #block_index=NULL, table_name = NULL) {
 #   assert_that(ncomp >= 1)
 #   assert_that(is.factor(supY))
 #   assert_that(length(levels(supY)) == x$ncond)
@@ -479,9 +480,9 @@ my_procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE, scores = "site
 # @export
 # correlations.mubada <-
 #   function(x,
-#            table_index = 1:nrow(x$blockIndices),
+#            block_index = 1:nrow(x$blockIndices),
 #            comp = 1:ncol(x$pca_fit$u)) {
-#     do.call(cbind, lapply(table_index, function(i) {
+#     do.call(cbind, lapply(block_index, function(i) {
 #       ind <- x$blockIndices[i, 1]:x$blockIndices[i, 2]
 #       cor(x$XB[, ind, drop = FALSE], x$pca_fit$u[, comp])
 #     }))
