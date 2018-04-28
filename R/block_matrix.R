@@ -122,6 +122,12 @@ dim.block_matrix_list <- function(x) {
   c(attr(x, "nrow"), attr(x, "ncol"))
 }
 
+#' @export
+dim.block_projection_matrix <- function(x) {
+  c(attr(x, "nrow"), attr(x, "ncol"))
+}
+
+
 
 #' @export
 block_lengths.block_matrix <- function(object) {
@@ -255,8 +261,13 @@ block_projection_matrix <- function(Xs) {
   attr(Xs, "ncol") <- P
   attr(Xs, "proj_ncol") <- projP
   attr(Xs, "block_names") <- names(Xs)
-  class(Xs) <- c("block_projection_matrix", "projector", "block_matrix", "list") 
+  class(Xs) <- c("block_projection_matrix", "block_matrix", "projector", "list") 
   Xs
+  
+}
+
+projection_fun.block_projection_matrix <- function(x, pre_process=TRUE, subind=NULL, ...) {
+  
   
 }
 

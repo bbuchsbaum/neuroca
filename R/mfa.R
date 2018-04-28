@@ -25,14 +25,20 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 }
 
 
- 
+#' @param X the data matrix of type \code{block_matrix} or \code{block_projection_matrix}
+#' @param ncomp the number of components to retain
+#' @param center whether to mean center the columns
+#' @param scale whether to standardize columns
 #' @export
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
                 normalization=c("MFA", "RV", "None", "RV-MFA")) {
   
-  assertthat::assert_that(inherits(X, "block_matrix"))
+  assertthat::assert_that(inherits(X, "block_matrix") || inherits(X, "block_projection_matrix"))
   
   normalization <- match.arg(normalization)
+  
+  xdim <- dim(X)
+  proj_fun <- projection_fun(X)
   
   Xr <- pre_processor(project(X), center=center,scale=scale)
   
