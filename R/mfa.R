@@ -10,7 +10,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
   } else if (type == "RV" && nblocks(block_mat) > 2) {
     smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
     diag(smat) <- 1
-    wts <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
+    wts <- abs(svd_wrapper(smat, ncomp=1, method="svds")$u[,1])
   } else if (type == "RV-MFA") {
     alpha1 <- unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="svds")$d[1]^2)))
     smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
@@ -25,11 +25,22 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 }
 
 
-#' @param X the data matrix of type \code{block_matrix} or \code{block_projection_matrix}
-#' @param ncomp the number of components to retain
-#' @param center whether to mean center the columns
-#' @param scale whether to standardize columns
+
+#' multiple factor analysis
+#' 
+#' mfa
+#' 
+#' @param X a \code{block_matrix} or a \code{block_projection_matrix} object
+#' @param ncomp the number of components to estimate
+#' @param center whether to mean center the variables
+#' @param scale whether to standardize the variables
+#' @param normalization the normalization method: MFA, RV, RV-MFA, or None (see details).
 #' @export
+#' @examples 
+#' 
+#' X <- block_matrix(replicate(5, { matrix(rnorm(10*10), 10, 10) }, simplify=FALSE))
+#' res <- mfa(X, ncomp=3, normalization="MFA")
+#' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
                 normalization=c("MFA", "RV", "None", "RV-MFA")) {
   
@@ -37,22 +48,18 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   normalization <- match.arg(normalization)
   
+<<<<<<< HEAD
   xdim <- dim(X)
   proj_fun <- projection_fun(X)
   
+=======
+  ## pre-process the projected variables.
+>>>>>>> 5c79a270e2f2ff7358a4f49f44762b5f2fa562e7
   Xr <- pre_processor(project(X), center=center,scale=scale)
-  
-  # Xr <- if (!is.null(rank_k)) {
-  #   is_reduced <- TRUE
-  #   reducer <- reduce_rank(X, rank_k)
-  #   reducer$x
-  # } else {
-  #   is_reduced=FALSE
-  #   reducer <- NULL
-  #   X
-  # }
-  
+
+  ## normalize the matrices 
   alpha <- normalization_factors(Xr, type=normalization)
+  
   
   bind <- block_index_list(X)
   
@@ -79,7 +86,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   }
   
   refit <- function(.X, .ncomp=ncomp) { 
-    mfa(.X, .ncomp, center=center, scale=scale, normalization=normalization, rank_k=rank_k) 
+    mfa(.X, .ncomp, center=center, scale=scale, normalization=normalization) 
   }
   
   permute_refit <- function(.ncomp=ncomp) {
@@ -89,8 +96,6 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     })
     
     refit(Xperm, .ncomp)
-    
-    
   }
   
   A <- rep(alpha, block_lengths(Xr))
@@ -116,12 +121,10 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     permute_refit=permute_refit,
     table_names=names(X),
     reprocess=reprocess,
-    reduced_rank=rank_k,
-    is_reduced=is_reduced,
     permute_refit=permute_refit
   )
   
-  class(result) <- c("mfa", "multiblock", "list")
+  class(result) <- c("mfa", "multiblock", "projector", "list")
   result
 }
 
@@ -148,9 +151,11 @@ loadings.mfa <- function(x) {
 
 #' @export
 partial_scores.mfa <- function(x, block_index=x$ntables) {
-  bind <- block_indices(x)
+ 
+  bind <- block_index_list(x)
   res <- lapply(block_index, function(i) {
-    x$ntables * project(x$fit, get_block(Xr, i), subind=bind[[i]])
+    ## FIXME
+    x$ntables * project(x$fit, get_block(x$Xr, i), subind=bind[[i]])
   })
   
   names(res) <- paste0("Block_", block_index)
