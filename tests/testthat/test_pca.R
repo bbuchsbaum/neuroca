@@ -22,9 +22,15 @@ test_that("can run a triply nested pca", {
   pca1 <- pca(mat1, ncomp=4)
   pca2 <- pca(pca1, ncomp=3)
   pca3 <- pca(pca2, ncomp=2)
-  
   expect_equal(ncol(pca3), ncol(mat1))
  
+})
+
+test_that("can partially project a plain pca", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pca1 <- pca(mat1, ncomp=4)
+  project(pca1, mat1[,1:2], subind=1:2)
+  
 })
 
 test_that("can run a shrink_pca", {

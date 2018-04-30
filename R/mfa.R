@@ -40,6 +40,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' 
 #' X <- block_matrix(replicate(5, { matrix(rnorm(10*10), 10, 10) }, simplify=FALSE))
 #' res <- mfa(X, ncomp=3, normalization="MFA")
+#' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
                 normalization=c("MFA", "RV", "None", "RV-MFA")) {
@@ -48,14 +49,13 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   normalization <- match.arg(normalization)
   
-<<<<<<< HEAD
   xdim <- dim(X)
   proj_fun <- projection_fun(X)
   
-=======
+
   ## pre-process the projected variables.
->>>>>>> 5c79a270e2f2ff7358a4f49f44762b5f2fa562e7
-  Xr <- pre_processor(project(X), center=center,scale=scale)
+
+  preproc <- pre_processor(X, center=center,scale=scale)
 
   ## normalize the matrices 
   alpha <- normalization_factors(Xr, type=normalization)
@@ -66,6 +66,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   reprocess <- function(newdat, block_index=NULL) {
     ## given a new observation(s), pre-process it in the same way the original observations were processed
     
+    ## get the projected data
     projdat <- project(X, newdata=newdat)
     prep <- attr(Xr, "pre_process")
     
@@ -155,7 +156,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
   bind <- block_index_list(x)
   res <- lapply(block_index, function(i) {
     ## FIXME
-    x$ntables * project(x$fit, get_block(x$Xr, i), subind=bind[[i]])
+    x$ntables * project(x$fit, get_block(x$Xr, i), subind=bind[[i]], pre_process=FALSE)
   })
   
   names(res) <- paste0("Block_", block_index)
