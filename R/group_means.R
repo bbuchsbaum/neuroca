@@ -54,12 +54,6 @@ apply_scaling <- function(Xc) {
 }
 
 
-pre_process <- function(X, center=TRUE, scale=FALSE) {
-  Xc <- scale(X, center=center, scale=scale)
-  applyFun <- apply_scaling(Xc)
-  attr(Xc, "applyFun") <- applyFun
-  Xc
-}
 
 
 combinedACC <- function(Pred, Obs) {

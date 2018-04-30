@@ -1,66 +1,93 @@
 
+.uncenter_scale <- function(newdata, center_vec, scale_vec, center, scale, subind=NULL) {
+  if (is.null(subind)) {
+    subind <- 1:ncol(newdata)
+  }
+  assert_that(length(subind) == ncol(newdata))
+  
+  if (!center && !scale) {
+    newdata
+  } else if (center && scale) {
+    m1 <- sweep(newdata, 2, scale_vec[subind], "*")
+    sweep(m1, 2, center_vec[subind], "+")
+  } else if (!center && scale) {
+    sweep(newdata, 2, scale_vec[subind], "*")
+  } else if (center && !scale) {
+    sweep(newdata, 2, center_vec[subind], "+")
+  } else {
+    stop()
+  }
+}
 
-#' pre_processor
-#' 
-#' @param X
-#' @param scale
-#' @param center
-#' @export
-pre_processor <- function(X, center=TRUE, scale=FALSE) {
-  Xs <- scale(X, scale=scale, center=center)
-  
-  center_vec <- attr(Xs, "scaled:center")
-  scale_vec <- attr(Xs, "scaled:scale")
-  
-  if (is.null(scale_vec)) {
-    scale_vec <- rep(1, ncol(X))
-  }
-  
-  if (is.null(center_vec)) {
-    center_vec <- rep(0, ncol(X))
-  }
-  
-  
-  rf <- function(M, subind=1:ncol(X)) {
-    if (!center && !scale) {
-      M
-    } else if (center && scale) {
-      m1 <- sweep(M, 2, scale_vec[subind], "*")
-      sweep(m1, 2, center_vec[subind], "+")
-      
-    } else if (!center && scale) {
-      sweep(M, 2, scale_vec[subind], "*")
-    } else if (center && !scale) {
-      sweep(M, 2, center_vec[subind], "+")
-    } else {
-      stop()
-    }
-  }
-  
-  f <- function(M, subind=1:ncol(X)) {
+.center_scale <- function(newdata, center_vec, scale_vec, center, scale, subind=NULL) {
     if (is.null(subind)) {
-      subind <- 1:ncol(X)
+      subind <- 1:ncol(newdata)
     }
+    assert_that(length(subind) == ncol(newdata))
     
     if (!center && !scale) {
-      M
+      newdata
     } else if (center && scale) {
-      m1 <- sweep(M, 2, center_vec[subind], "-")
+      m1 <- sweep(newdata, 2, center_vec[subind], "-")
       sweep(m1, 2, scale_vec[subind], "/")
     } else if (!center && scale) {
-      sweep(M, 2, scale_vec[subind], "/")
+      sweep(newdata, 2, scale_vec[subind], "/")
     } else if (center && !scale) {
-      sweep(M, 2, center_vec[subind], "-")
+      sweep(newdata, 2, center_vec[subind], "-")
     } else {
       stop()
     }
-  }
+}
+
+
+pre_process.matrix_pre_processor <- function(x, newdata, subind=1:length(x$center_vec)) {
+  .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+}
+
+reverse_pre_process.matrix_pre_processor <- function(x, newdata, subind=1:length(x$center_vec)) {
+  .uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+}
+
+pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
+  .center_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+}
+
+reverse_pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
+  .uncenter_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+}
+
+
+#' @importFrom matrixStats colSds
+#' @export
+pre_processor.matrix <- function(X, center=TRUE, scale=FALSE) {
+  center_vec <- if (center) colMeans(X) else rep(0, ncol(X))
+  scale_vec <- if (scale) matrixStats::colSds(X) else rep(1, ncol(X))
+
+  structure(
+    list(center=center,
+    scale=scale,
+    center_vec=center_vec,
+    scale_vec=scale_vec),
+    class="matrix_pre_processor")
   
-  attr(Xs, "pre_process") <- f
-  attr(Xs, "reverse") <- rf
-  attr(Xs, "center_vec") <- center_vec
-  attr(Xs, "scale_vec") <- scale_vec
-  Xs
+}
+  
+
+#' @export
+pre_processor.projector <- function(X, center=TRUE, scale=FALSE) {
+  projfun <- projection_fun(X)
+  Xp <- project(X)
+  center_vec <- if (center) colMeans(Xp) else rep(0, ncol(Xp))
+  scale_vec <- if (scale) matrixStats::colSds(Xp) else rep(1, ncol(Xp))
+  
+  structure(
+    list(center=center,
+         scale=scale,
+         center_vec=center_vec,
+         scale_vec=scale_vec,
+         projfun=projfun),
+    class="projector_pre_processor")
+  
 }
 
 
