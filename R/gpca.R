@@ -18,7 +18,9 @@
 genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
                    center=TRUE, scale=FALSE) {
   
-
+  proj_fun <- projection_fun(X)
+  xdim <- dim(X)
+  
   if (is.vector(A)) {
     assert_that(length(A) == ncomp(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
@@ -54,7 +56,9 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
   row.names(scores) <- row.names(X)
   #norm_loadings <- t(t(as.matrix(svdfit$v)) * svdfit$d)
   
-  ret <- list(v=svdfit$v, 
+  ret <- list(xdim=xdim,
+              proj_fun=proj_fun,
+              v=svdfit$v, 
               u=svdfit$u, 
               d=svdfit$d, 
               eig=svdfit$d^2,

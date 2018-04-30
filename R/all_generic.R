@@ -190,8 +190,12 @@ as.projector.default  <- function(x,...) {
   }
 }
 
+#' projection_fun
+#' 
+#' return a function that projects data to lower-dimensional space
+#' 
 #' @export
-projection_fun <- function(x, ...) UseMethod("projection_fun")
+projection_fun <- function(x, subind, ...) UseMethod("projection_fun")
 
 #' project_table
 #' 
@@ -212,7 +216,12 @@ procrusteanize <- function(x,...) UseMethod("procrusteanize")
 #' @export
 reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 
-# pre_process <- function(obj, X, ...) UseMethod("pre_process")
+
+#' @export
+pre_process <- function(obj, X, ...) UseMethod("pre_process")
+
+#' @export
+reverse_pre_process <- function(obj, X, ...) UseMethod("reverse_pre_process")
 
 #' block_lengths
 #' 
@@ -232,4 +241,9 @@ block_index_list <- function(object) UseMethod("block_index_list")
 #' @export
 project_copy <- function(x, ...) UseMethod("project_copy")
 
+#' @export
+is_transformer <- function(x) UseMethod("is_transformer")
+
+#' @export
+pre_processor <- function(x, center, scale) UseMethod("pre_processor")
 

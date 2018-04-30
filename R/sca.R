@@ -1,6 +1,6 @@
 
 #' @importFrom multiway sca
-sca <- function(X, ncomp=2, center=TRUE, scale=FALSE, rank_k=NULL,
+sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
                 type=c("sca-p","sca-pf2","sca-ind","sca-ecp"), ...) {
   
   assertthat::assert_that(inherits(X, "block_matrix"))

@@ -16,6 +16,7 @@ group_means <- function(Y, X) {
 }
 
 
+#' @export
 split_matrix <- function(X, fac) {
   idx <- split(1:nrow(X), fac)
   lapply(idx, function(i) X[i,])
@@ -94,14 +95,6 @@ apply_scaling <- function(Xc) {
       stop()
     }
   }
-}
-
-
-pre_process <- function(X, center=TRUE, scale=FALSE) {
-  Xc <- scale(X, center=center, scale=scale)
-  applyFun <- apply_scaling(Xc)
-  attr(Xc, "applyFun") <- applyFun
-  Xc
 }
 
 
