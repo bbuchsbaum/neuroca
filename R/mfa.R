@@ -45,21 +45,20 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
                 normalization=c("MFA", "RV", "None", "RV-MFA")) {
   
-  assertthat::assert_that(inherits(X, "block_matrix") || inherits(X, "block_projection_matrix"))
+  assertthat::assert_that(inherits(X, "block_matrix") || inherits(X, "block_projection_matrix"),
+                          msg="X must be a 'block_matrix' or 'block_projection_matrix'")
   
   normalization <- match.arg(normalization)
   
   xdim <- dim(X)
   proj_fun <- projection_fun(X)
   
-
   ## pre-process the projected variables.
-
   preproc <- pre_processor(X, center=center,scale=scale)
+  Xr <- pre_process(preproc, X)
 
   ## normalize the matrices 
   alpha <- normalization_factors(Xr, type=normalization)
-  
   
   bind <- block_index_list(X)
   
@@ -121,7 +120,6 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     refit=refit,
     permute_refit=permute_refit,
     table_names=names(X),
-    reprocess=reprocess,
     permute_refit=permute_refit
   )
   
@@ -167,25 +165,15 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
-  
-  assert_that(is.matrix(newdata))
-  
-  if (is.null(block_index)) {
+  if (!is.null(block_index)) {
+    assert_that(length(block_index) == 1, msg="block_index must have length of 1")
+    subind <- x$block_indices[[block_index]]
+    x$ntables * project(x$fit, newdat, comp=comp, subind=subind)
+  } else {
     # new data must have same number of columns as original data
     assert_that(ncol(newdata) == ncol(x$X))
-    xnewdat <- x$reprocess(newdata)
-    project(x$fit, xnewdat, comp=comp)
-  } else if (length(block_index) == 1) {
-    ind <- x$block_indices[[block_index]]
-    assert_that(length(ind) == ncol(newdata))
-    xnewdat <- x$reprocess(newdata, block_index)
-    x$ntables * project(x$fit, xnewdat, 
-                        comp=comp, subind=x$block_indices[[block_index]])
-   
-  } else {
-    stop("block_index must have length of 1")
-  }
-  
+    project(x$fit, newdata, comp=comp)
+  } 
 } 
 
 #' @export

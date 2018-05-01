@@ -5,7 +5,7 @@ test_that("can preprocess a matrix no center, no scale", {
   x2 <- reverse_pre_process(pp, x)
   expect_equal(x,x2)
   expect_equal(mat1,x)
-  
+  expect_equal(x, pp$Xp)
 })
 
 test_that("can preprocess a matrix center only", {
@@ -37,7 +37,7 @@ test_that("can preprocess a pca projector with a subind", {
   pca1 <- pca(mat1, ncomp=4)
   pp <- pre_processor(pca1,scale=FALSE)
   
-  expect_equal(x,project(pca1))
+  expect_equal(pre_process(pp, newdata=mat1[,1:2], subind=1:2),project(pca1, newdata=mat1[,1:2], subind=1:2))
 })
 
 
