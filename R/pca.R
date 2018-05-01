@@ -91,7 +91,7 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   proj_fun <- projection_fun(X)
   
   preproc <- pre_processor(X, center=center,scale=scale)
-  Xp <- pre_process(preproc, X)
+  Xp <- pre_process(preproc)
   
   svdres <- svd_wrapper(Xp, ncomp, ...)
   
@@ -215,10 +215,15 @@ truncate.pca <- function(obj, ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
     ret <- obj
   } else {
-    ret <- list(v=obj$v[,1:ncomp], u=obj$u[,1:ncomp], d=obj$d[1:ncomp], 
-                scores=obj$scores[,1:ncomp], ncomp=ncomp, 
-                pre_process=obj$pre_process,
-                reverse_pre_process=obj$pre_process)
+    ret <- list(xdim=obj$xdim,
+                proj_fun=obj$proj_fun,
+                v=obj$v[,1:ncomp,drop=FALSE], 
+                u=obj$u[,1:ncomp,drop=FALSE], 
+                d=obj$d[1:ncomp], 
+                scores=obj$scores[,1:ncomp,drop=FALSE], 
+                ncomp=ncomp, 
+                preproc=obj$preproc)
+    
     class(ret) <- c("pca", "projector", "list")
   }
   

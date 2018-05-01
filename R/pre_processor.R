@@ -40,20 +40,29 @@
 }
 
 
-pre_process.matrix_pre_processor <- function(x, newdata, subind=1:length(x$center_vec)) {
-  .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+pre_process.matrix_pre_processor <- function(x, newdata=NULL, subind=1:length(x$center_vec)) {
+  if (is.null(newdata)) {
+    x$Xp[,subind]
+  } else {
+    .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+  }
 }
 
 reverse_pre_process.matrix_pre_processor <- function(x, newdata, subind=1:length(x$center_vec)) {
   .uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
 }
 
-pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
-  .center_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+pre_process.projector_pre_processor <- function(x, newdata=NULL, subind=NULL) {
+  if (is.null(newdata)) {
+    .center_scale(x$Xp, x$center_vec, x$scale_vec, x$center, x$scale, subind)
+  } else {
+    #.center_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind) 
+    .center_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale) 
+  }
 }
 
 reverse_pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
-  .uncenter_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind)  
+  .uncenter_scale(x$projfun(newdata, subind=subind), x$center_vec, x$scale_vec, x$center, x$scale, subind) 
 }
 
 
@@ -62,13 +71,15 @@ reverse_pre_process.projector_pre_processor <- function(x, newdata, subind=NULL)
 pre_processor.matrix <- function(X, center=TRUE, scale=FALSE) {
   center_vec <- if (center) colMeans(X) else rep(0, ncol(X))
   scale_vec <- if (scale) matrixStats::colSds(X) else rep(1, ncol(X))
-
+  
   structure(
-    list(center=center,
-    scale=scale,
-    center_vec=center_vec,
-    scale_vec=scale_vec),
-    class="matrix_pre_processor")
+    list(
+      Xp=.center_scale(X, center_vec, scale_vec, center,scale),
+      center=center,
+      scale=scale,
+      center_vec=center_vec,
+      scale_vec=scale_vec),
+      class="matrix_pre_processor")
   
 }
   
@@ -77,11 +88,13 @@ pre_processor.matrix <- function(X, center=TRUE, scale=FALSE) {
 pre_processor.projector <- function(X, center=TRUE, scale=FALSE) {
   projfun <- projection_fun(X)
   Xp <- project(X)
+  
   center_vec <- if (center) colMeans(Xp) else rep(0, ncol(Xp))
   scale_vec <- if (scale) matrixStats::colSds(Xp) else rep(1, ncol(Xp))
   
   structure(
-    list(center=center,
+    list(Xp=.center_scale(Xp,center_vec, scale_vec, center,scale),
+         center=center,
          scale=scale,
          center_vec=center_vec,
          scale_vec=scale_vec,
