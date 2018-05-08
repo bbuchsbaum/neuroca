@@ -43,6 +43,27 @@ test_that("can truncate a pca", {
   expect_equal(dim(residuals(pca2, ncomp=5, xorig=mat1)), c(10,15))
 })
 
+test_that("can do an inverse projection and recover original data", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pca1 <- pca(mat1, ncomp=8)
+  sc <- scores(pca1)
+  ip <- inverse_project(pca1, sc)
+  expect_equal(ip, mat1)
+})
+
+test_that("can do an inverse projection on a projector-based pca and recover original data", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pca1 <- pca(mat1, ncomp=4)
+  pca2 <- pca(pca1, ncomp=2)
+  
+  sc <- scores(pca2)
+  ip <- inverse_project(pca2, sc)
+})
+
+
+
+  
+
 test_that("can run a shrink_pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- shrink_pca(mat1)

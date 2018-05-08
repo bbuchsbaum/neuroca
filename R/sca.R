@@ -10,16 +10,7 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
                      center=center, 
                      scale=scale)
   
-  
-  Xr <- if (!is.null(rank_k)) {
-    is_reduced <- TRUE
-    reducer <- reduce_rank(X, rank_k)
-    reducer$x
-  } else {
-    is_reduced=FALSE
-    reducer <- NULL
-    X
-  }
+  Xr <- pre_process(X)
   
   Xl <- lapply(as.list(Xr), t)
   

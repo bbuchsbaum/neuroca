@@ -1,5 +1,18 @@
 
+
+#' @importFrom assertthat assert_that 
+reduce_rows <- function(Xlist, Ylist) {
+
+  assert_that(length(Xlist) == length(Ylist))
+
+  ## compute barycenters for each table, averaging over replications
+  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], project(Xlist[[i]])))
+  Xr <- block_matrix(XB)
+}
+
+
 prep_multiblock_da <- function(Y, Xlist) {
+  
   ## work out the category structure of the X matrices
   if (is.factor(Y) && length(Y) == sum(sapply(Xlist, nrow))) {
     ## Y is a single factor with length equal to the sum of rows of each block
@@ -37,6 +50,7 @@ prep_multiblock_da <- function(Y, Xlist) {
   
   table_names <- names(Xlist)
   conditions <- factor(levels(Yl[[1]]), levels=levels(Yl[[1]]))
+  
   ## average categories within block to get barycenters
   Xr <- reduce_rows(Xlist, Yl)
   
@@ -44,14 +58,6 @@ prep_multiblock_da <- function(Y, Xlist) {
        Y_reps=Y_reps, YIndices=YIndices, conditions=conditions, Xr=Xr)
 }
 
-#' @importFrom assertthat assert_that
-reduce_rows <- function(Xlist, Ylist) {
-  assert_that(length(Xlist) == length(Ylist))
-  
-  ## compute barycenters for each table, averaging over replications
-  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], project(Xlist[[i]])))
-  Xr <- block_matrix(XB)
-}
 
 
 #' mubada
@@ -59,47 +65,43 @@ reduce_rows <- function(Xlist, Ylist) {
 #' @importFrom assertthat assert_that 
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 #'        If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.
-#' @param Xlist a list of X matrices, one per subject. 
+#' @param Xlist a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.
 #' @param ncomp number of common components to estimate
 #' @param center whether to center the variables
 #' @param scale whether to scale the variables by 1/sd
 #' @param normalization the type of normalization
-#' @param rank_k reduce data to k components per block via pca
 #' @export
 mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
-                     normalization=c("MFA", "RV", "None", "RV-MFA"), rank_k=NULL) {
+                     normalization=c("MFA", "RV", "None", "RV-MFA")) {
 
 
   normalization <- match.arg(normalization)
-
-  assertthat::assert_that(all(sapply(Xlist, is.matrix)))
   
-  cstruc <- prep_multiblock_da(Y, Xlist)
-  Yl <- cstruc$Yl
-  Xlist <- cstruc$Xlist
-  conditions <- cstruc$conditions
-  Xr <- cstruc$Xr
- 
-  fit <- mfa(cstruc$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, rank_k=rank_k)
+  assert_that(inherits(Xlist, "list"))
+
+  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x) || inherits(x, "projector"))))
+  
+  mu_prep <- prep_multiblock_da(Y, Xlist)
+  
+  block_indices <- block_indices(Xlist)
+  
+  fit <- mfa(mu_prep$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization)
   
   result <- list(
-    Xlist=cstruc$Xlist,
-    Y=cstruc$Yl,
-    Y_reps=cstruc$Y_reps,
-    conditions=cstruc$conditions,
-    Xr=cstruc$Xr,
+    Xlist=mu_prep$Xlist,
+    Y=mu_prep$Yl,
+    Y_reps=mu_prep$Y_reps,
+    conditions=mu_prep$conditions,
+    Xr=mu_prep$Xr,
     scores=scores(fit),
-   
-    ntables=length(cstruc$Xlist),
-    ncond=nrow(cstruc$Xr),
+    ntables=length(mu_prep$Xlist),
+    ncond=nrow(mu_prep$Xr),
     fit=fit,
     center=center,
     scale=scale,
     ncomp=fit$ncomp,
     block_indices=fit$block_indices,
-    normalization=normalization,
-    table_names=cstruc$table_names,
-    rank_k=rank_k
+    normalization=normalization
   )
   
   class(result) <- c("mubada", "multiblock_da", "list")
@@ -108,7 +110,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
 
 #' @export
 refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
-  mubada(Y, Xlist, ncomp=ncomp, x$center, x$scale, x$normalization, x$rank_k) 
+  mubada(Y, Xlist, ncomp=ncomp, x$center, x$scale, x$normalization) 
 }
 
 #' @export
@@ -127,6 +129,7 @@ permute_refit.multiblock_da <- function(x, ncomp) {
   
   if (any(nreps == 1)) {
     ## permute data
+    ## TODO this will fail if Xlist is a list of projectors
     .Xlist <- lapply(x$Xlist, function(x) x[sample(1:nrow(x)),])
     refit(x, x$Y, .Xlist, ncomp)
   } else {
@@ -148,7 +151,21 @@ loadings.multiblock_da <- function(x) loadings(x$fit)
  
 #' @importFrom abind abind
 project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, block_index=1:x$ntables) {
-  project(x$fit, newdata, comp=comp, block_index=block_index)
+  assert_that(length(block_index) == 1 || length(block_index) == x$ntables)
+  if (length(block_index) == 1) {
+    ind <- x$block_indices[[block_index]]
+    assert_that(ncol(newdata) == length(ind))
+    p <- project(x$Xlist[[block_index]], newdata)
+    project(x$fit, p,comp=comp, block_index=block_index)
+  } else {
+    p <- do.call(cbind, lapply(1:length(x$Xlist), function(i) {
+      ind <- x$block_indices[[i]]
+      project(Xlist[[i]], newdata[,ind])
+    }))
+    
+    project(x$fit, p, comp=comp)
+  }
+  
 }
   
 ## project from existing table
