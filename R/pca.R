@@ -142,14 +142,21 @@ loadings.pca <- function(x) {
   x$v
 }
 
+
 #' @export
 projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
   .comp <- comp
   .pre_process <- pre_process
+  
   function(newdata, subind=NULL) {
     .subind <- subind
     project(x, newdata, comp=.comp, pre_process=.pre_process, subind=.subind)
   }
+}
+
+#' @export
+inverse_project.pca <- function(x, newdata, comp=1:ncomp(x)) {
+  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp]))
 }
 
 #' @export

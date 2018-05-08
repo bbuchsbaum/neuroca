@@ -55,7 +55,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   ## pre-process the projected variables.
   preproc <- pre_processor(X, center=center,scale=scale)
-  Xr <- pre_process(preproc, X)
+  Xr <- pre_process(preproc)
 
   ## normalize the matrices 
   alpha <- normalization_factors(Xr, type=normalization)
@@ -98,6 +98,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     refit(Xperm, .ncomp)
   }
   
+  
   A <- rep(alpha, block_lengths(Xr))
   
   fit <- genpca(unclass(Xr), 
@@ -108,10 +109,13 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   
   result <- list(
-    X=X,
-    Xr=Xr,
+    xdim=xdim,
+    proj_fun=proj_fun,
+    X=Xr,
+    preproc=preproc,
     ntables=nblocks(X),
     fit=fit,
+    ncomp=fit$ncomp,
     center=center,
     scale=scale,
     block_indices=bind,
@@ -165,14 +169,16 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
+  
   if (!is.null(block_index)) {
     assert_that(length(block_index) == 1, msg="block_index must have length of 1")
-    subind <- x$block_indices[[block_index]]
-    x$ntables * project(x$fit, newdat, comp=comp, subind=subind)
+    newdat <- reprocess(x, newdata, block_index=block_index)
+    subind <- block_index_list(x$X)[[block_index]]
+    x$ntables * project(x$fit, unclass(newdat), comp=comp, subind=subind)
   } else {
     # new data must have same number of columns as original data
-    assert_that(ncol(newdata) == ncol(x$X))
-    project(x$fit, newdata, comp=comp)
+    assert_that(ncol(newdata) == x$xdim[2])
+    project(x$fit, unclass(reprocess(x, newdata)), comp=comp)
   } 
 } 
 

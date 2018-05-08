@@ -80,10 +80,10 @@ contributions.multiblock <- function(x, type=c("column", "row", "table")) {
 }
 
 #' @export
-ncol.multiblock <- function(x) ncol(x$fit)
+ncol.multiblock <- function(x) x$xdim[2]
 
 #' @export
-nrow.multiblock <- function(x) nrow(x$fit)
+nrow.multiblock <- function(x) x$xdim[1]
 
 #' @export
 ncomp.multiblock <- function(x) ncomp(x$fit)
@@ -110,23 +110,7 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
 
 reprocess.multiblock <- function(x, newdat, block_index=NULL) {
   ## given a new observation(s), pre-process it in the same way the original observations were processed
-  #browser()
-  prep <- attr(x$X, "pre_process")
-  
-  newdat <- if (is.null(block_index)) {
-    prep(newdat)
-  } else {
-    prep(newdat, x$block_indices[[block_index]])
-  }
-  
-  if (x$is_reduced && !is.null(block_index)) {
-    project(x$reducer, newdat, block_index)
-  } else if (x$is_reduced & is.null(block_index)) {
-    project(x$reducer, newdat)
-  } else {
-    newdat
-  }
-  
+  pre_process(x$preproc, newdat, block_index)
 }
 
 
