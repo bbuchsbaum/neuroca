@@ -86,8 +86,8 @@ pre_process.projector_pre_processor <- function(x, newdata=NULL, subind=NULL) {
 }
 
 #' @export
-reverse_pre_process.projector_pre_processor <- function(x, newdata) {
-  x$reconfun(.uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale)) 
+reverse_pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
+  x$reconfun(.uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale), subind=subind) 
 }
 
 #' @export
