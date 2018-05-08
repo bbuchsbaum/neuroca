@@ -155,8 +155,8 @@ projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
 }
 
 #' @export
-inverse_project.pca <- function(x, newdata, comp=1:ncomp(x)) {
-  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp]))
+inverse_project.pca <- function(x, newdata, comp=1:ncomp(x), subind=NULL) {
+  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp], subind))
 }
 
 #' @export
@@ -190,8 +190,14 @@ residuals.pca <- function(x, ncomp=1, xorig) {
 
 
 #' @export
-reconstruct.pca <- function(x, comp=1:x$ncomp) {
-  reverse_pre_process(x$preproc, scores(x)[,comp,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+reconstruct.pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+  if (is.null(newdata)) {
+    ## reconstruct and then uncenter_scale
+    reverse_pre_process(x$preproc, scores(x)[,comp,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]), subind=subind)
+  } else {
+    ## newdata must have length(comp) columns
+    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]), subind=subind)
+  }
 }
 
 
