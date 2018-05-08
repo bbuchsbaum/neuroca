@@ -37,19 +37,20 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
     assert_that(nrow(M) == nrow(X))
   }
   
-  X <- pre_processor(project(X), center=center,scale=scale)
+  preproc <- pre_processor(X, center=center,scale=scale)
+  Xp <- pre_process(preproc, X)
   
   assert_that(ncomp > 0)
-  ncomp <- min(min(dim(X)), ncomp)
+  ncomp <- min(min(dim(Xp)), ncomp)
   
-  n = nrow(X)
-  p = ncol(X)
+  n = nrow(Xp)
+  p = ncol(Xp)
   
   if(n < p){
-    ret = gmdLA(t(X), A,M, ncomp,p,n)
+    ret = gmdLA(t(Xp), A,M, ncomp,p,n)
     svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
   }else{
-    svdfit = gmdLA(X, M,A,ncomp,n,p)
+    svdfit = gmdLA(Xp, M,A,ncomp,n,p)
   }
   
   scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
@@ -66,8 +67,7 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
               ncomp=length(svdfit$d), 
               A=A,
               M=M,
-              pre_process=attr(X, "pre_process"), 
-              reverse_pre_process=attr(X, "reverse"))
+              preproc=preproc)
 
   class(ret) <- c("genpca", "pca", "projector", "list")
   ret
@@ -122,7 +122,7 @@ project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=
   }
   if (is.null(subind)) {
     Xsup <- if (pre_process) reprocess(x, newdata) else newdata
-    project_xav(Xsup, x$A, x$v)
+    project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
   } else {
     assertthat::assert_that(length(subind) == ncol(newdata))
     Xsup <- if (pre_process) {

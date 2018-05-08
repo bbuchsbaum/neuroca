@@ -150,9 +150,9 @@ reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 #' reconstruct the original data with some number of components
 #' 
 #' @param x the model fit
-#' @param ncomp the number of components to use
+#' @param comp the components to use
 #' @export
-reconstruct <- function(x, ncomp) UseMethod("reconstruct")
+reconstruct <- function(x, comp) UseMethod("reconstruct")
 
 #' get the residuals of a model, after removing the first \code{ncomp} components
 #' 
@@ -170,6 +170,16 @@ residuals <- function(x, ncomp, ...) UseMethod("residuals")
 #' @param ... extra args
 #' @export
 project <- function(x, newdata, ...) UseMethod("project")
+
+#' inverse_project
+#' 
+#' project data from the reduced space to the input space
+#' 
+#' @param x the model fit
+#' @param newdata a matrix or vector of new obervations(s)
+#' @param ... extra args
+#' @export
+inverse_project <- function(x, newdata, ...) UseMethod("inverse_project")
 
 
 #' as.projector
