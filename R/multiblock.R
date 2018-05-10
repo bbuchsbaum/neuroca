@@ -110,7 +110,13 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
 
 reprocess.multiblock <- function(x, newdat, block_index=NULL) {
   ## given a new observation(s), pre-process it in the same way the original observations were processed
-  pre_process(x$preproc, newdat, block_index)
+  if (!is.null(block_index)) {
+    subind <- block_index_list(x)[[block_index]]
+    pre_process(x$preproc, newdat, subind=subind)
+  } else {
+    pre_process(x$preproc, newdat)
+  }
+  
 }
 
 

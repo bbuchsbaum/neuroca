@@ -109,6 +109,8 @@ supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
 #' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
+#' @export
+compose <- function(x,y) UseMethod("compose")
 
 #' @export
 singular_values <- function(x) UseMethod("singular_values")
@@ -137,6 +139,9 @@ partial_scores <- function(x, ...) UseMethod("partial_scores")
 #' @export
 contributions <- function(x, ...) UseMethod("contributions")
 
+
+
+
 #' reproducibility
 #' 
 #' compute a measure of the reproducibility of a model under replication.
@@ -147,12 +152,14 @@ contributions <- function(x, ...) UseMethod("contributions")
 #' @export
 reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 
-#' reconstruct the original data with some number of components
+#' reconstruct the data with some number of components
 #' 
 #' @param x the model fit
+#' @param newdata newdata to be inverse projected (optional)
 #' @param comp the components to use
+#' @param ... extra args
 #' @export
-reconstruct <- function(x, comp) UseMethod("reconstruct")
+reconstruct <- function(x, newdata, comp) UseMethod("reconstruct")
 
 #' get the residuals of a model, after removing the first \code{ncomp} components
 #' 
@@ -171,15 +178,6 @@ residuals <- function(x, ncomp, ...) UseMethod("residuals")
 #' @export
 project <- function(x, newdata, ...) UseMethod("project")
 
-#' inverse_project
-#' 
-#' project data from the reduced space to the input space
-#' 
-#' @param x the model fit
-#' @param newdata a matrix or vector of new obervations(s)
-#' @param ... extra args
-#' @export
-inverse_project <- function(x, newdata, ...) UseMethod("inverse_project")
 
 
 #' as.projector
