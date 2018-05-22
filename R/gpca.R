@@ -53,7 +53,10 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
     svdfit = gmdLA(Xp, M,A,ncomp,n,p)
   }
   
-  scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
+  scores <- t(t(M %*% svdfit$u) * svdfit$d)
+  col_scores <- t(t(A %*% svdfit$v),2, svdfit$d,"*")
+  
+  #scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
   row.names(scores) <- row.names(X)
   #norm_loadings <- t(t(as.matrix(svdfit$v)) * svdfit$d)
   
@@ -64,6 +67,7 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
               d=svdfit$d, 
               eig=svdfit$d^2,
               scores=scores, 
+              col_scores=col_scores,
               ncomp=length(svdfit$d), 
               A=A,
               M=M,

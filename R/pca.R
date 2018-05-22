@@ -11,13 +11,10 @@
 #' @importFrom denoiseR adashrink
 #' @export
 shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", "SURE"), ...) {
-  xdim <- dim(X)
-  proj_fun <- projection_fun(X)
-  
   preproc <- pre_processor(X, center, scale)
   Xp <- pre_process(preproc, X)
   
-  res <- adashrink(Xp, method=method, center=FALSE, ...)
+  res <- denoiseR::adashrink(Xp, method=method, center=FALSE, ...)
   
   keep <- res$singval > 1e-06
   
@@ -33,9 +30,7 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
     d=res$low.rank$d[keep]
   }
   
-  ret <- list(proj_fun=proj_fun,
-              xdim=xdim,
-              v=v, 
+  ret <- list(v=v, 
               u=u,
               d=d,
               scores=t(t(as.matrix(u)) * d),
@@ -65,9 +60,7 @@ pseudo_pca <- function(u, v, d, rnames=NULL) {
   
   assert_that(length(d) == nrow(u))
   
-  ret <- list(xdim=c(length(d), nrow(v)),
-              proj_fun=identity,
-              v=v, 
+  ret <- list(v=v, 
               u=u, 
               d=d, 
               scores=scores, 
@@ -87,9 +80,6 @@ pseudo_pca <- function(u, v, d, rnames=NULL) {
 #' @export
 pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   
-  xdim <- dim(X)
-  proj_fun <- projection_fun(X)
-  
   preproc <- pre_processor(X, center=center,scale=scale)
   Xp <- pre_process(preproc)
   
@@ -101,9 +91,7 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
     row.names(scores) <- row.names(Xp)[seq_along(svdres$d)]
   }
   
-  ret <- list(xdim=xdim,
-              proj_fun=proj_fun,
-              v=svdres$v, 
+  ret <- list(v=svdres$v, 
               u=svdres$u, 
               d=svdres$d, 
               scores=scores, 
@@ -121,10 +109,7 @@ reprocess.pca <- function(x, newdata, subind=NULL) {
   if (is.null(subind)) {
     assert_that(ncol(newdata) == ncol(x))
     pre_process(x$preproc, newdata)
-    #xp <- x$proj_fun(newdata)
-    #x$pre_process(xp)
   } else {
-    #browser()
     assert_that(length(subind) == ncol(newdata), 
                 msg=paste("length of subind not equal to number of columns of newdata", length(subind), "!=", ncol(newdata)))
     pre_process(x$preproc, newdata, subind)
@@ -155,8 +140,17 @@ projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
 }
 
 #' @export
-inverse_project.pca <- function(x, newdata, comp=1:ncomp(x), subind=NULL) {
-  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp], subind))
+project_cols.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE) {
+  ## if no newdata, then simply return the factor scores
+  if (missing(newdata)) {
+    return(loadings(x)[,comp, drop=FALSE])
+  } else {
+    if (is.vector(newdata)) {
+      newdata <- as.matrix(newdata, ncol=1)
+    }
+    assert_that(nrow(newdata) == nrow(x$u))
+    t(newdata) %*% (x$u[,comp,drop=FALSE]) %*% diag(1/x$d[comp], nrow=length(comp), ncol=length(comp))
+  }
 }
 
 #' @export
@@ -164,7 +158,7 @@ project.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NU
   
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
-    return(scores(x)[,comp])
+    return(scores(x)[,comp, drop=FALSE])
   }
   
   if (is.vector(newdata)) {
@@ -172,43 +166,42 @@ project.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NU
   }
   
   if (is.null(subind)) {
-    reprocess(x, newdata) %*% loadings(x)[,comp]
+    reprocess(x, newdata) %*% loadings(x)[,comp, drop=FALSE]
   } else {
     ## subind must be in the input space
     assertthat::assert_that(max(subind) <= ncol(newdata))
-    reprocess(x, newdata, subind=subind) %*% (loadings(x)[subind, comp])
+    reprocess(x, newdata, subind=subind) %*% (loadings(x)[subind, comp, drop=FALSE])
   }
 }
-
 
 #' @export
 residuals.pca <- function(x, ncomp=1, xorig) {
-  recon <- scores(x)[,1:ncomp,drop=FALSE] %*% t(loadings(x)[,1:ncomp,drop=FALSE])
-  newdat <- pre_process(x$preproc, xorig)
-  newdat - recon
+  recon <- reconstruct(x,comp=1:ncomp)
+  #recon <- scores(x)[,1:ncomp,drop=FALSE] %*% t(loadings(x)[,1:ncomp,drop=FALSE])
+  orig <- pre_process(x$preproc, xorig)
+  orig - recon
 }
 
 
 #' @export
-reconstruct.pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
-  if (is.null(newdata)) {
-    ## reconstruct and then uncenter_scale
-    reverse_pre_process(x$preproc, scores(x)[,comp,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]), subind=subind)
+reconstruct.pca <- function(x, newdata=NULL, comp=1:x$ncomp) {
+  if (!is.null(newdata)) {
+    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
-    ## newdata must have length(comp) columns
-    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]), subind=subind)
+    newdata <- scores(x)[,comp, drop=FALSE]
   }
+  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]))
 }
 
 
 #' @export
 ncol.pca <- function(x) {
-  x$xdim[2]
+  nrow(x$v)
 }
 
 #' @export
 nrow.pca <- function(x) {
-  x$xdim[1]
+  nrow(x$u)
 }
 
 #' @export
@@ -228,9 +221,7 @@ truncate.pca <- function(obj, ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
     ret <- obj
   } else {
-    ret <- list(xdim=obj$xdim,
-                proj_fun=obj$proj_fun,
-                v=obj$v[,1:ncomp,drop=FALSE], 
+    ret <- list(v=obj$v[,1:ncomp,drop=FALSE], 
                 u=obj$u[,1:ncomp,drop=FALSE], 
                 d=obj$d[1:ncomp], 
                 scores=obj$scores[,1:ncomp,drop=FALSE], 
@@ -255,15 +246,18 @@ contributions.pca <- function(x, type=c("column", "row")) {
 }
 
 #' @export
-reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, 
-                               reducer=pca, ...) {
-  res <- reducer(x, k, center=center, scale=scale, ...)
+print.pca <- function(object) {
+  showk <- 1:min(object$ncomp, 5)
+  cat("pca", "\n")
+  cat("  number of components: ", object$ncomp, "\n")
+  cat("  number of variables: ", nrow(object$v), "\n")
+  cat("  number of observations: ", nrow(object$u), "\n")
+  cat("  center: ", object$preproc$center, "\n")
+  cat("  scale: ", object$preproc$scale, "\n")
+  cat("  % variance explained (top 5): ", ((object$d[showk]^2)/sum(object$d^2)) * 100, "\n")
 }
 
 
 
 
 
-# 
-# hierarchical_pca <- function(X, comps, hierarchy, svd.method="base") {
-# }

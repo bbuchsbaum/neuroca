@@ -79,7 +79,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   assert_that(inherits(Xlist, "list"))
 
-  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x) || inherits(x, "projector"))))
+  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x))))
   
   mu_prep <- prep_multiblock_da(Y, Xlist)
   
@@ -129,7 +129,6 @@ permute_refit.multiblock_da <- function(x, ncomp) {
   
   if (any(nreps == 1)) {
     ## permute data
-    ## TODO this will fail if Xlist is a list of projectors
     .Xlist <- lapply(x$Xlist, function(x) x[sample(1:nrow(x)),])
     refit(x, x$Y, .Xlist, ncomp)
   } else {
