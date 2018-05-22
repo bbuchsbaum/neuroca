@@ -43,6 +43,14 @@ test_that("can truncate a pca", {
   expect_equal(dim(residuals(pca2, ncomp=5, xorig=mat1)), c(10,15))
 })
 
+test_that("can reconstruct a pca", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pca1 <- pca(mat1, ncomp=15)
+  recon <- reconstruct(pca1)
+  expect_equal(ip, mat1)
+  
+  
+})
 test_that("can do an inverse projection and recover original data", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=8)
