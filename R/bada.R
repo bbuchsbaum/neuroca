@@ -1,6 +1,7 @@
-#' bada
-#' 
 #' Barycentric Discriminant Analysis
+#' 
+#' A technique whose goal is to assign observations to some predetermined categories a  linear combination of the
+#' variables of a data matrix
 #' 
 #' @importFrom assertthat assert_that 
 #' @param Y dependent \code{factor} variable. The categories of the observations.
@@ -10,8 +11,19 @@
 #' @param center whether to center the variables
 #' @param scale whether to divide the variables by the standard deviation.
 #' @param ... arguments to pass through
+#' 
+#' @references
+#' Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
+#' 
+#' @examples 
+#' 
+#' X <- matrix(rnorm(100*1000), 100, 1000)
+#' Y <- factor(rep(letters[1:8], length.out=100))
+#' S <- factor(rep(1:5, each=20))
+#' 
+#' bres <- bada(Y, X, S, ncomp=3)
 #' @export
-bada <- function(Y, X, S, ncomp=2, center=TRUE, scale=FALSE,...) {
+bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, scale=FALSE,...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
@@ -29,10 +41,10 @@ bada <- function(Y, X, S, ncomp=2, center=TRUE, scale=FALSE,...) {
 #' @export
 project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
   if (is.null(newdata)) {
-    Xp <- project(x$fit, newdata=x$X, comp=comp, subind=subind)
+    project(x$fit, newdata=x$X, comp=comp, subind=subind)
   } else {
     assert_that(ncol(newdata) == ncol(X))
-    Xp <- project(x$fit, newdata, subind)
+    project(x$fit, newdata, comp=comp, subind=subind)
   }
 }
 
@@ -45,10 +57,33 @@ loadings.bada <- function(x) loadings(x$fit)
 #' @export
 scores.bada <- function(x) scores(x$fit)
 
+#' @export
+reprocess.bada <- function(x, newdata, subind=NULL) {
+  reprocess(x$fit,newdata,subind)
+}
 
 
+#' @export
+print.bada <- function(object) {
+  showk <- 1:min(object$ncomp, 5)
 
+  cat("barycentric discriminant analysis (BADA) decomposition", "\n")
+  cat("  number of components: ", object$ncomp, "\n")
+  cat("  number of variables: ", nrow(object$fit$v), "\n")
+  cat("  number of categories: ", nrow(object$fit$u), "\n")
   
+  if (length(levels(object$Y)) > 8) {
+    cat("  category levels: ", paste(levels(object$Y)[1:8], collapse = " "), " ... \n")
+  } else {
+    cat("  category levels: ", paste(levels(object$Y), collapse = " "), "\n")
+  }
+  cat("  number of original observations: ", nrow(object$X), "\n")
+  cat("  center: ", object$fit$preproc$center, "\n")
+  cat("  scale: ", object$fit$preproc$scale, "\n")
+  cat("  % variance explained (top ", showk, "): ", ((object$fit$d[showk]^2)/sum(object$fit$d^2)) * 100, "\n")
+}
+
+
 
 #' # Barycentric Discriminant Analysis
 #' #' 

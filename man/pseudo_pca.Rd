@@ -4,8 +4,7 @@
 \alias{pseudo_pca}
 \title{pseudo_pca}
 \usage{
-pseudo_pca(u, v, d, pre_process = function(x, subind) x,
-  reverse_pre_process = function(x, subind) x, rnames = NULL)
+pseudo_pca(u, v, d, rnames = NULL)
 }
 \arguments{
 \item{u}{the row weights}
@@ -14,11 +13,7 @@ pseudo_pca(u, v, d, pre_process = function(x, subind) x,
 
 \item{d}{the singular values}
 
-\item{pre_process}{the function to pre_process the data}
-
-\item{reverse_pre_process}{the function to reverse pre_process the data}
-
-\item{row}{names of observations}
+\item{rnames}{row names of observations}
 }
 \description{
 pseudo_pca

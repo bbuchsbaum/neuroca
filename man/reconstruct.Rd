@@ -2,15 +2,19 @@
 % Please edit documentation in R/all_generic.R
 \name{reconstruct}
 \alias{reconstruct}
-\title{reconstruct the original data with some number of components}
+\title{reconstruct the data with some number of components}
 \usage{
-reconstruct(x, ncomp)
+reconstruct(x, newdata, comp)
 }
 \arguments{
 \item{x}{the model fit}
 
-\item{ncomp}{the number of components to use}
+\item{newdata}{newdata to be inverse projected (optional)}
+
+\item{comp}{the components to use}
+
+\item{...}{extra args}
 }
 \description{
-reconstruct the original data with some number of components
+reconstruct the data with some number of components
 }
