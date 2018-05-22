@@ -139,6 +139,19 @@ projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
   }
 }
 
+#' @export
+project_cols.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE) {
+  ## if no newdata, then simply return the factor scores
+  if (missing(newdata)) {
+    return(loadings(x)[,comp, drop=FALSE])
+  } else {
+    if (is.vector(newdata)) {
+      newdata <- as.matrix(newdata, ncol=1)
+    }
+    assert_that(nrow(newdata) == nrow(x$u))
+    t(newdata) %*% (x$u[,comp,drop=FALSE]) %*% diag(1/x$d[comp], nrow=length(comp), ncol=length(comp))
+  }
+}
 
 #' @export
 project.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
@@ -233,8 +246,18 @@ contributions.pca <- function(x, type=c("column", "row")) {
 }
 
 #' @export
-reduce_rank.matrix <- function(x, k=min(dim(x)), center=TRUE, scale=FALSE, 
-                               reducer=pca, ...) {
-  res <- reducer(x, k, center=center, scale=scale, ...)
+print.pca <- function(object) {
+  showk <- 1:min(object$ncomp, 5)
+  cat("pca", "\n")
+  cat("  number of components: ", object$ncomp, "\n")
+  cat("  number of variables: ", nrow(object$v), "\n")
+  cat("  number of observations: ", nrow(object$u), "\n")
+  cat("  center: ", object$preproc$center, "\n")
+  cat("  scale: ", object$preproc$scale, "\n")
+  cat("  % variance explained (top 5): ", ((object$d[showk]^2)/sum(object$d^2)) * 100, "\n")
 }
+
+
+
+
 

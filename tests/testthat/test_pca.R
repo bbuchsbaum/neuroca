@@ -66,6 +66,25 @@ test_that("can reconstruct a nested pca and recover original data", {
 })
 
 
+test_that("can project a single variable onto pca space", {
+  mat1 <- matrix(rnorm(10*20), 10, 20)
+  pca1 <- pca(mat1, ncomp=10, center=TRUE)
+  v1 <- mat1[,1]
+  proj <- project_cols(pca1,newdata=v1)
+  expect_equal(as.vector(proj), as.vector(pca1$v[1,]))
+})
+
+test_that("can project a set of variables onto pca space", {
+  mat1 <- matrix(rnorm(10*20), 10, 20)
+  mat2 <- matrix(rnorm(10*100), 10, 100)
+  pca1 <- pca(mat1, ncomp=10, center=TRUE)
+  
+  proj <- project_cols(pca1,newdata=mat2)
+  expect_equal(dim(proj), c(100, pca1$ncomp))
+})
+
+
+
 
   
 
