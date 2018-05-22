@@ -1,14 +1,17 @@
 
-.uncenter_scale <- function(newdata, center_vec, scale_vec, center, scale) {
+.uncenter_scale <- function(newdata, center_vec, scale_vec, center, scale, subind=NULL) {
+  if (is.null(subind)) {
+    subind <- 1:length(center_vec)
+  }
   if (!center && !scale) {
-    newdata
+    newdata[,subind]
   } else if (center && scale) {
-    m1 <- sweep(newdata, 2, scale_vec, "*")
-    sweep(m1, 2, center_vec, "+")
+    m1 <- sweep(newdata[,subind], 2, scale_vec[subind], "*")
+    sweep(m1, 2, center_vec[subind], "+")
   } else if (!center && scale) {
-    sweep(newdata, 2, scale_vec, "*")
+    sweep(newdata[,subind], 2, scale_vec[subind], "*")
   } else if (center && !scale) {
-    sweep(newdata, 2, center_vec, "+")
+    sweep(newdata[,subind], 2, center_vec[subind], "+")
   } else {
     stop()
   }
@@ -18,7 +21,7 @@
     if (is.null(subind)) {
       subind <- 1:ncol(newdata)
     }
-    assert_that(length(subind) == ncol(newdata))
+    assert_that(length(subind) == ncol(newdata), msg=paste("length(subind) = ", length(subind), "and ncol(newdata) = ", ncol(newdata)))
     
     if (!center && !scale) {
       newdata
@@ -44,33 +47,22 @@ pre_process.matrix_pre_processor <- function(x, newdata=NULL, subind=1:length(x$
 }
 
 #' @export
-reverse_pre_process.matrix_pre_processor <- function(x, newdata) {
-  .uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale)  
+reverse_pre_process.matrix_pre_processor <- function(x, newdata, subind=NULL) {
+  .uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
 }
 
 #' @export
-pre_process.block_matrix_pre_processor <- function(x, newdata=NULL, block_index=NULL) {
-  assert_that(is.null(block_index) || length(block_index) == 1)
-
-  if (is.null(newdata)) {
-    if (!is.null(block_index)) {
-      subind <- block_index_list(x)[[block_index]]
-      .center_scale(x$Xp[,subind], x$center_vec, x$scale_vec, x$center, x$scale, subind)
-    } else {
-      .center_scale(x$Xp, x$center_vec, x$scale_vec, x$center, x$scale)
-    }
+pre_process.block_matrix_pre_processor <- function(x, newdata=NULL,subind=NULL) {
+  if (is.null(newdata) && is.null(subind)) {
+    x$Xp
   } else {
-    if (!is.null(block_index)) {
-      subind <- block_index_list(x$Xp)[[block_index]]
-      .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
-    } else {
-      .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale)  
-    }
+    ## return a block_matrix
+    .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, subind)  
   }
 }
 
 #'@export
-reverse_pre_process.block_matrix_pre_processor <- function(x, newdata) {
+reverse_pre_process.block_matrix_pre_processor <- function(x, newdata,subind=NULL) {
   .uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale)  
 }
 
@@ -87,7 +79,8 @@ pre_process.projector_pre_processor <- function(x, newdata=NULL, subind=NULL) {
 
 #' @export
 reverse_pre_process.projector_pre_processor <- function(x, newdata, subind=NULL) {
-  x$reconfun(.uncenter_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale), subind=subind) 
+  xrecon <- x$reconfun(newdata)
+  uncenter_scale(xrecon, x$center_vec, x$scale_vec, x$center, x$scale) 
 }
 
 #' @export
@@ -154,7 +147,7 @@ pre_processor.block_matrix <- function(X, center=TRUE, scale=FALSE) {
 #' @export
 pre_processor.projector <- function(X, center=TRUE, scale=FALSE) {
   projfun <- projection_fun(X)
-  reconfun <- function(newdata) inverse_project(X, newdata)
+  reconfun <- function(newdata, .subind=NULL) reconstruct(X, newdata, subind=.subind)
   
   Xp <- project(X)
   
@@ -174,7 +167,7 @@ pre_processor.projector <- function(X, center=TRUE, scale=FALSE) {
 }
 
 #' @export
-pre_processor.block_projection_matrix <- function(X, center=TRUE, scale=FALSE) {
+pre_processor.block_projector <- function(X, center=TRUE, scale=FALSE) {
   projfun <- projection_fun(X)
   reconfun <- function(newdata) inverse_project(X, newdata)
   

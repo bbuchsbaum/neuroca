@@ -1,4 +1,7 @@
 
+
+#' block_pca
+#' 
 #' @param X
 #' @param groups
 #' @param method
@@ -7,70 +10,45 @@
 #' @param max_k
 #' @param center
 #' @param scale
-blocked_pca <- function(X, groups, method=c("gcv", "shrink", "fixed"), 
+#' @importFrom parallel mclapply
+block_pca <- function(X, est_method=c("gcv", "shrink", "fixed"), 
                    ncomp=2, min_k=1, max_k=3, 
-                   center=TRUE, scale=FALSE, ...) {
+                   center=TRUE, scale=FALSE, ncores=max(parallel::detectCores()/2,1), ...) {
   
   
-  assertthat(length(groups) == ncol(X))
+  assert_that(inherits(X, "block_matrix"))
   
-  method <- match.arg(method)
+  est_method <- match.arg(est_method)
   
-  ngroups <- length(unique(groups))
+  ngroups <- nblocks(X)
   
   if (length(ncomp) == 1) {
     ncomp <- rep(ncomp, ngroups)
   } else {
     assertthat::assert_that(length(ncomp) == ngroups)
   }
+
   
-  group_indices <- split(1:length(groups), factor(groups))
-  
-  Xblock <- block_matrix(lapply(group_indices, function(ind) {
-    X[,ind,drop=FALSE]
-  }))
-  
-  fits <- if (method == "gcv") {
-    fits <- lapply(1:nblocks(Xblock), function(i) {
-      xb <- get_block(Xblock, i)
+  fits <- if (est_method == "gcv") {
+    fits <- parallel::mclapply(1:nblocks(X), function(i) {
+      xb <- get_block(X, i)
       est <- fast_estim_ncomp(xb, ncp.min=min_k, ncp.max=max_k)
       pca(xb, ncomp=max(min_k, est$bestcomp), center=center, scale=scale)
-    })
-  } else if (method == "fixed") {
+    }, mc.cores=ncores)
+  } else if (est_method == "fixed") {
     ## method is fixed
-    lapply(1:nblocks(Xblock), function(i) {
-      xb <- get_block(Xblock, i)
+    parallel::mclapply(1:nblocks(X), function(i) {
+      xb <- get_block(X, i)
       pca(xb, ncomp=ncomp[i], center=center, scale=scale)
-    })
+    },mc.cores=ncores)
   } else {
-    lapply(1:nblocks(Xblock), function(i) {
-      xb <- get_block(Xblock, i)
-      shrink_pca(xb, ncomp=ncomp[i], center=center, scale=scale, ...)
-    })
+    parallel::mclapply(1:nblocks(X), function(i) {
+      xb <- get_block(X, i)
+      shrink_pca(xb, center=center, scale=scale, ...)
+    },mc.cores=ncores)
   }
   
-  components <- lapply(fits, function(x) scores(x))
-  
-  bm <- block_matrix_list(components)
-  
-  projector <- function(x,i) {
-    project(fits[[i]], x)
-  }
-  
-  global_projector <- function(x) {
-    out <- lapply(1:ngroups, function(i) {
-      xi <- x[, group_indices[[i]]]
-      projector(xi,i)
-    })
-    
-    names(out) <- paste0("G_", 1:ngroup)
-    ## need to reorder
-    block_matrix_list(out)
-  }
-  
-  ret <- list(x=bm, block_projector=projector, global_projector=global_projector)
-  class(ret) <- c("blocked_pca", "projector", "list")
-  ret
-  
+  bm <- block_projector(fits)
+
 }
   

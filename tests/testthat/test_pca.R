@@ -10,27 +10,31 @@ test_that("can run a simple pca", {
 test_that("can run a simple nested pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=4)
-  pca2 <- pca(pca1, ncomp=2)
+  pca2 <- pca(scores(pca1), ncomp=2)
   
-  expect_equal(ncol(pca2), ncol(pca1))
-  expect_equal(ncomp(pca2), 2)
-  expect_equal(abs(project(pca1, comp=1)), abs(project(pca2, comp=1)))
+  cp <- compose(pca1, pca2)
+  
+  expect_equal(ncol(cp), ncol(pca1))
+  expect_equal(ncomp(cp), 2)
+  expect_equal(dim(reconstruct(cp)), dim(mat1))
 })
 
 test_that("can run a triply nested pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=4)
-  pca2 <- pca(pca1, ncomp=3)
-  pca3 <- pca(pca2, ncomp=2)
-  expect_equal(ncol(pca3), ncol(mat1))
- 
+  pca2 <- pca(scores(pca1), ncomp=3)
+  pca3 <- pca(scores(pca2), ncomp=2)
+  cp <- compose_all(pca1,pca2,pca3)
+  
+  expect_equal(ncomp(pca3), ncomp(cp))
+  expect_equal(dim(project(cp)), c(10,2))
 })
 
 test_that("can partially project a plain pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=4)
-  project(pca1, mat1[,1:2], subind=1:2)
-  
+  p <- project(pca1, mat1[,1:2], subind=1:2)
+  expect_equal(dim(p), c(10, 4))
 })
 
 test_that("can truncate a pca", {
@@ -48,29 +52,44 @@ test_that("can reconstruct a pca", {
   pca1 <- pca(mat1, ncomp=15)
   recon <- reconstruct(pca1)
   expect_equal(ip, mat1)
-  
-  
 })
-test_that("can do an inverse projection and recover original data", {
+
+test_that("can reconstruct a pca and get original data", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
-  pca1 <- pca(mat1, ncomp=8)
+  pca1 <- pca(mat1, ncomp=15)
   sc <- scores(pca1)
-  ip <- inverse_project(pca1, sc)
+  ip <- reconstruct(pca1)
+  ip2 <- reconstruct(pca1, newdata=sc)
   expect_equal(ip, mat1)
 })
 
-test_that("can do an inverse projection on a projector-based pca and recover original data", {
-  mat1 <- matrix(rnorm(10*15), 10, 15)
-  pca1 <- pca(mat1, ncomp=4)
-  pca2 <- pca(pca1, ncomp=2)
-  
-  sc <- scores(pca2)
-  ip <- inverse_project(pca2, sc)
+test_that("can reconstruct a nested pca and recover original data", {
+  mat1 <- matrix(rnorm(10*20), 10, 20)
+  pca1 <- pca(mat1, ncomp=10)
+  pca2 <- pca(scores(pca1), ncomp=10)
+  cp <- compose(pca1,pca2)
+  ip <- reconstruct(cp)
+  expect_equal(ip, mat1)
 })
 
 
+test_that("can project a single variable onto pca space", {
+  mat1 <- matrix(rnorm(10*20), 10, 20)
+  pca1 <- pca(mat1, ncomp=10, center=TRUE)
+  v1 <- mat1[,1]
+  proj <- project_cols(pca1,newdata=v1)
+  expect_equal(as.vector(proj), as.vector(pca1$v[1,]))
+})
 
+test_that("can project a set of variables onto pca space", {
+  mat1 <- matrix(rnorm(10*20), 10, 20)
+  mat2 <- matrix(rnorm(10*100), 10, 100)
+  pca1 <- pca(mat1, ncomp=10, center=TRUE)
   
+  proj <- project_cols(pca1,newdata=mat2)
+  expect_equal(dim(proj), c(100, pca1$ncomp))
+})
+
 
 test_that("can run a shrink_pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
