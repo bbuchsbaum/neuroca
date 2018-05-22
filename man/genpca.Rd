@@ -4,7 +4,7 @@
 \alias{genpca}
 \title{genpca}
 \usage{
-genpca(X, A = rep(1, ncol(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
+genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
   center = TRUE, scale = FALSE)
 }
 \arguments{

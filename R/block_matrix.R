@@ -122,7 +122,6 @@ block_index_list.block_matrix <- function(object) {
 }
 
 
-
 #' get_block
 #' 
 #' @export
@@ -159,7 +158,6 @@ as.matrix.block_matrix_list <- function(x) {
 }
 
 
-
 #' @export
 nblocks.block_matrix <- function(x) {
   attr(x, "nblock")
@@ -193,65 +191,6 @@ names.block_matrix <- function(x) attr(x, "block_names")
 
 #' @export
 is.block_matrix <- function(x) { inherits(x, "block_matrix") }
-
-
-#' @export
-reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
-  
-  nb <- nblocks(x)
-  bind <- attr(x, "block_indices")
-  
-  if (length(k) == 1) {
-    k <- rep(k, nblocks(x))
-  }
-  
-  assert_that(length(k) == nblocks(x))
-  
-  pcres <- lapply(1:nblocks(x), function(i) {
-    print(i)
-    xb <- get_block(x, i)
-    k <- min(min(dim(xb)), k[i])
-    pca(get_block(x, i), k, center=center, scale=scale, method="propack")
-  })
-  
-  
-  components <- lapply(pcres, function(x) scores(x))
-  bm <- block_matrix_list(components)
-  
-  projector <- function(x,i) {
-    project(pcres[[i]], x)
-  }
-  
-  global_projector <- function(x) {
-    out <- lapply(1:nb, function(i) {
-      xi <- x[, bind[i,1]:bind[i,2]]
-      projector(xi,i)
-    })
-    
-    block_matrix_list(out)
-  }
-  
-  ret <- list(x=bm, block_projector=projector, global_projector=global_projector)
-  class(ret) <- c("reduced_rank_block_matrix", "list")
-  ret
-}
-
-
-#' @export
-nblocks.reduced_rank_block_matrix <- function(x) {
-  nblocks(x$x)
-}
-
-
-#' @export
-project.reduced_rank_block_matrix <- function(x, newX, i) {
-  if (missing(i)) {
-    x$global_projector(newX)
-  } else {
-    assert_that(length(i) == 1 && i >0 && i <= nblocks(x))
-    x$block_projector(newX,i)
-  }
-}
 
 
 print.block_matrix <- function(object) {

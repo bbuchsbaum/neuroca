@@ -5,13 +5,13 @@
 \title{mubada}
 \usage{
 mubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
-  normalization = c("MFA", "RV", "None", "RV-MFA"), rank_k = NULL)
+  normalization = c("MFA", "RV", "None", "RV-MFA"))
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
 If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.}
 
-\item{Xlist}{a list of X matrices, one per subject.}
+\item{Xlist}{a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.}
 
 \item{ncomp}{number of common components to estimate}
 
@@ -20,8 +20,6 @@ If there are a different number of rows (e.g. different numbers of replications 
 \item{scale}{whether to scale the variables by 1/sd}
 
 \item{normalization}{the type of normalization}
-
-\item{rank_k}{reduce data to k components per block via pca}
 }
 \description{
 mubada
