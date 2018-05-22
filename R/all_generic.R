@@ -76,7 +76,6 @@ block_apply <- function(x, f, ...) UseMethod("block_apply")
 #' @export
 nblocks <- function(x) UseMethod("nblocks")
 
-
 #' @export
 jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
 
@@ -95,8 +94,6 @@ refit <- function(x, ...) UseMethod("refit")
 #' @export
 reprocess <- function(x, ...) UseMethod("reprocess")
 
-#' @export
-project_cols <- function(x, ncomp,...) UseMethod("project_cols")
 
 #' @export
 split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
@@ -109,6 +106,8 @@ supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
 #' @export
 optimal_components <- function(x, ...) UseMethod("optimal_components")
+
+
 #' @export
 compose <- function(x,y) UseMethod("compose")
 
@@ -168,6 +167,18 @@ reconstruct <- function(x, newdata, comp) UseMethod("reconstruct")
 #' @param ... extra arguments
 residuals <- function(x, ncomp, ...) UseMethod("residuals")
 
+
+#' project
+#' 
+#' project supplementary variables in to the subspace defined by the model
+#' 
+#' @param x the model fit
+#' @param newdata a matrix or vector of new variables(s)
+#' @param ... extra args
+#' @export
+project_cols <- function(x, newdata, ...) UseMethod("project_cols")
+
+
 #' project
 #' 
 #' project supplementary observations in to the subspace defined by the model
@@ -179,24 +190,6 @@ residuals <- function(x, ncomp, ...) UseMethod("residuals")
 project <- function(x, newdata, ...) UseMethod("project")
 
 
-
-#' as.projector
-#' 
-#' convert object to a \code{projector}
-#' 
-#' @param x the object
-#' @param ... extra args
-#' @export
-as.projector <- function(x, ...) UseMethod("as.projector")
-
-#' @export
-as.projector.default  <- function(x,...) {
-  if (inherits(x, "projector")) {
-    x
-  } else {
-    as.projector.matrix(as.matrix(x))
-  }
-}
 
 #' projection_fun
 #' 
@@ -214,15 +207,6 @@ project_table <- function(x, supY, supX, ncomp, ...) UseMethod("project_table")
 
 #' @export
 procrusteanize <- function(x,...) UseMethod("procrusteanize")
-
-#' reduce_rank
-#' 
-#' reduce the rank of a data set to from m variables to k components
-#' 
-#' @param x the data matrix with m columns
-#' @param k the desired number of components
-#' @export
-reduce_rank <- function(x, k, ...) UseMethod("reduce_rank")
 
 
 #' @export

@@ -137,6 +137,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
   res
 }
 
+#' @export
 project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
@@ -155,8 +156,8 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
 } 
 
 #' @export
-reconstruct.mfa <- function(x, comp=1:ncomp(x)) {
-  recon <- reconstruct(x$fit, comp)
+reconstruct.mfa <- function(x, newdata=NULL, comp=1:ncomp(x)) {
+  recon <- reconstruct(x$fit, newdata, comp)
 }
 
 
