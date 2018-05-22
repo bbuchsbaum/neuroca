@@ -195,8 +195,6 @@ names.block_matrix <- function(x) attr(x, "block_names")
 is.block_matrix <- function(x) { inherits(x, "block_matrix") }
 
 
-
-
 #' @export
 reduce_rank.block_matrix <- function(x, k, center=TRUE, scale=FALSE) {
   

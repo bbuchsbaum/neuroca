@@ -1,4 +1,54 @@
+#' bada
+#' 
+#' Barycentric Discriminant Analysis
+#' 
+#' @importFrom assertthat assert_that 
+#' @param Y dependent \code{factor} variable. The categories of the observations.
+#' @param X the data matrix with \code{nrow} equal to \code{length} of \code{Y}
+#' @param S an integer \code{vector} or \code{factor} of subject ids which is the same length as \code{Y}.
+#' @param ncomp number of common components to estimate
+#' @param center whether to center the variables
+#' @param scale whether to divide the variables by the standard deviation.
+#' @param ... arguments to pass through
+#' @export
+bada <- function(Y, X, S, ncomp=2, center=TRUE, scale=FALSE,...) {
+  assert_that(is.factor(Y))
+  assert_that(length(Y) == nrow(X)) 
+  assert_that(length(S) == nrow(X))
+  S <- factor(S)
+  
+  ncomp <- min(ncomp, length(levels(Y)))
+  
+  Xr <- group_means(Y, X)
+  fit <- pca(Xr, ncomp=ncomp, center=center, scale=scale, method="fast")
+  ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
+  class(ret) <- c("bada", "projector")
+  ret
+}
 
+#' @export
+project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+  if (is.null(newdata)) {
+    Xp <- project(x$fit, newdata=x$X, comp=comp, subind=subind)
+  } else {
+    assert_that(ncol(newdata) == ncol(X))
+    Xp <- project(x$fit, newdata, subind)
+  }
+}
+
+#' @export
+singular_values.bada <- function(x) x$fit$d
+
+#' @export
+loadings.bada <- function(x) loadings(x$fit)
+
+#' @export
+scores.bada <- function(x) scores(x$fit)
+
+
+
+
+  
 
 #' # Barycentric Discriminant Analysis
 #' #' 

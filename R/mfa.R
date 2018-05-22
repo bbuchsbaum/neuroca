@@ -45,14 +45,10 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
                 normalization=c("MFA", "RV", "None", "RV-MFA")) {
   
-  assertthat::assert_that(inherits(X, "block_matrix") || inherits(X, "block_projection_matrix"),
-                          msg="X must be a 'block_matrix' or 'block_projection_matrix'")
+  assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
   
   normalization <- match.arg(normalization)
-  
-  xdim <- dim(X)
-  proj_fun <- projection_fun(X)
-  
+
   ## pre-process the projected variables.
   preproc <- pre_processor(X, center=center,scale=scale)
   Xr <- pre_process(preproc)
@@ -62,28 +58,6 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   bind <- block_index_list(X)
   
-  reprocess <- function(newdat, block_index=NULL) {
-    ## given a new observation(s), pre-process it in the same way the original observations were processed
-    
-    ## get the projected data
-    projdat <- project(X, newdata=newdat)
-    prep <- attr(Xr, "pre_process")
-    
-    newdat <- if (is.null(block_index)) {
-      prep(newdat)
-    } else {
-      prep(newdat, bind[[block_index]])
-    }
-    
-    if (is_reduced && !is.null(block_index)) {
-      project(reducer, newdat, block_index)
-    } else if (is_reduced & is.null(block_index)) {
-      project(reducer, newdat)
-    } else {
-      newdat
-    }
-
-  }
   
   refit <- function(.X, .ncomp=ncomp) { 
     mfa(.X, .ncomp, center=center, scale=scale, normalization=normalization) 
@@ -109,8 +83,6 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   
   result <- list(
-    xdim=xdim,
-    proj_fun=proj_fun,
     X=Xr,
     preproc=preproc,
     ntables=nblocks(X),
@@ -165,6 +137,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
   res
 }
 
+#' @export
 project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
@@ -172,19 +145,19 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
   
   if (!is.null(block_index)) {
     assert_that(length(block_index) == 1, msg="block_index must have length of 1")
-    newdat <- reprocess(x, newdata, block_index=block_index)
     subind <- block_index_list(x$X)[[block_index]]
+    newdat <- reprocess(x, newdata, block_index)
     x$ntables * project(x$fit, unclass(newdat), comp=comp, subind=subind)
   } else {
     # new data must have same number of columns as original data
-    assert_that(ncol(newdata) == x$xdim[2])
+    assert_that(ncol(newdata) == ncol(x$X))
     project(x$fit, unclass(reprocess(x, newdata)), comp=comp)
   } 
 } 
 
 #' @export
-reconstruct.mfa <- function(x, comp=1:ncomp(x)) {
-  recon <- reconstruct(x$fit, comp)
+reconstruct.mfa <- function(x, newdata=NULL, comp=1:ncomp(x)) {
+  recon <- reconstruct(x$fit, newdata, comp)
 }
 
 
