@@ -1,6 +1,6 @@
 #' @export
 ncomp.projector <- function(x) {
-  ncol(x)
+  x$ncomp
 }
 
 #' @export
