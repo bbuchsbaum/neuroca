@@ -18,10 +18,25 @@
 #' @examples 
 #' 
 #' X <- matrix(rnorm(100*1000), 100, 1000)
-#' Y <- factor(rep(letters[1:8], length.out=100))
-#' S <- factor(rep(1:5, each=20))
+#' Y <- factor(rep(letters[1:4], length.out=100))
+#' S <- factor(rep(1:10, each=10))
 #' 
 #' bres <- bada(Y, X, S, ncomp=3)
+#' 
+#' 
+#' xbar <- matrix(rnorm(4*1000), 4, 1000)
+#' Y <- factor(rep(letters[1:4], length.out=100))
+#' X <- do.call(rbind, lapply(as.character(Y), function(y) { switch(y,
+#'                                "a" = xbar[1,] + rnorm(1000)*5,
+#'                                "b" = xbar[2,] + rnorm(1000)*5,
+#'                                "c" = xbar[3,] + rnorm(1000)*5,
+#'                                "d" = xbar[4,] + rnorm(1000)*5)
+#'                                }
+#'                                ))
+#'                                
+#' bres2 <- bada(Y, X, S, ncomp=3)
+#' 
+#' 
 #' @export
 bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, scale=FALSE,...) {
   assert_that(is.factor(Y))
@@ -39,6 +54,14 @@ bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, sca
 }
 
 #' @export
+rotate.bada <- function(x, rot) {
+  rfit <- rotate(x$fit, rot)
+  ret <- list(X=x$X, Y=x$Y,S=x$S, Xr=x$Xr, fit=rfit, ncomp=x$fit$ncomp, center=x$center, scale=x$scale)
+  class(ret) <- c("bada", "projector")
+  ret
+}
+
+#' @export
 project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
   if (is.null(newdata)) {
     project(x$fit, newdata=x$X, comp=comp, subind=subind)
@@ -46,6 +69,11 @@ project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
     assert_that(ncol(newdata) == ncol(X))
     project(x$fit, newdata, comp=comp, subind=subind)
   }
+}
+
+#' @export
+project_cols.bada <- function(x, newdata=NULL, comp=1:ncomp(x), pre_process=TRUE) {
+  project_cols(x$fit,newdata,comp=comp,pre_process=pre_process)
 }
 
 #' @export

@@ -245,6 +245,26 @@ contributions.pca <- function(x, type=c("column", "row")) {
   }
 }
 
+
+#' @export
+rotate.pca <- function(x, rot) {
+  u_rot <- x$u %*% rot
+  v_rot <- x$v %*% rot
+  sc_rot <- scores(x) %*% rot
+  
+  ret <- list(v=v_rot, 
+              u=u_rot, 
+              d=apply(sc_rot, 2, function(x) sqrt(sum(x^2))),
+              scores=sc_rot, 
+              ncomp=length(x$d), 
+              preproc=x$preproc)
+  
+  
+  class(ret) <- c("pca", "projector", "list")
+  ret
+  
+}
+
 #' @export
 print.pca <- function(object) {
   showk <- 1:min(object$ncomp, 5)
