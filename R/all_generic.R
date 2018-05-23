@@ -239,3 +239,10 @@ is_transformer <- function(x) UseMethod("is_transformer")
 #' @export
 pre_processor <- function(x, center, scale) UseMethod("pre_processor")
 
+
+#' @param x the object to rotate
+#' @param rot the rotation matrix to apply
+#' @param ... extra arguments
+#' @export
+rotate <- function(x, rot,...) UseMethod("rotate")
+
