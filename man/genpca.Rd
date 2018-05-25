@@ -23,3 +23,22 @@ genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
 \description{
 genpca
 }
+\examples{
+
+coords <- expand.grid(x=seq(1,100), y=seq(1,100))
+img <- apply(coords, 1, function(x) {
+  x1 <- 1 - pnorm(abs(x[1] - 50), sd=8)
+  x2 <- 1 - pnorm(abs(x[2] - 50), sd=8)
+  x1*x2
+})
+
+mat <- matrix(img, 100,100)
+mlist <- replicate(50, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
+X <- do.call(rbind, mlist)
+S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
+
+gp1 <- genpca(X, A=S, ncomp=2)
+
+Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] \%*\% S))
+gp2 <- genpca(as.matrix(Xs), ncomp=2, center=FALSE)
+}
