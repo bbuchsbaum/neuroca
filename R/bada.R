@@ -218,15 +218,7 @@ print.bada <- function(object) {
 #'   }
 #' }
 #' 
-#' #' @export
-#' scores.bada <- function(x) {
-#'   x$scores
-#' }
-#' 
-#' loadings.bada <- function(x) {
-#'   x$v
-#' }
-#' 
+ 
 #' #' @export
 #' #' @importFrom MatrixCorrelation PCAcv
 #' optimal_components.bada <- function(x, ncomp=x$ncomp) {
@@ -374,79 +366,6 @@ print.bada <- function(object) {
 #' }
 #' 
 #' 
-#' #' @export
-#' bootstrap.plscorr_result_da <- function(x, niter) {
-#'   do_boot <- function(indices) {
-#'     XBoot <- x$X[indices,]
-#'     YBoot <- x$Y[indices]
-#'     
-#'     #Xc <- x$pre_process(XBoot)
-#'     
-#'     ## barycenters of bootstrap samples
-#'     #XB <- x$reduce(XBoot, YBoot)
-#'     XB <- group_means(YBoot, XBoot)
-#'     
-#'     ## apply pre-processing from full model
-#'     XBc <- x$pre_process(XB) 
-#'     
-#'     br <- project.rows(XBc, x$u)
-#'     bc <- project.cols(t(XBc), x$v)
-#'     
-#'     list(boot4R=br,
-#'          boot4C=bc)
-#'   }
-#'   
-#'   do_stratified_boot <- function(ids) {
-#'     blocks <- x$XBlock[ids]
-#'     XB <- Reduce("+", blocks)/length(blocks)
-#'     br <- project.rows(XB, x$u)
-#'     bc <- project.cols(t(XB), x$v)
-#'     
-#'     list(boot4R=br,
-#'          boot4C=bc)
-#'     
-#'   }
-#'   
-#'   boot_ratio <- function(bootlist) {
-#'     boot.mean <- Reduce("+", bootlist)/length(bootlist)
-#'     boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
-#'     boot.mean/boot.sd	
-#'   }
-#'   
-#'   .resample <- function(x, ...)  { x[sample.int(length(x), ...)] }
-#'   
-#'   sample_indices <- function(Y) {
-#'     sort(unlist(lapply(levels(x$Y), function(lev) {
-#'       sample(which(x$Y == lev), replace=TRUE)
-#'     })))
-#'   }
-#'   
-#'   boot.res <- 
-#'     lapply(1:niter, function(i) {
-#'       message("bootstrap iteration: ", i)
-#'       if (is.null(x$strata)) {
-#'         row_indices <- sample_indices(x$Y)
-#'         do_boot(sort(unlist(row_indices)))
-#'       } else {
-#'         levs <- levels(x$strata)
-#'         slevs <- sample(levs, length(levs), replace=TRUE)
-#'         ind <- sort(sapply(slevs, function(lev) which(lev == levs)))
-#'         ret <- do_stratified_boot(ind)
-#'       }
-#'     })
-#'   
-#'   
-#'   ret <- list(boot.ratio.R=boot_ratio(lapply(boot.res, "[[", 1)),
-#'               boot.ratio.C=boot_ratio(lapply(boot.res, "[[", 2)),
-#'               boot.raw.R=lapply(boot.res, "[[", 1),
-#'               boot.raw.C=lapply(boot.res, "[[", 2))
-#'   
-#'   class(res) <- c("list", "bootstrap_result")
-#'   
-#' }
-#' 
-#' 
-
 
 
 
