@@ -90,6 +90,23 @@ reprocess.bada <- function(x, newdata, subind=NULL) {
   reprocess(x$fit,newdata,subind)
 }
 
+#' @export
+reconstruct.bada <- function(x, ncomp=x$ncomp) {
+  recon <- reconstruct(x$fit,comp=1:ncomp)
+  row.names(recon) <- levels(x$Y)
+  recon
+}
+
+#' @export
+residuals.bada <- function(x, ncomp=x$ncomp) {
+  recon <- reconstruct(x,ncomp)
+ 
+  mm <- as.matrix(model.matrix(~ x$Y -1))
+  recon_x <- mm %*% recon
+  xresid <- x$X - recon_x
+  xresid
+}
+
 
 #' @export
 print.bada <- function(object) {
