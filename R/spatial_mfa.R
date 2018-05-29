@@ -35,10 +35,10 @@ empca <- function(x, k=4, alpha=1, Smat, thresh=1e-4) {
     Uinv <- corpcor::pseudoinverse(U)
     
     A <- t(Uinv %*% x)
-    Aprime <- -Smat %*% A
+    Aprime <- Smat %*% A
     
     #A <- A + alpha*Aprime
-    A <- A + alpha * Aprime
+    A <- A - alpha * Aprime
     #A <- Aprime
     Ui <- x %*% t(corpcor::pseudoinverse(as.matrix(A)))
     Ui <- sweep(U, 2, FUN="/", STATS=apply(Ui, 2, function(x) sqrt(sum(x ^2))))
