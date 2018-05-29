@@ -14,7 +14,6 @@
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
 #' @importFrom Matrix sparseMatrix
-#' @importFrom Matrix t
 #' @export
 #' 
 #' 
@@ -33,7 +32,6 @@
 #' 
 #' ## spatial smoother
 #' S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
-#' 
 #' gp1 <- genpca(X, A=S, ncomp=2)
 #' 
 #' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
