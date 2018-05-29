@@ -14,6 +14,7 @@
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
 #' @importFrom Matrix sparseMatrix
+#' @importFrom Matrix t
 #' @export
 genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
                    center=TRUE, scale=FALSE) {
@@ -54,7 +55,7 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
   }
   
   scores <- t(t(M %*% svdfit$u) * svdfit$d)
-  col_scores <- t(t(A %*% svdfit$v),2, svdfit$d,"*")
+  col_scores <- t(t(A %*% svdfit$v) * svdfit$d)
   
   #scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
   row.names(scores) <- row.names(X)

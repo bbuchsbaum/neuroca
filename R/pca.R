@@ -140,8 +140,8 @@ projection_fun.pca <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
 }
 
 #' @export
-project_cols.pca <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE) {
-  ## if no newdata, then simply return the factor scores
+project_cols.pca <- function(x, newdata, comp=1:ncomp(x)) {
+  ## if no newdata, then simply return the loadings
   if (missing(newdata)) {
     return(loadings(x)[,comp, drop=FALSE])
   } else {

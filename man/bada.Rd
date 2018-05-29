@@ -29,10 +29,25 @@ variables of a data matrix
 \examples{
 
 X <- matrix(rnorm(100*1000), 100, 1000)
-Y <- factor(rep(letters[1:4], 25))
-S <- factor(rep(1:5, each=20))
+Y <- factor(rep(letters[1:4], length.out=100))
+S <- factor(rep(1:10, each=10))
 
 bres <- bada(Y, X, S, ncomp=3)
+
+
+xbar <- matrix(rnorm(4*1000), 4, 1000)
+Y <- factor(rep(letters[1:4], length.out=100))
+X <- do.call(rbind, lapply(as.character(Y), function(y) { switch(y,
+                               "a" = xbar[1,] + rnorm(1000)*5,
+                               "b" = xbar[2,] + rnorm(1000)*5,
+                               "c" = xbar[3,] + rnorm(1000)*5,
+                               "d" = xbar[4,] + rnorm(1000)*5)
+                               }
+                               ))
+                               
+bres2 <- bada(Y, X, S, ncomp=3)
+
+
 }
 \references{
 Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
