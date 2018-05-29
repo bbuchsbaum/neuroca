@@ -29,6 +29,8 @@
 #' mat <- matrix(img, 100,100)
 #' mlist <- replicate(50, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
 #' X <- do.call(rbind, mlist)
+#' 
+#' ## spatial smoother
 #' S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
 #' 
 #' gp1 <- genpca(X, A=S, ncomp=2)
