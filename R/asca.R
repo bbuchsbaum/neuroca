@@ -16,11 +16,16 @@ gen_threeway_mat <- function(n1,n2,n3, nvox, index) {
 #strata <- "sid"
 
 
-#' collapse
+#' Column-wise average a matrix variables, collapsing some set of factors
+#' 
 #' @param form the formula defining the model to collapse over
 #' @param X the matrix to collpased ober rows
 #' @param design the \code{data.frame} containing the variables reference in \code{form}
-#' 
+#' @export
+#' @examples 
+#' X <- matrix(rnorm(20*10), 20, 10)
+#' des <- data.frame(a=rep(letters[1:4], 5), b=factor(rep(1:5, each=4)))
+#' xcoll <- collapse(~ a+b, X, design=des)
 collapse <- function(form, X, design) {
   tt <- terms(form)
   facnames <- colnames(attr(tt, "factors"))
@@ -35,11 +40,20 @@ collapse <- function(form, X, design) {
 }
 
 
-#' residualize
+#' Compute a regression model for each column in a matrix and return residual matrix
 #' 
 #' @param form the formula defining the model to fit for residuals
 #' @param X the response matrix
 #' @param design the \code{data.frame} containing the design variables specified in \code{form} argument.
+#' @examples 
+#' 
+#' X <- matrix(rnorm(20*10), 20, 10)
+#' des <- data.frame(a=rep(letters[1:4], 5), b=factor(rep(1:5, each=4)))
+#' xresid <- residualize(~ a+b, X, design=des)
+#' 
+#' ## design is saturated, residuals should be zero
+#' xresid2 <- residualize(~ a*b, X, design=des)
+#' sum(xresid2) == 0
 #' @export
 residualize <- function(form, X, design) {
   options(contrasts = c("contr.sum", "contr.poly"))

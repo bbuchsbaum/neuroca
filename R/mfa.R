@@ -150,10 +150,16 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
     x$ntables * project(x$fit, unclass(newdat), comp=comp, subind=subind)
   } else {
     # new data must have same number of columns as original data
-    assert_that(ncol(newdata) == ncol(x$X))
+    assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
     project(x$fit, unclass(reprocess(x, newdata)), comp=comp)
   } 
 } 
+
+#' @export
+project_cols.mfa <- function(x, newdata=NULL, comp=1:x$ncomp) {
+  project_cols(x$fit,newdata,comp=comp)
+}
+
 
 #' @export
 reconstruct.mfa <- function(x, newdata=NULL, comp=1:ncomp(x)) {

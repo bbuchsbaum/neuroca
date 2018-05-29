@@ -7,10 +7,17 @@ proc_rot <- function(X, Y) {
   A
 }
 
+
+#' compute standard deviations for a set of bootstrap results
+boot_sd <- function(bootlist) {
+  boot.mean <- Reduce("+", bootlist)/length(bootlist)
+  boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
+}
+
 #' compute bootstrap ratios for a list of matrices
 boot_ratio <- function(bootlist) {
   boot.mean <- Reduce("+", bootlist)/length(bootlist)
-  boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
+  boot.sd <- boot_sd(bootlist)
   boot.mean/boot.sd	
 }
 
@@ -25,6 +32,8 @@ resampleXY <- function(X, Y) {
   
 }
 
+
+#' @export
 resample.mubada <- function(x) {
   ## check for multiple repetitions per Y levels per block
   Xresam <- x$Xlist
@@ -39,6 +48,8 @@ resample.mubada <- function(x) {
   list(X=Xret, Y=Yret)
 }
 
+
+#' @export
 resample.bada <- function(x) {
   ## split all indices by category
   Y_by_idx <- split(1:length(x$Y), x$Y)
@@ -46,21 +57,89 @@ resample.bada <- function(x) {
   list(Y=x$Y[resam], X=x$X[resam,])
 }
 
-
 #' @export
-bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "rotated", "unrotated", "split_half")) {
-  
+#' @examples 
+#' 
+#' Xl <- lapply(1:5, function(i) matrix(rnorm(100*20), 100, 20))
+#' Yl <- lapply(1:5, function(i) factor(rep(letters[1:5], length.out=100)))
+#' 
+#' mb <- mubada(Yl, Xl)
+#' 
+bootstrap.mubada <- function(x, niter, nboot=100, ncomp=x$ncomp,type=c("projection", "rotated", "unrotated")) {
   type <- match.arg(type)
   if (ncomp > x$ncomp) {
     ncomp <- x$ncomp
   }
   
-  project.rows <- function(xr) {
-    xr %*% x$fit$v[,1:ncomp,drop=FALSE] 
+  
+  do_boot_projection <- function() {
+    ## resample original data with replacement, generating a new dataset
+    resam <- resample(x)
+    
+    ## calculate barycenters
+    Xb <- do.call(cbind, lapply(1:length(resam$X), function(i) {
+      reprocess(x, group_means(resam$Y[[i]], resam$X[[i]]), block_index=i)
+    }))
+    
+    #browser()
+    #browser()
+    ## project rows and columns of barycenters
+    br <- project(x, Xb)
+    bc <- project_cols(x, Xb)
+    
+    list(boot4R=br,
+         boot4C=bc)
   }
   
-  project.cols <- function(xc) {
-    t(xc) %*% (x$fit$u %*% diag(1/x$fit$d, nrow=ncomp, ncol=ncomp))
+  do_boot_svd <- function() {
+    ## resample original data with replacement, generating a new dataset
+    resam <- resample(x)
+    xboot <- mubada(resam$Y, resam$X, ncomp=x$ncomp, center=x$center, scale=x$scale, normalization=x$normalization)
+    
+    if (type == "rotated") {
+      A <- proc_rot(scores(x), scores(xboot))
+      boot_scores <- scores(xboot) %*% A
+      boot_loadings <- loadings(xboot) %*% A
+    } else {
+      sign_flip <- sign(diag(t(scores(x)) %*% scores(xboot)))
+      boot_scores <- t(t(scores(xboot)) * sign_flip)
+      boot_loadings <- t(t(loadings(xboot)) * sign_flip)
+    }
+    
+    list(boot4R=boot_scores,
+         boot4C=boot_loadings)
+  }
+  
+  ret <- if (type == "projection") {
+    boots <- replicate(nboot, do_boot_projection(), simplify = FALSE)
+    list(zboot_scores=boot_ratio(lapply(boots, "[[", 1)),
+         zboot_loadings=boot_ratio(lapply(boots, "[[", 2)))
+    
+  } else {
+    boots <- replicate(nboot, do_boot_svd(), simplify=FALSE)
+    list(zboot_scores=boot_ratio(lapply(boots, "[[", 1)),
+         zboot_loadings=boot_ratio(lapply(boots, "[[", 2)),
+         nboot=nboot)
+  }
+  
+  
+  class(ret) <- c("bootstrap_result", "list")
+  ret
+  
+  
+  
+  
+}
+
+
+
+
+#' @export
+bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "rotated", "unrotated")) {
+  
+  type <- match.arg(type)
+  if (ncomp > x$ncomp) {
+    ncomp <- x$ncomp
   }
   
   do_split <- function() {
@@ -114,10 +193,23 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
     
   }
   
+  do_perm <- function() {
+    split_idx <- split(1:length(x$Y), x$S)
+    Yperm <- unlist(lapply(split_idx, function(idx) {
+      sample(x$Y[idx])
+    }))
+
+   
+    bperm <- bada(Yperm, x$X, S=x$S, center=x$center, scale=x$scale)
+    
+    list(boot4R=scores(bperm)[,1:ncomp],
+         boot4C=loadings(bperm)[,1:ncomp])
+  }
+  
  
   do_boot_projection <- function() {
     ## resample original data with replacement, generating a new dataset
-    resam <- resample.bada(x)
+    resam <- resample(x)
     
     ## calculate barycenters of pre-processed data
     Xb <- group_means(resam$Y, reprocess(x, resam$X))
@@ -149,21 +241,20 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
          boot4C=boot_loadings)
   }
   
-  boot.res <- 
-    lapply(1:nboot, function(i) {
-      if (type == "projection") {
-        do_boot_projection()
-      } else if (type == "split_half") {
-        do_split()
-      } else {
-        do_boot_svd()
-      }
-    })
-  
-  ret <- list(zboot_scores=boot_ratio(lapply(boot.res, "[[", 1)),
-              zboot_loadings=boot_ratio(lapply(boot.res, "[[", 2)))
-  
-  class(ret) <- c("list", "bootstrap_result")
+  ret <- if (type == "projection") {
+    boots <- replicate(nboot, do_boot_projection(), simplify = FALSE)
+    list(zboot_scores=boot_ratio(lapply(boots, "[[", 1)),
+         zboot_loadings=boot_ratio(lapply(boots, "[[", 2)))
+    
+  } else {
+    boots <- replicate(nboot, do_boot_svd(), simplify=FALSE)
+    list(zboot_scores=boot_ratio(lapply(boots, "[[", 1)),
+         zboot_loadings=boot_ratio(lapply(boots, "[[", 2)),
+         nboot=nboot)
+  }
+
+ 
+  class(ret) <- c("bootstrap_result", "list")
   ret
   
 }
@@ -171,60 +262,6 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
 
 
 
-#' @export
-bootstrap.mubada <- function(x, niter, ncomp=x$ncomp) {
-  if (ncomp > x$ncomp) {
-    ncomp <- x$ncomp
-  }
-  
-  project.rows <- function(xr) {
-     xr %*% x$fit$v[,1:ncomp,drop=FALSE] 
-   }
-   
-  project.cols <- function(xc) {
-    t(xc) %*% (x$fit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$fit$d[1:ncomp], nrow=ncomp, ncol=ncomp)
-  }
-  
-  do_boot <- function() {
-    ## resample original data with replacement, generating a new dataset
-    resam <- resample.mubada(x)
-    
-    ## calculate barycenters of pre-processed data
-    XBary <- do.call(cbind, lapply(1:length(resam$X), function(i) {
-      group_means(resam$Y[[i]], reprocess(x, resam$X[[i]], i))
-    }))
-    
-    ## project rows and columns of barycenters
-    br <- project.rows(XBary)
-    bc <- project.cols(XBary)
-    
-    list(boot4R=br,
-         boot4C=bc)
-  }
-
-  
-  boot_ratio <- function(bootlist) {
-    boot.mean <- Reduce("+", bootlist)/length(bootlist)
-    boot.sd <- sqrt(Reduce("+", lapply(bootlist, function(mat) (mat - boot.mean)^2))/length(bootlist))
-    boot.mean/boot.sd	
-  }
-  
-  boot.res <- 
-    lapply(1:niter, function(i) {
-      message("bootstrap iteration: ", i)
-        do_boot()
-    })
-  
-  
-  ret <- list(boot_ratio_rows=boot_ratio(lapply(boot.res, "[[", 1)),
-              boot_ratio_cols=boot_ratio(lapply(boot.res, "[[", 2)),
-              boot_raw_rows=lapply(boot.res, "[[", 1),
-              boot_raw_cols=lapply(boot.res, "[[", 2))
-  
-  class(ret) <- c("list", "bootstrap_result")
-  ret
-  
-}
 
 
 
@@ -237,17 +274,22 @@ bootstrap.pca <- function(x, nboot=100, k=x$ncomp) {
   
   gen <- function() {
     sidx <- sample(1:ncol(DUt), replace=TRUE)
-    DUt[,sidx,drop=FALSE]
+    list(DUt=DUt[,sidx,drop=FALSE], idx=sidx)
   }
   
   res <- boot_svd(nboot=nboot, k=k, loadings(x), gen)
-  
+
+ 
   zboot <- do.call(cbind, lapply(1:k, function(ki) {
     res$EVs[[ki]]/res$sdVs[[ki]]
   }))
   
-  ret <- list(boot_ratio_vars=zboot, nboot=nboot, k=k)
-  class(ret) <- "bootstrap_pca"
+  zscores <- do.call(cbind, lapply(1:k, function(ki) {
+    res$EScores[[ki]]/res$sdScores[[ki]]
+  }))
+  
+  ret <- list(zboot_loadings=zboot, zboot_scores=zscores, nboot=nboot, k=k)
+  class(ret) <- c("bootstrap_result", "list")
   ret
  
 }
@@ -279,11 +321,30 @@ svd_dutp <- function(DUtP,k) {
 #' @keywords internal
 boot_sum <- function(res,k, v) {
   
+  
   AsByK <- lapply(1:k, function(ki) {
     do.call(rbind, lapply(res, function(a) {
-      a$Ab[,ki]
+      a$svdfit$Ab[,ki]
     }))
   })
+  
+  ScoresByK <- lapply(1:k, function(ki) {
+    do.call(rbind, lapply(res, function(a) {
+      u <- a$svdfit$Ub[,ki] * a$svdfit$d[ki]
+      u2 <- rep(NA, length(u))
+      u2[a$idx] <- u
+      u2
+    }))
+  })
+  
+  EScores <- lapply(ScoresByK, function(s) {
+    apply(s, 2, mean, na.rm=TRUE)
+  })
+  
+  sdScores <- lapply(ScoresByK, function(s) {
+    apply(s, 2, sd, na.rm=TRUE)
+  })
+  
   
   
   EAs <- lapply(AsByK, colMeans) #EAs is indexed by k
@@ -294,18 +355,19 @@ boot_sum <- function(res,k, v) {
   varVs <- lapply(1:length(AsByK), function(ki) {
     rowSums((v %*% varAs[[ki]]) * v)
   })
-  
+
   sdVs <- lapply(varVs,sqrt)
-  list(res=res, EAs=EAs, EVs=EVs, varAs=varAs, sdVs=sdVs)
+  list(res=res, EAs=EAs, EVs=EVs, varAs=varAs, sdVs=sdVs, EScores=EScores, sdScores=sdScores)
   
 }
 
 #' @keywords internal
 boot_svd <- function(nboot, k, v, gen_DUtP) {
   res <- lapply(1:nboot, function(i) {
-    DUtP <- gen_DUtP()
+    sam <- gen_DUtP()
+    DUtP <- sam$DUt
     #DUtP <- if(x$center) t(scale(t(DUt[,sidx]),center=TRUE,scale=FALSE)) else DUt[,sidx]
-    svd_dutp(DUtP,k)
+    list(svdfit=svd_dutp(DUtP,k), idx=sam$idx)
   })
   
   boot_sum(res,k, v)
