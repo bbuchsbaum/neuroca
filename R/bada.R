@@ -66,14 +66,14 @@ project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
   if (is.null(newdata)) {
     project(x$fit, newdata=x$X, comp=comp, subind=subind)
   } else {
-    assert_that(ncol(newdata) == ncol(X))
+    assert_that(ncol(newdata) == ncol(x$X))
     project(x$fit, newdata, comp=comp, subind=subind)
   }
 }
 
 #' @export
-project_cols.bada <- function(x, newdata=NULL, comp=1:ncomp(x), pre_process=TRUE) {
-  project_cols(x$fit,newdata,comp=comp,pre_process=pre_process)
+project_cols.bada <- function(x, newdata=NULL, comp=1:x$ncomp) {
+  project_cols(x$fit,newdata,comp=comp)
 }
 
 #' @export
@@ -88,6 +88,16 @@ scores.bada <- function(x) scores(x$fit)
 #' @export
 reprocess.bada <- function(x, newdata, subind=NULL) {
   reprocess(x$fit,newdata,subind)
+}
+
+#' @export
+permute.bada <- function(x) {
+  split_idx <- split(1:length(x$Y), x$S)
+  Yperm <- unlist(lapply(split_idx, function(idx) {
+    sample(x$Y[idx])
+  }))
+  
+  Yperm <- Yperm[unlist(split_idx)]
 }
 
 

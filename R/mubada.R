@@ -2,7 +2,6 @@
 
 #' @importFrom assertthat assert_that 
 reduce_rows <- function(Xlist, Ylist) {
-
   assert_that(length(Xlist) == length(Ylist))
 
   ## compute barycenters for each table, averaging over replications
@@ -10,7 +9,7 @@ reduce_rows <- function(Xlist, Ylist) {
   Xr <- block_matrix(XB)
 }
 
-
+#' @keywords internal
 prep_multiblock_da <- function(Y, Xlist) {
   
   ## work out the category structure of the X matrices
@@ -147,22 +146,24 @@ singular_values.multiblock_da <- function(x) {
 #' @export
 loadings.multiblock_da <- function(x) loadings(x$fit) 
 
+#' @export
+project_cols.multiblock_da <- function(x, newdata=NULL, comp=1:x$ncomp) {
+  project_cols(x$fit,newdata,comp=comp)
+}
+
  
 #' @importFrom abind abind
 project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, block_index=1:x$ntables) {
   assert_that(length(block_index) == 1 || length(block_index) == x$ntables)
-  if (length(block_index) == 1) {
+  if (missing(newdata)) {
+    scores(x)
+  } else if (length(block_index) == 1) {
     ind <- x$block_indices[[block_index]]
     assert_that(ncol(newdata) == length(ind))
-    p <- project(x$Xlist[[block_index]], newdata)
-    project(x$fit, p,comp=comp, block_index=block_index)
+    project(x$fit, newdata, comp=comp, block_index=block_index)
   } else {
-    p <- do.call(cbind, lapply(1:length(x$Xlist), function(i) {
-      ind <- x$block_indices[[i]]
-      project(Xlist[[i]], newdata[,ind])
-    }))
-    
-    project(x$fit, p, comp=comp)
+    assert_that(ncol(newdata) == length(unlist(x$block_indices)))
+    project(x$fit, newdata, comp=comp)
   }
   
 }
@@ -184,6 +185,11 @@ predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp,
     scorepred(as.matrix(fscores), scores(x), type=type, ncomp=ncomp)
   }
   
+}
+
+#' @export
+reprocess.multiblock_da <- function(x, newdat, block_index=NULL) {
+  reprocess(x$fit, newdat, block_index=block_index)
 }
 
 

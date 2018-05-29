@@ -88,6 +88,9 @@ performance <- function(x, yobs, ncomp, folds, metric, ...) UseMethod("performan
 #' @export
 permute_refit <- function(x, ...) UseMethod("permute_refit")
 
+#' @export 
+permute <- function(x, ...) UseMethod("permute")
+
 #' @export
 refit <- function(x, ...) UseMethod("refit")
 
