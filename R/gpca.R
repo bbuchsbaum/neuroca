@@ -36,6 +36,15 @@
 #' 
 #' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
 #' gp2 <- genpca(as.matrix(Xs), ncomp=2, center=FALSE)
+#' 
+#' ## use an adjacency matrix to weight items sharing an index.
+#' 
+#' X <- matrix(rnorm(50*100), 50, 100)
+#' colind <- rep(1:10, 10)
+#' S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=1, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="binary")
+#' diag(S) <- 1
+#' S <- S/RSpectra::svds(S,k=1)$d
+#' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
                    center=TRUE, scale=FALSE) {
   
@@ -162,7 +171,7 @@ project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=
 }
 
 
-
+#' @keywords internal
 gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
 
