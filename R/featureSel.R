@@ -1,4 +1,36 @@
 
+
+unit_norm <- function(X) {
+  Xs <- scale(X, center=TRUE, scale=TRUE)
+  div <- sqrt(nrow(X) - 1)
+  Xs/div
+}
+
+relief_scores <- function(X, labels, k=10) {
+  labels <- as.factor(labels)
+  
+  X <- unit_norm(X)
+  neighborweights:::label_matrix2(labels, labels)
+  
+  nclasses <- length(levels(labels))
+  
+  D <- Diagonal(nrow(X)) 
+  knabes <- neighborweights::similarity_matrix(X, k=k, neighbor_mode="knn", weight_mode="binary", sigma=1) 
+  lambat <- neighborweights:::label_matrix2(labels,labels)
+  
+  S <- lambat
+  S[Matrix::which(knabes==1 & lambat == 1, arr.ind=TRUE)] <- 1/k
+  S[Matrix::which(knabes==1 & lambat == 0, arr.ind=TRUE)] <- -1/((nclasses-1)*k)
+  
+  D <- rowSums(S)
+  L <- Diagonal(x=D) - S
+
+  Dtilde <- Diagonal(x= D^(-1/2))
+  Lnorm <- Dtilde %*% L %*% Dtilde
+  X %*% Lnorm %*% X
+  
+}
+
 laplacian_scores <- function(X, W) {
   nsamples <- nrow(X)
   nfeatures <- ncol(X)
