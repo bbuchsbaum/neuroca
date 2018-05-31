@@ -43,37 +43,30 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
-                normalization=c("MFA", "RV", "None", "RV-MFA")) {
+                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
   
   normalization <- match.arg(normalization)
+  
+  if (normalization == "custom") {
+    assert_that(!is.null(A))
+  }
 
-  ## pre-process the projected variables.
+  ## pre-process the variables.
   preproc <- pre_processor(X, center=center,scale=scale)
   Xr <- pre_process(preproc)
 
   ## normalize the matrices 
-  alpha <- normalization_factors(Xr, type=normalization)
+  
+  if (normalization != "custom") {
+    alpha <- normalization_factors(Xr, type=normalization)
+    A <- rep(alpha, block_lengths(X))
+  } else {
+    alpha <- rep(1, nblocks(X))
+  }
   
   bind <- block_index_list(X)
-  
-  
-  refit <- function(.X, .ncomp=ncomp) { 
-    mfa(.X, .ncomp, center=center, scale=scale, normalization=normalization) 
-  }
-  
-  permute_refit <- function(.ncomp=ncomp) {
-    Xperm <- block_apply(X, function(x) {
-      sidx <- sample(1:nrow(x))
-      x[sidx,]
-    })
-    
-    refit(Xperm, .ncomp)
-  }
-  
-  
-  A <- rep(alpha, block_lengths(Xr))
   
   fit <- genpca(unclass(Xr), 
                     A=A, 
@@ -93,10 +86,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     block_indices=bind,
     alpha=alpha,
     normalization=normalization,
-    refit=refit,
-    permute_refit=permute_refit,
-    table_names=names(X),
-    permute_refit=permute_refit
+    table_names=names(X)
   )
   
   class(result) <- c("mfa", "multiblock", "projector", "list")
