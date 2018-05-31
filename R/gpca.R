@@ -105,7 +105,12 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
 
   class(ret) <- c("genpca", "pca", "projector", "list")
   ret
-  
+}
+
+
+#' @export
+loadings.genpca <- function(obj) {
+  obj$A %*% obj$v
 }
 
 project_xav <- function(X, A, V) {
@@ -230,6 +235,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   )
   
 }
+
 
 #' @export
 truncate.genpca <- function(obj, ncomp) {
