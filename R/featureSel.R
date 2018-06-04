@@ -21,6 +21,8 @@ relief_scores <- function(X, labels, k=10) {
   S <- lambat
   S[Matrix::which(knabes==1 & lambat == 1, arr.ind=TRUE)] <- 1/k
   S[Matrix::which(knabes==1 & lambat == 0, arr.ind=TRUE)] <- -1/((nclasses-1)*k)
+  S[Matrix::which(knabes==0 & lambat == 1, arr.ind=TRUE)] <- 0
+  diag(S) <- rep(1, nrow(S))
   
   D <- rowSums(S)
   L <- Diagonal(x=D) - S

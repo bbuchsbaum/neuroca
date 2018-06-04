@@ -71,7 +71,7 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' @param normalization the type of normalization
 #' @export
 mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
-                     normalization=c("MFA", "RV", "None", "RV-MFA")) {
+                     normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
 
 
   normalization <- match.arg(normalization)
@@ -84,7 +84,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   block_indices <- block_indices(Xlist)
   
-  fit <- mfa(mu_prep$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization)
+  fit <- mfa(mu_prep$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, A=A)
   
   result <- list(
     Xlist=mu_prep$Xlist,
