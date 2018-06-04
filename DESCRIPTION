@@ -11,7 +11,6 @@ Imports:
     plyr,
     FactoMineR,
     parallel,
-    caret,
     fields,
     sda
 License: GPL (>= 2)
