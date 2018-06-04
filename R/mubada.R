@@ -69,6 +69,7 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' @param center whether to center the variables
 #' @param scale whether to scale the variables by 1/sd
 #' @param normalization the type of normalization
+#' @param A a \code{vector} or symmetric matrix of custom column constraints
 #' @export
 mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
                      normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
@@ -100,7 +101,8 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
     scale=scale,
     ncomp=fit$ncomp,
     block_indices=fit$block_indices,
-    normalization=normalization
+    normalization=normalization,
+    A=fit$A
   )
   
   class(result) <- c("mubada", "multiblock_da", "list")
@@ -109,7 +111,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
 
 #' @export
 refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
-  mubada(Y, Xlist, ncomp=ncomp, x$center, x$scale, x$normalization) 
+  mubada(Y, Xlist, ncomp=ncomp, center=x$center, scale=x$scale, normalization=x$normalization, A=x$A) 
 }
 
 #' @export
@@ -272,14 +274,15 @@ subset_rows.multiblock_da <- function(x, idx) {
 #' @export
 performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC", "ACC"), 
                                       type=c("class", "prob", "scores", "cosine", "distance", "r2")) {
+  
   type <- match.arg(type)
   metric <- match.arg(metric)
-  if (length(folds) == 1) {
-    folds <- lapply(1:length(x$Y), function(i) caret::createFolds(x$Y[[i]], folds))
+  
+  if (!is.list(folds) && is.numeric(folds) && length(folds) == 1) {
+    folds <- lapply(1:length(x$Y), function(i) create_folds(x$Y[[i]], folds))
   } else if (is.list(folds)) {
     ## folds must be a list of blocking variables
     folds <- lapply(folds, function(bind) split(1:length(bind), bind))
-    
   } else {
     stop("'folds' variable must be an integer scalar or a list of block ids (one list element per data block)")
   }
@@ -296,7 +299,7 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC"
     xsub <- subset_rows(x, lapply(fidx, "*", -1))
     
     ## refit on subset
-    rfit <- refit(x, xsub$y,xsub$x, ncomp=ncomp) 
+    rfit <- refit(x, xsub$y, xsub$x, ncomp=ncomp) 
     
     ## extract test data set
     xsubout <- subset_rows(x, fidx)
@@ -308,12 +311,9 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC"
   })
   
 
-  
   pfun <- if (metric == "ACC") {
-    print("ACC")
     combinedACC
   } else {
-    print("AUC")
     combinedAUC
   }
   
