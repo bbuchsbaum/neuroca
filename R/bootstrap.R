@@ -21,7 +21,7 @@ boot_ratio <- function(bootlist) {
   boot.mean/boot.sd	
 }
 
-
+# given a matrix and a vector, resample with replacement.
 resampleXY <- function(X, Y) {
   ysplit <- split(1:length(Y), Y)
   yidx <- sort(unlist(lapply(ysplit, function(ids) {
@@ -29,7 +29,6 @@ resampleXY <- function(X, Y) {
   })))
   
   list(X=X[yidx,], Y=Y[yidx])
-  
 }
 
 
@@ -57,14 +56,15 @@ resample.bada <- function(x) {
   list(Y=x$Y[resam], X=x$X[resam,])
 }
 
-#' @export
+#' @rdname bootstrap
 #' @examples 
 #' 
+#' ## mubada bootstrap analysis
 #' Xl <- lapply(1:5, function(i) matrix(rnorm(100*20), 100, 20))
 #' Yl <- lapply(1:5, function(i) factor(rep(letters[1:5], length.out=100)))
 #' 
 #' mb <- mubada(Yl, Xl)
-#' 
+#' @export
 bootstrap.mubada <- function(x, niter, nboot=100, ncomp=x$ncomp,type=c("projection", "rotated", "unrotated")) {
   type <- match.arg(type)
   if (ncomp > x$ncomp) {

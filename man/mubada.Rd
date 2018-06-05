@@ -2,7 +2,7 @@
 % Please edit documentation in R/mubada.R
 \name{mubada}
 \alias{mubada}
-\title{mubada}
+\title{Multiple Subjects Barycentric Discriminant Analysis}
 \usage{
 mubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
   normalization = c("MFA", "RV", "None", "RV-MFA", "custom"), A = NULL)
@@ -13,16 +13,18 @@ If there are a different number of rows (e.g. different numbers of replications 
 
 \item{Xlist}{a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.}
 
-\item{ncomp}{number of common components to estimate}
+\item{ncomp}{number of common components to estimate.}
 
-\item{center}{whether to center the variables}
+\item{center}{whether to center the variables.}
 
-\item{scale}{whether to scale the variables by 1/sd}
+\item{scale}{whether to scale the variables by 1/sd.}
 
-\item{normalization}{the type of normalization}
+\item{normalization}{the type of normalization.}
+
+\item{A}{optional constraint matrix for the columns used when \code{normalization} is "custom".}
 }
 \description{
-mubada
+Multiple Subjects Barycentric Discriminant Analysis
 }
 \references{
 Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
