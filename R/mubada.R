@@ -274,7 +274,7 @@ subset_rows.multiblock_da <- function(x, idx) {
 #' @export
 performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC", "ACC"), 
                                       type=c("class", "prob", "scores", "cosine", "distance", "r2")) {
-  
+
   type <- match.arg(type)
   metric <- match.arg(metric)
   

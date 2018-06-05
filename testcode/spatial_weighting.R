@@ -50,5 +50,7 @@ mfa.1 <- mfa(Xbar, normalization="custom", A=S, ncomp=6, center=TRUE, scale=TRUE
 
 Y <- rep(perc_dat[[1]]$design$Video, 14)
 mu.1 <- mubada(Y, Xlist, normalization="custom", A=S, ncomp=10)
+mu.2 <- mubada(Y, Xlist, normalization="MFA", ncomp=10)
 
-
+performance(mu.1, metric="ACC", type="cosine")
+performance(mu.2, metric="ACC", type="cosine")
