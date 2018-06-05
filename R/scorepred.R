@@ -1,7 +1,10 @@
-#' @param fscores
-#' @param scores
-#' @param type
-#' @param ncomp
+
+#' Given a set of factor scores and a set of reference scores, compute one of several performance metrics.
+#' 
+#' @param fscores the projected scores to be compared to the reference scores
+#' @param scores the reference scores
+#' @param type the type of metric to compute
+#' @param ncomp the number of dimensions to use
 #' @export
 scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine", "distance", "r2"), ncomp=ncol(fscores), class_name=TRUE) {
   if (type == "scores") {
@@ -37,11 +40,12 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine
   }
 }
 
-
+#' @keywords internal
 max.col.value <- function (x) {
   return(x[cbind(1:nrow(x), max.col(x, ties.method = "first"))])
 }
 
+#' @keywords internal
 min.col.value <- function (x) {
   return(x[cbind(1:nrow(x), max.col(-x, ties.method = "first"))])
 }

@@ -1,5 +1,5 @@
 
-
+#' @keywords internal
 nipals <- function(X, center=TRUE, scale=FALSE, ncomp=min(dim(X)), thresh=1e-5) {
 
   iterate <- function(E) {
