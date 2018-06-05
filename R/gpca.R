@@ -159,6 +159,7 @@ project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, subind=
   if (is.vector(newdata)) {
     newdata <- matrix(newdata,nrow=1)
   }
+  
   if (is.null(subind)) {
     Xsup <- if (pre_process) reprocess(x, newdata) else newdata
     project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
