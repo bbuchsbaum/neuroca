@@ -5,7 +5,7 @@
 \title{multiple factor analysis}
 \usage{
 mfa(X, ncomp = 2, center = TRUE, scale = FALSE, normalization = c("MFA",
-  "RV", "None", "RV-MFA"))
+  "RV", "None", "RV-MFA", "custom"), A = NULL)
 }
 \arguments{
 \item{X}{a \code{block_matrix} or a \code{block_projection_matrix} object}

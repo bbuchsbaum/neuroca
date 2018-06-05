@@ -5,7 +5,7 @@
 \title{mubada}
 \usage{
 mubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
-  normalization = c("MFA", "RV", "None", "RV-MFA"))
+  normalization = c("MFA", "RV", "None", "RV-MFA", "custom"), A = NULL)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
@@ -23,4 +23,9 @@ If there are a different number of rows (e.g. different numbers of replications 
 }
 \description{
 mubada
+}
+\references{
+Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
+
+Abdi, H., Williams, L. J., Connolly, A. C., Gobbini, M. I., Dunlop, J. P., & Haxby, J. V. (2012). Multiple Subject Barycentric Discriminant Analysis (MUSUBADA): how to assign scans to categories without using spatial normalization. \emph{Computational and Mathematical Methods in Medicine}, 2012.
 }
