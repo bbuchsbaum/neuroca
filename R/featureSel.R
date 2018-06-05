@@ -1,10 +1,11 @@
 
-
+#' @keywords internal
 unit_norm <- function(X) {
   Xs <- scale(X, center=TRUE, scale=TRUE)
   div <- sqrt(nrow(X) - 1)
   Xs/div
 }
+
 
 relief_scores <- function(X, labels, k=10) {
   labels <- as.factor(labels)

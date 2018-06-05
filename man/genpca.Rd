@@ -2,7 +2,7 @@
 % Please edit documentation in R/gpca.R
 \name{genpca}
 \alias{genpca}
-\title{genpca}
+\title{Generalized Principal Components Analysis}
 \usage{
 genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
   center = TRUE, scale = FALSE)
@@ -10,9 +10,9 @@ genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
 \arguments{
 \item{X}{the data matrix}
 
-\item{A}{the column constraints. Can be a \code{vector}, \code{matrix}, or sparse matrix.}
+\item{A}{the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.}
 
-\item{M}{the row constraints. Can be a \code{vector}, \code{matrix}, or sparse matrix.}
+\item{M}{the row constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{nrow(X)} rows and columns.}
 
 \item{ncomp}{the number of components to estimate}
 
@@ -21,7 +21,7 @@ genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
 \item{scale}{whether to standardize the columns}
 }
 \description{
-genpca
+Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
 }
 \examples{
 
@@ -51,4 +51,9 @@ S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=1, sigma=1, 
 diag(S) <- 1
 S <- S/RSpectra::svds(S,k=1)$d
 gp1 <- genpca(X, A=S, ncomp=2)
+}
+\references{
+Abdi, H. (2007). Singular value decomposition (SVD) and generalized singular value decomposition. \emph{Encyclopedia of measurement and statistics}, 907-912.
+
+Allen, G. I., Grosenick, L., & Taylor, J. (2014). A generalized least-square matrix decomposition. \emph{Journal of the American Statistical Association}, 109(505), 145-159.
 }
