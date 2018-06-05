@@ -2,7 +2,7 @@
 % Please edit documentation in R/asca.R
 \name{residualize}
 \alias{residualize}
-\title{compute a regression model for each column in a matrix and return residual matrix}
+\title{Compute a regression model for each column in a matrix and return residual matrix}
 \usage{
 residualize(form, X, design)
 }
@@ -14,7 +14,7 @@ residualize(form, X, design)
 \item{design}{the \code{data.frame} containing the design variables specified in \code{form} argument.}
 }
 \description{
-compute a regression model for each column in a matrix and return residual matrix
+Compute a regression model for each column in a matrix and return residual matrix
 }
 \examples{
 
