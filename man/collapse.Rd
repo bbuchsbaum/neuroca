@@ -2,7 +2,7 @@
 % Please edit documentation in R/asca.R
 \name{collapse}
 \alias{collapse}
-\title{collapse}
+\title{Column-wise average a matrix variables, collapsing some set of factors}
 \usage{
 collapse(form, X, design)
 }
@@ -14,5 +14,10 @@ collapse(form, X, design)
 \item{design}{the \code{data.frame} containing the variables reference in \code{form}}
 }
 \description{
-collapse
+Column-wise average a matrix variables, collapsing some set of factors
+}
+\examples{
+X <- matrix(rnorm(20*10), 20, 10)
+des <- data.frame(a=rep(letters[1:4], 5), b=factor(rep(1:5, each=4)))
+xcoll <- collapse(~ a+b, X, design=des)
 }

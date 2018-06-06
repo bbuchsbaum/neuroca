@@ -4,17 +4,25 @@
   a.sqrt <- a.eig$vectors %*% diag(sqrt(a.eig$values)) %*% solve(a.eig$vectors)
 }
 
-#' genpca
+#' Generalized Principal Components Analysis
+#' 
+#' Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
 #' 
 #' @param X the data matrix
-#' @param A the column constraints. Can be a \code{vector}, \code{matrix}, or sparse matrix.
-#' @param M the row constraints. Can be a \code{vector}, \code{matrix}, or sparse matrix.
+#' @param A the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.
+#' @param M the row constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{nrow(X)} rows and columns.
 #' @param ncomp the number of components to estimate
 #' @param center whether to center the columns
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
 #' @importFrom Matrix sparseMatrix
 #' @export
+#' 
+#' @references 
+#' 
+#' Abdi, H. (2007). Singular value decomposition (SVD) and generalized singular value decomposition. \emph{Encyclopedia of measurement and statistics}, 907-912.
+#' 
+#' Allen, G. I., Grosenick, L., & Taylor, J. (2014). A generalized least-square matrix decomposition. \emph{Journal of the American Statistical Association}, 109(505), 145-159.
 #' 
 #' 
 #' @examples 

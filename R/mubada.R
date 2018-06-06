@@ -1,6 +1,7 @@
 
 
 #' @importFrom assertthat assert_that 
+#' @keywords internal
 reduce_rows <- function(Xlist, Ylist) {
   assert_that(length(Xlist) == length(Ylist))
 
@@ -59,7 +60,7 @@ prep_multiblock_da <- function(Y, Xlist) {
 
 
 
-#' mubada
+#' Multiple Subjects Barycentric Discriminant Analysis
 #' 
 #' @importFrom assertthat assert_that 
 #' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
@@ -70,6 +71,16 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' @param scale whether to scale the variables by 1/sd
 #' @param normalization the type of normalization
 #' @param A a \code{vector} or symmetric matrix of custom column constraints
+#' @param ncomp number of common components to estimate.
+#' @param center whether to center the variables.
+#' @param scale whether to scale the variables by 1/sd.
+#' @param normalization the type of normalization.
+#' @param A optional constraint matrix for the columns used when \code{normalization} is "custom".
+#' 
+#' @references
+#' Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
+#' 
+#' Abdi, H., Williams, L. J., Connolly, A. C., Gobbini, M. I., Dunlop, J. P., & Haxby, J. V. (2012). Multiple Subject Barycentric Discriminant Analysis (MUSUBADA): how to assign scans to categories without using spatial normalization. \emph{Computational and Mathematical Methods in Medicine}, 2012.
 #' @export
 mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
                      normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
