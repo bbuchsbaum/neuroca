@@ -16,10 +16,10 @@ gen_threeway_mat <- function(n1,n2,n3, nvox, index) {
 #strata <- "sid"
 
 
-#' Column-wise average a matrix variables, collapsing some set of factors
+#' Column-wise average a matrix of variables, collapsing over some set of factors
 #' 
 #' @param form the formula defining the model to collapse over
-#' @param X the matrix to collpased ober rows
+#' @param X the matrix to collpased over rows
 #' @param design the \code{data.frame} containing the variables reference in \code{form}
 #' @export
 #' @examples 
@@ -187,11 +187,11 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
       
       bres <- mubada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
       
-      list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
+      list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), 
+           scores=bres$scores, bada_result=bres)
     } else {
       lower_form <- get_lower_form(ord)
-      
-    
+  
       XresidL <- lapply(1:length(Xlist), function(i) {
         residualize(lower_form, Xlist[[i]], designL[[i]])
       })

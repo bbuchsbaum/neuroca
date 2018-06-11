@@ -15,7 +15,7 @@
 #' @param center whether to center the columns
 #' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
-#' @importFrom Matrix sparseMatrix
+#' @importFrom Matrix sparseMatrix t
 #' @export
 #' 
 #' @references 
@@ -91,8 +91,9 @@ genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
     svdfit = gmdLA(Xp, M,A,ncomp,n,p)
   }
   
-  scores <- t(t(M %*% svdfit$u) * svdfit$d)
-  col_scores <- t(t(A %*% svdfit$v) * svdfit$d)
+  
+  scores <- t(t(as.matrix(M %*% svdfit$u)) * svdfit$d)
+  col_scores <- t(t(as.matrix(A %*% svdfit$v)) * svdfit$d)
   
   #scores <- t(t(as.matrix(svdfit$u)) * svdfit$d)
   row.names(scores) <- row.names(X)
