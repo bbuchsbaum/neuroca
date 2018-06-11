@@ -96,6 +96,7 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   block_indices <- block_indices(Xlist)
   
+  
   fit <- mfa(mu_prep$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, A=A)
   
   result <- list(
@@ -302,9 +303,11 @@ performance.multiblock_da <- function(x, ncomp=x$ncomp, folds=10, metric=c("AUC"
   
   yobs <- x$Y
   
-  predlist <- lapply(seq_along(folds[[1]]), function(fnum) {
+  nfolds <- length(folds[[1]])
+  predlist <- lapply(1:nfolds, function(fnum) {
     message("performance fold: ", fnum)
-    fidx <- lapply(folds, "[[", fnum)
+    
+    fidx <- lapply(folds, function(x) x[[fnum]])
     
     ## subset the original data
     xsub <- subset_rows(x, lapply(fidx, "*", -1))
