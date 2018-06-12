@@ -102,7 +102,7 @@ residualize <- function(form, X, design) {
 #' 
 #' Xlist <- replicate(5, matrix(rnorm(100*100), 100, 100), simplify=FALSE)
 #' 
-#' res <- muasca(~ f1*f2, Xlist, ncomp=3)
+#' res <- muasca(~ f1*f2, Xlist, ncomp=3,design=des)
 muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
   assert_that(inherits(Xlist, "list"))
   assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x))))
@@ -186,6 +186,7 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
   
   res <- lapply(1:length(termorder), function(i) {
     ord <- termorder[i]
+    
     message("pca decomposition for factor ", colnames(facs)[i])
     
     if (ord == 1) {
