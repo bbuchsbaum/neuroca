@@ -88,7 +88,7 @@ residualize <- function(form, X, design) {
 #' muasca
 #' 
 #' @param formula a formula specifying the ANOVA design
-#' @param Xlist the list of data matrices
+#' @param Xlist a \code{list} of X matrices, one per subject.
 #' @param design a \code{data.frame} providing the variables provided in \code{formula} argument.
 #' @param scale whether to scale the variables
 #' @export
