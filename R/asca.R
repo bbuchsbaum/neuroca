@@ -9,6 +9,29 @@ gen_threeway_mat <- function(n1,n2,n3, nvox, index) {
 
 }
 
+#' @keywords internal
+construct_design_table <- function(termorder, facs, Ymaximal, all_terms, designL) {
+  ## dgrid contains the factors for each term in the ANOVA
+  dgrid <- expand.grid(lapply(all_terms, function(tname) levels(designL[[1]][[tname]])))
+  names(dgrid) <- all_terms
+  
+  ## add higher-order terms to dgrid
+  if (any(termorder > 1)) {
+    high_facs <- which(termorder > 1)
+    
+    for (i in high_facs) {
+      nam <- colnames(facs)[i]
+      idx <- which(facs[,i] > 0)
+      cols <- dgrid[,idx]
+      dgrid[[nam]] <- do.call(paste, c(cols, list(sep=":")))
+    }
+  }
+  
+  
+  dgrid[[paste0(all_terms, collapse=":")]] <- levels(Ymaximal[[1]])
+  dgrid
+}
+
 #Xs <- lapply(1:10, function(i) gen_threeway_mat(3,3,5, 10, i))
 #Xlist <- lapply(Xs, "[[", "mat")
 #design <- Xs[[1]]$design
@@ -61,19 +84,31 @@ residualize <- function(form, X, design) {
   resid(lsfit(modmat, X, intercept=FALSE))
 }
   
-  
-#' musu_asca
+
+#' muasca
 #' 
-#' 
-#' @param Xlist the list of data matrices
 #' @param formula a formula specifying the ANOVA design
+#' @param Xlist the list of data matrices
 #' @param design a \code{data.frame} providing the variables provided in \code{formula} argument.
-#' @param center whether to center the variables
 #' @param scale whether to scale the variables
-#' @param svd.method the svd method to use.
 #' @export
-musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE, svd.method="fast") {
-  Xlist <- lapply(Xlist, as.matrix)
+#' 
+#' @examples 
+#' 
+#' f1 <- factor(rep(letters[1:4], 25))
+#' f2 <- factor(rep(1:4, each=25))
+#' 
+#' des <- data.frame(f1=f1,f2=f2)
+#' 
+#' Xlist <- replicate(5, matrix(rnorm(100*100), 100, 100), simplify=FALSE)
+#' 
+#' res <- muasca(~ f1*f2, Xlist, ncomp=3)
+muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
+  assert_that(inherits(Xlist, "list"))
+  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x))))
+  
+  block_indices <- block_indices(Xlist)
+  
   tform <- terms(formula)
   facs <- attr(tform, "factors")
   
@@ -91,20 +126,18 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   assert_that(length(ncomp) == length(terms))
   
   if (is.data.frame(design) && nrow(design) == nrow(Xlist[[1]])) {
-    designL <- replicate(design, length(Xlist))
+    designL <- replicate(length(Xlist), design, simplify=FALSE)
   } else if (is.list(design) && length(design) == length(Xlist)) {
     designL <- design
   } else {
-    stop("musu_asca: design must be a data.frame or a list of data.frames whose rows match the correspinding entries of Xlist")
+    stop("musu_asca: design must be a data.frame or a list of data.frames whose rows match the corresponding entries of Xlist")
   }
   
   assert_that(length(designL) == length(Xlist))
   assert_that(all(sapply(1:length(Xlist), function(i) nrow(Xlist[[i]]) == nrow(designL[[i]]))))
   
-  blockInd <- block_indices(Xlist)
-  
-  
-  
+
+  ## construct a list of conditions for each factor combination
   Yfacl <- lapply(1:ncol(facs), function(i) {
     find <- which(facs[,i] > 0)
     facnames <- row.names(facs)[find]
@@ -119,6 +152,7 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   
   names(Yfacl) <- terms
   
+  ## the highrest order factor combination
   Ymaximal <- lapply(designL, function(d) {
     if (length(row.names(facs)) > 1) {
       do.call(function(...) interaction(..., sep=":"), d[, row.names(facs)])
@@ -135,32 +169,10 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
   main_terms <- terms[termorder == 1]
   all_terms <- row.names(facs)
   
-  dgrid <- expand.grid(lapply(all_terms, function(tname) levels(designL[[1]][[tname]])))
-  
-  names(dgrid) <- all_terms
-  
+  dgrid <- construct_design_table(termorder, facs, Ymaximal, all_terms, designL)
 
-  if (any(termorder > 1)) {
-    high_facs <- which(termorder > 1)
-  
-    for (i in high_facs) {
-      nam <- colnames(facs)[i]
-      idx <- which(facs[,i] > 0)
-      cols <- dgrid[,idx]
-      dgrid[[nam]] <- do.call(paste, c(cols, list(sep=":")))
-    }
-  }
-  
-  
-  dgrid[[paste0(all_terms, collapse=":")]] <- levels(Ymaximal[[1]])
-  
   Yfacl[[names(dgrid)[ncol(dgrid)]]] <- Ymaximal
   
-  refit <- function(.Xlist, .design, .ncomp=ncomp) { 
-    musu_asca(.Xlist, formula, ncomp=.ncomp, design=.design, center=center, scale=scale, svd.method=svd.method) 
-  }
-  
-
   get_lower_form <- function(ord) {
     tnames <- colnames(facs)[termorder < ord]
     meat <-paste0("(", paste(tnames, collapse= " + "),")")
@@ -185,13 +197,16 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
       
       Yl <- Yfacl[[i]]
       
-      bres <- mubada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
+      bres <- mubada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), 
+                     center=TRUE, scale=scale, normalization="None", A=A)
       
-      list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
+      list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], 
+           ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), 
+           scores=bres$scores, bada_result=bres)
+    
     } else {
       lower_form <- get_lower_form(ord)
       
-    
       XresidL <- lapply(1:length(Xlist), function(i) {
         residualize(lower_form, Xlist[[i]], designL[[i]])
       })
@@ -202,10 +217,11 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
         G <- model.matrix(form, data=des)
       })
       
-   
       Yl <- Yfacl[[i]]
       
-      bres <- mubada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, svd.method=svd.method, normalization="None")
+      bres <- mubada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, scale=scale, 
+                     normalization="None")
+      
       list(G=Gl, Y=Yl, form=form, lower_form = lower_form, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
     }
   })
@@ -242,22 +258,20 @@ musu_asca <- function(Xlist, formula, ncomp=2, design, center=TRUE, scale=FALSE,
     terms=colnames(facs)
   )
   
-  
-  class(ret) <- c("projector", "musu_asca")
+  class(ret) <- c("muasca", "projector")
   ret
   
 }
 
 #' @export
 loadings.musu_asca <- function(x) {
-  do.call(cbind, lapply(res, function(x) loadings(x$bada_result$pca_fit)))
+  do.call(cbind, lapply(res, function(x) loadings(x$bada_result)))
 }
 
 #' @export
 scores.musu_asca <- function(x) {
   x$scores
 }
-
 
 #' @export
 bootstrap.musu_asca <- function(x, niter=100, term=res$terms[1], ncomp=x$ncomp[1]) {
