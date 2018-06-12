@@ -86,7 +86,8 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     block_indices=bind,
     alpha=alpha,
     normalization=normalization,
-    table_names=names(X)
+    table_names=names(X),
+    A=A
   )
   
   class(result) <- c("mfa", "multiblock", "projector", "list")
@@ -209,7 +210,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
       ind <- x$block_indices[[i]]
       
       Xp <- if (pre_process) {
-        x$reprocess(newdata[, ind], i)
+        reprocess(x, newdata[, ind], block_index=i)
       } else {
         newdata[, ind]
       }
@@ -220,12 +221,12 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
     ind <- x$block_indices[[block_index]]
     
     Xp <- if (pre_process) {
-      x$reprocess(newdata, block_index)
+      reprocess(x, newdata, block_index=block_index)
     } else {
       newdata
     }
 
-    fscores <- project(x$fit, Xp, ncomp=ncomp, subind=ind) * x$ntables
+    fscores <- project(x$fit, Xp, comp=1:ncomp, subind=ind) * x$ntables
 
   }
   
