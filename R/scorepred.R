@@ -10,11 +10,11 @@ scorepred <- function(fscores, scores, type=c("class", "prob", "scores", "cosine
   if (type == "scores") {
     fscores
   } else if (type == "cosine") {
-    proxy::simil(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE], method="cosine")
+    proxy::simil(as.matrix(fscores[,1:ncomp,drop=FALSE]), as.matrix(scores[,1:ncomp,drop=FALSE]), method="cosine")
   } else if (type == "distance") {
-    D <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+    D <- fields::rdist(as.matrix(fscores[,1:ncomp,drop=FALSE]), as.matrix(scores[,1:ncomp,drop=FALSE]))
   } else if (type =="class") {
-    D <- fields::rdist(fscores[,1:ncomp,drop=FALSE], scores[,1:ncomp,drop=FALSE])
+    D <- fields::rdist(as.matrix(fscores[,1:ncomp,drop=FALSE]), as.matrix(scores[,1:ncomp,drop=FALSE]))
     D2 <- D^2
     min.d <- apply(D2, 1, which.min)
     if (class_name) {
