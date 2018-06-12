@@ -39,10 +39,10 @@ construct_design_table <- function(termorder, facs, Ymaximal, all_terms, designL
 #strata <- "sid"
 
 
-#' Column-wise average a matrix variables, collapsing some set of factors
+#' Column-wise average a matrix of variables, collapsing over some set of factors
 #' 
 #' @param form the formula defining the model to collapse over
-#' @param X the matrix to collpased ober rows
+#' @param X the matrix to collpased over rows
 #' @param design the \code{data.frame} containing the variables reference in \code{form}
 #' @export
 #' @examples 
@@ -200,6 +200,7 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
       bres <- mubada(Yl, Xlist, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), 
                      center=TRUE, scale=scale, normalization="None", A=A)
       
+
       list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], 
            ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), 
            scores=bres$scores, bada_result=bres)
