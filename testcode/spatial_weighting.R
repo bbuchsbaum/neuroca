@@ -8,8 +8,8 @@ perc_dat <- lapply(dat, function(x) {
   des <- x$design[keep,]
   m <- m[keep,]
   
-  cscore <- sda::catscore(as.matrix(m), des$Video, diagonal=FALSE)
-  fscore <- apply(cscore, 1, function(x) sqrt(sum(x^2)))
+  cscore <- sda::catscore(as.matrix(m), des$Video, diagonal=TRUE)
+  fscore <- apply(cscore, 1, function(x) max(abs(x)))
   
   if (nrow(m) != 77) {
 
@@ -35,52 +35,49 @@ indices <- rep(1:nrow(coords), length(dat))
 
 Xlist <- lapply(perc_dat, function(x) x$mat)
 
+
+Xbar <- block_matrix(lapply(Xlist, function(x) {
+  gm <- group_means(perc_dat[[1]]$design$Video, x)
+  gm[gm==0] <- rnorm(sum(gm==0))*.1
+  gm
+}))
+  
 wg <- unlist(lapply(perc_dat, function(x) x$fscore/sum(x$fscore)))
 wg <- wg/max(wg)
+cds2 <- do.call(rbind, lapply(1:length(dat), function(i) cbind(coords, i*10)))
 
 folds <- lapply(perc_dat, function(x) x$design$Run)
 
 
-Y <- rep(perc_dat[[1]]$design$Video, 14)
 
-do_wmubada <- function(sigma, sigmab, bw, wg) {
-  SA <- spatial_constraints(coords,nblocks=length(perc_dat), feature_scores=wg, sigma=sigma, sigma_between=sigmab, shrinkage_factor=bw)
+do_wmubada <- function(sigma, bw, bdthresh=1) {
+  Swithin <- neighborweights::spatial_smoother(cds2,sigma=sigma,nnk=27,stochastic = TRUE)
+  Sbetween <- neighborweights::spatial_adjacency(as.matrix(indices),weight_mode="binary", 
+                                                 normalize=FALSE,dthresh=bdthresh, include_diagonal=FALSE)/length(perc_dat)
+  diag(Sbetween) <- 0
+
+  Wg <- Diagonal(x=sqrt(wg))
+
+  S <- Wg %*% Swithin %*% Wg
+  S <- S/(RSpectra::eigs_sym(S, k=1, which="LA")$values[1])
+  S <- S + Sbetween*bw
+  S <- S/(RSpectra::eigs_sym(S, k=1, which="LA")$values[1])
   
-  mu.1 <- mubada(Y, Xlist, normalization="custom", A=SA, ncomp=10)
+  mu.1 <- mubada(Y, Xlist, normalization="custom", A=S, ncomp=10)
   p <- performance(mu.1, metric="ACC", type="prob")
-
-  df1 <- data.frame(p=unlist(p), sid=1:length(p), bw=bw, sigmab=sigmab, sigma=sigma)
-  print(df1)
-  df1
+  
+  data.frame(p=unlist(p), sid=1:length(p), bw=bw, sigma=sigma)
 }
 
+grid <- expand.grid(bw=seq(0,.1, by=.01), sigma=c(2,5,8))
+
 res <- do.call(rbind, lapply(1:nrow(grid), function(i) {
-  do_wmubada(sigma=grid$sigma[i], sigmab=grid$sigmab[i], bw=grid$bw[i], wg=rep(1, length(wg)))
+  do_wmubada(sigma=grid$sigma[i], bw=grid$bw[i])
 }))
-
-
-
-library(dplyr)
-library(ggplot2)
-res2 <- res %>% group_by(bw, sigmab, sigma) %>% summarize(p=mean(p), pmed=median(p))
-res3 <- res %>% group_by(sigma) %>% summarize(p=mean(p), pmed=median(p))
-res4 <- res %>% group_by(sigmab) %>% summarize(p=mean(p), pmed=median(p))
-res5 <- res %>% group_by(bw) %>% summarize(p=mean(p), pmed=median(p))
-res6 <- res %>% group_by(bw,sigmab) %>% summarize(p=mean(p), pmed=median(p))
-res7 <- res %>% group_by(bw,sigma) %>% summarize(p=mean(p), pmed=median(p))
-
-
-qplot(sigma, p, colour=factor(sigmab), shape=factor(bw), data=res2)
-qplot(sigma, p, data=res3) + geom_line()
-qplot(sigmab, p, data=res4) + geom_line()
-qplot(bw, p, data=res5) + geom_line()
-qplot(bw, p, colour=factor(sigmab), data=res6) + geom_line()
-qplot(bw, p, colour=factor(sigma), data=res7) + geom_line()
-
 
 #mfa.1 <- mfa(Xbar, normalization="custom", A=S, ncomp=6, center=TRUE, scale=TRUE)
 
-
+Y <- rep(perc_dat[[1]]$design$Video, 14)
 mu.1 <- mubada(Y, Xlist, normalization="custom", A=S, ncomp=10)
 mu.2 <- mubada(Y, Xlist, normalization="MFA", ncomp=10, center=TRUE)
 
