@@ -11,9 +11,10 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, center=FALSE, scale=FALS
   p=ncol(X)
   n=nrow(X)
   
-  if (is.null(ncp.max)) 
-    ncp.max <- ncol(X)
-  
+  if (is.null(ncp.max)) {
+    ncp.max <- min(dim(X))
+  }
+
   ncp.max <- min(nrow(X),ncol(X),ncp.max)
   
   crit <- NULL
@@ -22,7 +23,11 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, center=FALSE, scale=FALS
   
   crit0 <- mean(X^2, na.rm = TRUE)*(n*p)/(p*(n-1))
   
-  rr <- RSpectra::svds(X, ncp.max)
+  if (ncp.max == min(dim(X))) {
+    rr <- corpcor::fast.svd(X)
+  } else {
+    rr <- RSpectra::svds(X, ncp.max)
+  }
   
   chash <- list()
   chash[["0"]] <- crit0
@@ -71,8 +76,16 @@ fast_estim_ncomp <- function(X, ncp.min=0,ncp.max=NULL, center=FALSE, scale=FALS
     }
     
     cnames <- names(chash)
+    delta <- diff(unlist(chash))
+    firstpos <- which(delta > 0)
     
-    opt <- as.integer(cnames[which.min(unlist(chash))])
+    opt <- if (length(firstpos) >= 1) {
+      as.integer(cnames[firstpos[1]])
+    } else {
+      as.integer(cnames[length(cnames)])
+    }
+    
+    #opt <- as.integer(cnames[which.min(unlist(chash))])
 
   } else {
     

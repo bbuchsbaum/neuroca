@@ -9,7 +9,7 @@ spatial_mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   ## pre-process the projected variables.
   preproc <- pre_processor(X, center=center,scale=scale)
-  Xr <- pre_process(preproc)
+  Xr <- pre_process(preproc,X)
   
   ## normalize the matrices 
   #alpha <- normalization_factors(Xr, type=normalization)

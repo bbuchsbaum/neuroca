@@ -391,9 +391,9 @@ predict.procrusteanized_da <- function(x, newdata, type=c("class", "prob", "scor
       ind <- mf$block_indices[[block_index]]
       
       Xp <- if (pre_process) {
-        mf$reprocess(newdata[, ind[1]:ind[2]], i)
+        mf$reprocess(newdata[, ind[1]:ind[2], drop=FALSE], i)
       } else {
-        newdata[, ind[1]:ind[2]]
+        newdata[, ind[1]:ind[2],drop=FALSE]
       }
       
      

@@ -76,8 +76,6 @@ block_apply <- function(x, f, ...) UseMethod("block_apply")
 #' @export
 nblocks <- function(x) UseMethod("nblocks")
 
-#' @export
-jackstraw <- function(x, nsynth, niter, ...) UseMethod("jackstraw")
 
 #' @export
 permutation <- function(x, ...) UseMethod("permutation")
@@ -99,20 +97,19 @@ reprocess <- function(x, ...) UseMethod("reprocess")
 
 
 #' @export
-split_half_reliability <- function(x, ...) UseMethod("split_half_reliability")
-
-#' @export
 supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
 
 #' @export
 supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
 #' @export
-optimal_components <- function(x, ...) UseMethod("optimal_components")
-
+compose <- function(x,y) UseMethod("compose")
 
 #' @export
-compose <- function(x,y) UseMethod("compose")
+concat <- function(x,...) UseMethod("concat")
+
+#' @export
+combine <- function(x,...) UseMethod("combine")
 
 #' @export
 singular_values <- function(x) UseMethod("singular_values")
@@ -120,15 +117,14 @@ singular_values <- function(x) UseMethod("singular_values")
 #' @export
 truncate <- function(x, ncomp) UseMethod("truncate")
 
-#' @export
-eigen_values <- function(x) UseMethod("eigen_values")
-
 #' @export 
 subset_rows <- function(x, idx) UseMethod("subset_rows")
+
 
 #' partial_scores
 #' 
 #' compute the partial scores from a multivariate model using a subset of the input
+#' 
 #' @param x the model fit
 #' @export
 partial_scores <- function(x, ...) UseMethod("partial_scores")
@@ -140,8 +136,6 @@ partial_scores <- function(x, ...) UseMethod("partial_scores")
 #' @param ... extra args
 #' @export
 contributions <- function(x, ...) UseMethod("contributions")
-
-
 
 
 #' reproducibility
@@ -161,7 +155,7 @@ reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 #' @param comp the components to use
 #' @param ... extra args
 #' @export
-reconstruct <- function(x, newdata, comp) UseMethod("reconstruct")
+reconstruct <- function(x, newdata, comp,...) UseMethod("reconstruct")
 
 #' get the residuals of a model, after removing the first \code{ncomp} components
 #' 

@@ -55,7 +55,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
 
   ## pre-process the variables.
   preproc <- pre_processor(X, center=center,scale=scale)
-  Xr <- pre_process(preproc)
+  Xr <- pre_process(preproc,X)
 
   ## normalize the matrices 
   
@@ -210,7 +210,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
       ind <- x$block_indices[[i]]
       
       Xp <- if (pre_process) {
-        reprocess(x, newdata[, ind], block_index=i)
+        reprocess(x, newdata[, ind,drop=FALSE], block_index=i)
       } else {
         newdata[, ind]
       }

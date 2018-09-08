@@ -19,17 +19,14 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
   keep <- res$singval > 1e-06
   
   if (sum(keep) == 0) {
-    warning("all singular values are zero, computing rank-1 svd")
-    res <- RSpectra::svds(Xp, k=1)
-    v <- res$v
-    u <- res$u
-    d <- res$d
-  } else {
-    v=res$low.rank$v[,keep,drop=FALSE]
-    u=res$low.rank$u[,keep,drop=FALSE]
-    d=res$low.rank$d[keep]
-  }
+    keep <- 1
+  } 
   
+  
+  v=res$low.rank$v[,keep,drop=FALSE]
+  u=res$low.rank$u[,keep,drop=FALSE]
+  d=res$low.rank$d[keep]
+
   ret <- list(v=v, 
               u=u,
               d=d,
@@ -44,13 +41,13 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
                        
 
 
-#' pseudo_pca
+#' pseudo_svd
 #' 
 #' @param u the row weights
 #' @param v the column weights
 #' @param d the singular values
 #' @param rnames row names of observations
-pseudo_pca <- function(u, v, d, rnames=NULL) {
+pseudo_svd <- function(u, v, d, rnames=NULL) {
   
   scores <- t(t(as.matrix(u)) * d)
   
@@ -58,7 +55,8 @@ pseudo_pca <- function(u, v, d, rnames=NULL) {
     row.names(scores) <- rnames
   }
   
-  assert_that(length(d) == nrow(u))
+  assert_that(length(d) == ncol(u))
+  assert_that(ncol(v) == ncol(u))
   
   ret <- list(v=v, 
               u=u, 
@@ -68,7 +66,7 @@ pseudo_pca <- function(u, v, d, rnames=NULL) {
               preproc=pre_processor(matrix(), center=FALSE, scale=FALSE))
   
   
-  class(ret) <- c("pseudo_pca", "pca", "projector", "list")
+  class(ret) <- c("pseudo_svd", "pca", "projector", "list")
   ret
 }
 
@@ -79,9 +77,10 @@ pseudo_pca <- function(u, v, d, rnames=NULL) {
 #' @param scale
 #' @export
 pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
+  assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
   preproc <- pre_processor(X, center=center,scale=scale)
-  Xp <- pre_process(preproc)
+  Xp <- pre_process(preproc,X)
   
   svdres <- svd_wrapper(Xp, ncomp, ...)
   
@@ -184,13 +183,18 @@ residuals.pca <- function(x, ncomp=1, xorig) {
 
 
 #' @export
-reconstruct.pca <- function(x, newdata=NULL, comp=1:x$ncomp) {
+reconstruct.pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
     newdata <- scores(x)[,comp, drop=FALSE]
   }
-  reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]))
+  
+  if (is.null(subind)) {
+    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]))
+  } else {
+    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE])[,subind], subind=subind)
+  }
 }
 
 
