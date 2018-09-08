@@ -4,7 +4,7 @@
 \alias{reconstruct}
 \title{reconstruct the data with some number of components}
 \usage{
-reconstruct(x, newdata, comp)
+reconstruct(x, newdata, comp, ...)
 }
 \arguments{
 \item{x}{the model fit}

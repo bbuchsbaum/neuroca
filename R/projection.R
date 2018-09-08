@@ -187,6 +187,27 @@ reconstruct.composed_projector <- function(x, newdata=NULL) {
   x$recon(newdata)
 }
 
+#' @export
+combine.projector <- function(x,..., orthogonalize=FALSE, nretain=NULL) {
+  xl <- c(list(x), list(...))
+  
+  scores <- do.call(cbind, map(xl, ~ scores(.)))
+  
+  if (orthogonalize || !is.null(nretain)) {
+    if (is.null(nretain)) {
+      nretain <- ncol(scores)
+    }
+    
+    res <- RSpectra::svds(scores, k=nretain)
+    pseudo_svd(res$u,res$v,res$d)
+  } else {
+    v <- do.call(cbind, map(xl, ~ loadings(.)))
+    d <- apply(scores, 2, function(y) sqrt(sum(y^2)))
+
+    u <- scores %*% Matrix::Diagonal(x=1/d)
+    pseudo_svd(u,v,d)
+  }
+}
 
 
 

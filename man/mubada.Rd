@@ -13,6 +13,16 @@ If there are a different number of rows (e.g. different numbers of replications 
 
 \item{Xlist}{a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.}
 
+\item{ncomp}{number of common components to estimate}
+
+\item{center}{whether to center the variables}
+
+\item{scale}{whether to scale the variables by 1/sd}
+
+\item{normalization}{the type of normalization}
+
+\item{A}{a \code{vector} or symmetric matrix of custom column constraints}
+
 \item{ncomp}{number of common components to estimate.}
 
 \item{center}{whether to center the variables.}
