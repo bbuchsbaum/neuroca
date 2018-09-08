@@ -6,11 +6,11 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   assertthat::assert_that(inherits(X, "block_matrix"))
   type <- match.arg(type)
   
-  X <- pre_processor(X, 
+  preproc <- pre_processor(X, 
                      center=center, 
                      scale=scale)
   
-  Xr <- pre_process(X)
+  Xr <- pre_process(preproc, X)
   
   Xl <- lapply(as.list(Xr), t)
   
@@ -26,12 +26,13 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   u <- sca_fit$B / sqrt(nrow(X))
   d <- vscale * sqrt(nrow(X))
   
-  fit <- pseudo_pca(u, v, d, rnames=row.names(X))
+  fit <- pseudo_svd(u, v, d, rnames=row.names(X))
   
   ret <- list(
     X=X,
     Xr=Xr,
     sca_fit=sca_fit,
+    preproc=preproc,
     fit=fit,
     center=center,
     scale=scale,

@@ -22,6 +22,7 @@ bootstrap a model
 }
 \examples{
 
+## mubada bootstrap analysis
 Xl <- lapply(1:5, function(i) matrix(rnorm(100*20), 100, 20))
 Yl <- lapply(1:5, function(i) factor(rep(letters[1:5], length.out=100)))
 

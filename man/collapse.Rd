@@ -2,19 +2,19 @@
 % Please edit documentation in R/asca.R
 \name{collapse}
 \alias{collapse}
-\title{Column-wise average a matrix variables, collapsing some set of factors}
+\title{Column-wise average a matrix of variables, collapsing over some set of factors}
 \usage{
 collapse(form, X, design)
 }
 \arguments{
 \item{form}{the formula defining the model to collapse over}
 
-\item{X}{the matrix to collpased ober rows}
+\item{X}{the matrix to collpased over rows}
 
 \item{design}{the \code{data.frame} containing the variables reference in \code{form}}
 }
 \description{
-Column-wise average a matrix variables, collapsing some set of factors
+Column-wise average a matrix of variables, collapsing over some set of factors
 }
 \examples{
 X <- matrix(rnorm(20*10), 20, 10)
