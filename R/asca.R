@@ -32,12 +32,6 @@ construct_design_table <- function(termorder, facs, Ymaximal, all_terms, designL
   dgrid
 }
 
-#Xs <- lapply(1:10, function(i) gen_threeway_mat(3,3,5, 10, i))
-#Xlist <- lapply(Xs, "[[", "mat")
-#design <- Xs[[1]]$design
-#formula = ~ A + B + C + A:B + A:C + B:C + A:B:C
-#strata <- "sid"
-
 
 #' Column-wise average a matrix of variables, collapsing over some set of factors
 #' 
@@ -203,8 +197,8 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
       
 
       list(G=Gl, Y=Yl, form=form, lower_form = ~ 1, term=colnames(facs)[i], 
-           ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), 
-           scores=bres$scores, bada_result=bres)
+           ex_scores=expand_scores(scores(bres), dgrid[,terms[i]]), 
+           scores=scores(bres), bada_result=bres)
     
     } else {
       lower_form <- get_lower_form(ord)
@@ -224,7 +218,8 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
       bres <- mubada(Yl, XresidL, ncomp=min(ncomp[i], length(levels(Yl[[1]]))), center=TRUE, scale=scale, 
                      normalization="None")
       
-      list(G=Gl, Y=Yl, form=form, lower_form = lower_form, term=colnames(facs)[i], ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=bres$scores, bada_result=bres)
+      list(G=Gl, Y=Yl, form=form, lower_form = lower_form, term=colnames(facs)[i], 
+           ex_scores=expand_scores(bres$scores, dgrid[,terms[i]]), scores=scores(bres), bada_result=bres)
     }
   })
   
@@ -253,7 +248,7 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
     results=res,
     reduced_scores=scores,
     scores=sc,
-    loadings=do.call(cbind, lapply(res, function(x) loadings(x$bada_result$pca_fit))),
+    loadings=do.call(cbind, lapply(res, function(x) loadings(x$bada_result))),
     formula=formula,
     design=designL,
     refit=refit,
