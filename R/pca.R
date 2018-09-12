@@ -1,8 +1,111 @@
 
+## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
 
+kmeans_projector <- function(X, ncomp=min(dim(X)),center=TRUE, scale=FALSE,  ...) {
+  preproc <- pre_processor(X, center, scale)
+  Xp <- pre_process(preproc, X)
+  
+  kres <- kmeans(t(Xp), centers=ncomp,...)
+  
+  mat <- do.call(rbind, purrr::imap(split(1:ncol(Xp), kres$cluster), function(.x, .y) {
+    cbind(as.numeric(.x), as.numeric(.y), 1)
+  }))
+  
+  v <- sparseMatrix(i=mat[,1], j=mat[,2], x=mat[,3])
+  
+  cen <- t(kres$centers)
+  u <- apply(cen, 2, function(vals) normalize(as.matrix(vals)))
+  
+  ret <- list(u=u, 
+              v=v,
+              d=apply(cen,2,function(x) sqrt(sum(x^2))),
+              scores=cen,
+              ncomp=ncomp, 
+              preproc=preproc)
+  
+  class(ret) <- c("kmeans_projector", "projector")
+  ret
+  
+}
+
+#' @export
+reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+  if (!is.null(newdata)) {
+    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
+  } else {
+    newdata <- x$scores[,comp, drop=FALSE]
+  }
+  
+  ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
+  lds <- x$v[,comp,drop=FALSE]
+  
+  if (is.null(subind)) {
+    reverse_pre_process(x$preproc, newdata %*% t(lds))
+  } else {
+    reverse_pre_process(x$preproc, newdata %*% t(lds)[,subind], subind=subind)
+  }
+}
+
+
+
+#' nneg_pca
+#' 
+#' non-negative pca
+#' 
+#'   
+#' @inheritParams pca
+#' @importFrom nsprcomp nsprcomp
+#' @export
+nneg_pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,  ...) {
+  preproc <- pre_processor(X, center, scale)
+  Xp <- pre_process(preproc, X)
+  
+  ret <- nsprcomp::nsprcomp(Xp, center=FALSE, scale=FALSE, nneg=TRUE, ...)
+  keep <- ret$sdev > 1e-06
+  
+  v=ret$rotation[,keep,drop=FALSE]
+  u=ret$x[,keep,drop=FALSE]
+  d=ret$sdev[keep] * 1/sqrt(max(1,nrow(X)-1))
+  
+  ret <- list(v=v, 
+              u=u,
+              d=d,
+              scores=ret$x,
+              ncomp=length(d), 
+              preproc=preproc)
+  
+  
+  class(ret) <- c("nneg_pca", "pca", "projector", "list")
+  ret
+  
+}
+
+#' @export
+reconstruct.nneg_pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+  if (!is.null(newdata)) {
+    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
+  } else {
+    newdata <- scores(x)[,comp, drop=FALSE]
+  }
+  
+  ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
+  
+  
+  piv <- corpcor::pseudoinverse(loadings(x)[,comp,drop=FALSE])
+  if (is.null(subind)) {
+    reverse_pre_process(x$preproc, newdata %*% piv)
+  } else {
+    reverse_pre_process(x$preproc, newdata %*% piv[,subind], subind=subind)
+  }
+}
+  
+  
+  
+  
+  
 #' shrink_pca
 #' 
-#' adaptive shrinakge pca from the \code{denoiseR} package
+#' adaptive shrinkage pca from the \code{denoiseR} package
 #' 
 #'   
 #' @param X
