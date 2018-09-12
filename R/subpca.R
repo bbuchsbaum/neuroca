@@ -11,7 +11,7 @@
 #' @param center
 #' @param scale
 #' @importFrom furrr future_map
-block_pca <- function(X, est_method=c("gcv", "shrink", "fixed"), 
+block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"), 
                    ncomp=2, min_k=1, max_k=3, 
                    center=TRUE, scale=FALSE, shrink_method="GSURE", ...) {
   
