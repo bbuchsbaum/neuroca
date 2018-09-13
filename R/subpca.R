@@ -61,9 +61,10 @@ multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"
   preproc <- pre_processor(X, center=center, scale=scale)
   Xp <- pre_process(preproc, X)
  
-  row_offset <- rowMeans(Xp)
-  Xp <- sweep(Xp, 1, row_offset, "-")
   
+  #offset <- rowMeans(Xp)
+  #Xp <- sweep(Xp, 1, offset, "-")
+
   do_pca <- function(x, level, cind) {
     fit <- if (est_method == "fixed") {
       pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
@@ -111,9 +112,11 @@ multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"
     print(i)
     cind <- cutree(hclus, cuts[i])
     Xbar <- t(group_means(cind, Xresid))
+    #offset <- rowMeans(Xbar) 
+    #Xbar <- sweep(Xbar, 1, offset, "-")
+    
     fits[[i]] <- do_pca(Xbar, i, cind)
-    #Xresid <- t(residuals(fits[[i]], xorig=Xp))
-    #tmp2 <- residualize(~ cind, Xresid, design=data.frame(cind=factor(cind)))
+    
     Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
       xb <- Xbar[j,]
       Xresid[,j] - xb[cind]
