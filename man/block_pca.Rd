@@ -4,9 +4,9 @@
 \alias{block_pca}
 \title{block_pca}
 \usage{
-block_pca(X, est_method = c("gcv", "shrink", "fixed"), ncomp = 2,
+block_pca(X, est_method = c("gcv", "shrink", "fixed", "nneg"), ncomp = 2,
   min_k = 1, max_k = 3, center = TRUE, scale = FALSE,
-  ncores = max(parallel::detectCores()/2, 1), ...)
+  shrink_method = "GSURE", ...)
 }
 \description{
 block_pca

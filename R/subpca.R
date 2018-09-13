@@ -52,6 +52,79 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
 }
 
 
+
+
+multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
+                           center=TRUE, scale=FALSE, shrink_method="GSURE") {
+  
+  est_method <- match.arg(est_method)
+  preproc <- pre_processor(X, center=center, scale=scale)
+  Xp <- pre_process(preproc, X)
+ 
+  row_offset <- rowMeans(Xp)
+  Xp <- sweep(Xp, 1, row_offset, "-")
+  
+  do_pca <- function(x, level, cind) {
+    fit <- if (est_method == "fixed") {
+      pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
+    } else if (est_method == "gcv") {
+      #est <- fast_estim_ncomp(x)
+      est <- FactoMineR::estim_ncp(x)
+      bestcomp <- est$ncp
+      print(paste("best", bestcomp))
+      if (bestcomp == 0) {
+        ## 0 comps, return dummy pca
+        pseudo_svd(u=matrix(rep(0, nrow(x))), v=matrix(rep(0,ncol(x))), d=0)
+      } else {
+        pca(x, ncomp=bestcomp, center=FALSE, scale=FALSE)
+      }
+    } else {
+      shrink_pca(x, center=FALSE, scale=FALSE, method=shrink_method)
+    }
+    
+    out <- matrix(0, length(cind), ncomp(fit))
+    isplit <- split(1:length(cind), cind)
+    for (i in 1:length(isplit)) {
+      ind <- isplit[[i]]
+      v <- fit$v[i,,drop=FALSE]
+      vex <- apply(v, 2, rep, length(ind))
+      out[ind,] <- vex
+    }
+    
+    nout <- apply(out, 2, function(vals) vals/ norm(as.matrix(vals), "F"))
+    
+    ## TODO check scores...
+    ## maintain the non-expand version?
+    bi_projector(preproc=pre_processor(matrix(), center=FALSE, scale=FALSE),
+                 ncomp=ncomp(fit),
+                 v=nout,
+                 u=fit$u,
+                 d=fit$d,
+                 scores=fit$scores,
+                 classes="expanded_pca")
+  }
+                 
+  fits <- list(length(cuts))
+  
+  Xresid <- t(Xp)
+  for (i in 1:length(cuts)) {
+    print(i)
+    cind <- cutree(hclus, cuts[i])
+    Xbar <- t(group_means(cind, Xresid))
+    fits[[i]] <- do_pca(Xbar, i, cind)
+    #Xresid <- t(residuals(fits[[i]], xorig=Xp))
+    #tmp2 <- residualize(~ cind, Xresid, design=data.frame(cind=factor(cind)))
+    Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
+      xb <- Xbar[j,]
+      Xresid[,j] - xb[cind]
+    })))
+   
+  }
+    
+  
+}
+
+
 #' hclust_pca
 #' 
 #' A type of pca that uses a hierarchical clustering to define a set of nested regions for pca compression.

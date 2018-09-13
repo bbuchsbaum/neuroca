@@ -261,12 +261,6 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
 
 
 
-
-
-
-
-
-
 #' @export
 bootstrap.pca <- function(x, nboot=100, k=x$ncomp) {
   DUt <- t(scores(x))
