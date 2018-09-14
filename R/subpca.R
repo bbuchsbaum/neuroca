@@ -54,7 +54,7 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
 
 
 
-multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
+multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
                            center=TRUE, scale=FALSE, shrink_method="GSURE") {
   
   est_method <- match.arg(est_method)
@@ -85,14 +85,24 @@ multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"
     
     out <- matrix(0, length(cind), ncomp(fit))
     isplit <- split(1:length(cind), cind)
+    
     for (i in 1:length(isplit)) {
       ind <- isplit[[i]]
       v <- fit$v[i,,drop=FALSE]
       vex <- apply(v, 2, rep, length(ind))
+      vex <- apply(vex, 2, function(vals) vals/sqrt(length(ind)))
       out[ind,] <- vex
     }
     
     nout <- apply(out, 2, function(vals) vals/ norm(as.matrix(vals), "F"))
+    Xex <- x[,cind]
+    
+    browser()
+    
+    #browser()
+    #sc <- fit$scores
+    #denom <- sqrt(sapply(isplit, length))
+    #sweep(sc, 1, denom, "*")
     
     ## TODO check scores...
     ## maintain the non-expand version?
@@ -105,12 +115,12 @@ multiscale_pca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"
                  classes="expanded_pca")
   }
                  
-  fits <- list(length(cuts))
+  fits <- list(ncol(cutmat))
   
   Xresid <- t(Xp)
-  for (i in 1:length(cuts)) {
+  for (i in 1:ncol(cutmat)) {
     print(i)
-    cind <- cutree(hclus, cuts[i])
+    cind <- cutmat[,i]
     Xbar <- t(group_means(cind, Xresid))
     #offset <- rowMeans(Xbar) 
     #Xbar <- sweep(Xbar, 1, offset, "-")
