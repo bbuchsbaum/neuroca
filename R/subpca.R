@@ -119,7 +119,6 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
                  scores=fit$scores,
                  classes="expanded_pca")
     
-    browser()
     proj
   }
                  
@@ -135,10 +134,13 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
     
     fits[[i]] <- do_pca(Xbar, i, cind)
     
-    Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
-      xb <- Xbar[j,]
-      Xresid[,j] - xb[cind]
-    })))
+    supp_lds <- project_cols(fits[[i]], t(Xresid))
+    recon <- scores(fits[[i]]) %*% t(supp_lds)
+    Xresid <- Xresid - t(recon)
+    #Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
+    #  xb <- Xbar[j,]
+    #  Xresid[,j] - xb[cind]
+    #})))
     
     print(sqrt(sum(Xresid^2)))
    
