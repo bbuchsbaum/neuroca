@@ -13,4 +13,6 @@ maskc[mask.idx] <- 1
 maskc[-mask.idx] <- 0
 
 clus <- commute_cluster(vec, mask=maskc, K=350, weight_mode="heat", alpha=.5)
-cres <- meta_clust(clus, cuts = c(16,32,64,128,256))
+cres <- meta_clust.cluster_result(clus, cuts = c(16,64,256))
+
+X <- series(vec, mask.idx)

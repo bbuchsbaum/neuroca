@@ -66,7 +66,14 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
   #Xp <- sweep(Xp, 1, offset, "-")
 
   do_pca <- function(x, level, cind) {
+    isplit <- split(1:length(cind), cind)
+    lens <- sapply(isplit, length)
+    
+    ## rescale x to match number of elements in each cluster
+    x <- sweep(x, 2, sqrt(lens), "*")
+  
     fit <- if (est_method == "fixed") {
+      print(ncomp[level])
       pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
     } else if (est_method == "gcv") {
       #est <- fast_estim_ncomp(x)
@@ -83,8 +90,9 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
       shrink_pca(x, center=FALSE, scale=FALSE, method=shrink_method)
     }
     
+  
+    
     out <- matrix(0, length(cind), ncomp(fit))
-    isplit <- split(1:length(cind), cind)
     
     for (i in 1:length(isplit)) {
       ind <- isplit[[i]]
@@ -95,29 +103,29 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
     }
     
     nout <- apply(out, 2, function(vals) vals/ norm(as.matrix(vals), "F"))
-    Xex <- x[,cind]
     
-    browser()
-    
+    ## expanded X
+    #Xex <- x[,cind]
+  
     #browser()
     #sc <- fit$scores
     #denom <- sqrt(sapply(isplit, length))
     #sweep(sc, 1, denom, "*")
-    
-    ## TODO check scores...
-    ## maintain the non-expand version?
-    bi_projector(preproc=pre_processor(matrix(), center=FALSE, scale=FALSE),
+    proj <- bi_projector(preproc=pre_processor(matrix(), center=FALSE, scale=FALSE),
                  ncomp=ncomp(fit),
                  v=nout,
                  u=fit$u,
                  d=fit$d,
                  scores=fit$scores,
                  classes="expanded_pca")
+    
+    browser()
+    proj
   }
                  
   fits <- list(ncol(cutmat))
-  
   Xresid <- t(Xp)
+  
   for (i in 1:ncol(cutmat)) {
     print(i)
     cind <- cutmat[,i]
@@ -131,6 +139,8 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
       xb <- Xbar[j,]
       Xresid[,j] - xb[cind]
     })))
+    
+    print(sqrt(sum(Xresid^2)))
    
   }
     
