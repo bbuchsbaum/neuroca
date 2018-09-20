@@ -53,7 +53,6 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
 
 
 
-
 multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
                            center=TRUE, scale=FALSE, shrink_method="GSURE") {
   

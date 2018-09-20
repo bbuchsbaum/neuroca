@@ -56,7 +56,9 @@ collapse <- function(form, X, design) {
   list(X=Xbar, design=rdes)
 }
 
+
 # TODO check this over
+
 
 #' Compute a regression model for each column in a matrix and return residual matrix
 #' 

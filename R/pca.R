@@ -1,6 +1,7 @@
 
 ## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
 
+
 projector <- function(preproc, ncomp, v, classes, ...) {
   out <- list(
     preproc=preproc,
@@ -29,13 +30,14 @@ bi_projector <- function(preproc, ncomp, v, u, d, scores, classes, ...) {
 
 
 kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, scale=FALSE,  ...) {
+
   preproc <- pre_processor(X, center, scale)
   Xp <- pre_process(preproc, X)
   
   kres <- kmeans(t(Xp), centers=ncomp,...)
-  
   mat <- do.call(rbind, purrr::imap(split(1:ncol(Xp), kres$cluster), function(.x, .y) {
-    cbind(as.numeric(.x), as.numeric(.y), 1/length(.x))
+  cbind(as.numeric(.x), as.numeric(.y), 1/length(.x))
+
   }))
   
   v <- sparseMatrix(i=mat[,1], j=mat[,2], x=mat[,3])
@@ -173,6 +175,7 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
               d=d,
               scores=t(t(as.matrix(u)) * d),
               classes=c("shrink_pca", "pca"))
+
 }
                        
 
@@ -240,6 +243,7 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
 
 
 #' @export
+
 reprocess.bi_projector <- function(x, newdata, subind=NULL) {
   if (is.null(subind)) {
     assert_that(ncol(newdata) == ncol(x))
@@ -253,17 +257,20 @@ reprocess.bi_projector <- function(x, newdata, subind=NULL) {
 }
 
 #' @export
+
 singular_values.bi_projector <- function(x) {
   x$d
 }
 
 #' @export
+
 loadings.bi_projector <- function(x) {
   x$v
 }
 
 
 #' @export
+
 projection_fun.bi_projector <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
   .comp <- comp
   .pre_process <- pre_process
@@ -275,6 +282,7 @@ projection_fun.bi_projector <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
 }
 
 #' @export
+
 project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
   ## if no newdata, then simply return the loadings
   if (missing(newdata)) {
@@ -310,6 +318,7 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, sub
 }
 
 #' @export
+
 residuals.bi_projector <- function(x, ncomp=1, xorig) {
   recon <- reconstruct(x,comp=1:ncomp)
   #recon <- scores(x)[,1:ncomp,drop=FALSE] %*% t(loadings(x)[,1:ncomp,drop=FALSE])
@@ -335,6 +344,7 @@ reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NUL
 
 
 #' @export
+
 ncol.projector <- function(x) {
   nrow(x$v)
 }
@@ -356,6 +366,7 @@ scores.bi_projector <- function(x) {
 
 
 #' @export
+
 truncate.bi_projector <- function(obj, ncomp) {
   if (ncomp >= obj$ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
@@ -398,6 +409,7 @@ rotate.pca <- function(x, rot) {
   v_rot <- x$v %*% rot
   sc_rot <- scores(x) %*% rot
   
+
   ret <- bi_projector(
               preproc=x$preproc,
               ncomp=length(x$d),
@@ -412,6 +424,7 @@ rotate.pca <- function(x, rot) {
 }
 
 #' @export
+
 print.bi_projector <- function(object) {
   showk <- 1:min(object$ncomp, 5)
   cat("pca", "\n")

@@ -24,7 +24,7 @@ prox <- function(X, u, Lu, v, Su, lambda, conv=1e-5) {
 #' @param Pu optional penalty matrix for rows
 #' @param Pv optional penalty matrix for columns
 sfpca <- function(X, ncomp=2, lu=1, lv=1, au=1, av=1, coords, Pu=NULL, Pv=NULL, conv=1e-5) {
-  
+
   if (is.null(Pv)) {
     Pv <- neighborweights::spatial_laplacian(coords, nnk=ncol(coords)^2, weight_mode="binary")
   }
@@ -43,7 +43,7 @@ sfpca <- function(X, ncomp=2, lu=1, lv=1, au=1, av=1, coords, Pu=NULL, Pv=NULL, 
   v <- init_svd$v
   u <- init_svd$u
   criterion <- Inf
-  
+
   while (criterion > conv) {
     u_new <- prox(X, u, Lu, v, Su, lu)
     v_new <- prox(t(X), v, Lv, u, Sv, lv)

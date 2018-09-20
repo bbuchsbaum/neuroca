@@ -1,4 +1,5 @@
 
+
 #' Given a set of projected scores and a set of reference scores, compute one of several performance metrics.
 #' 
 #' @param fscores the projected scores to be compared to the reference scores
