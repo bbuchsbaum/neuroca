@@ -57,6 +57,10 @@ collapse <- function(form, X, design) {
 }
 
 
+
+# TODO check this over
+
+
 #' Compute a regression model for each column in a matrix and return residual matrix
 #' 
 #' @param form the formula defining the model to fit for residuals
@@ -109,6 +113,7 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
   ## get the order number of each term (1 = main effect, 2 = two-way interaction, etc.)
   termorder <- apply(facs,2, function(x) sum(x > 0))
   terms <- names(termorder)
+
   
   ## the set of orders
   orders <- sort(unique(termorder))

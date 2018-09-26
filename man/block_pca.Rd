@@ -4,9 +4,24 @@
 \alias{block_pca}
 \title{block_pca}
 \usage{
-block_pca(X, est_method = c("gcv", "shrink", "fixed"), ncomp = 2,
+block_pca(X, est_method = c("gcv", "shrink", "fixed", "nneg"), ncomp = 2,
   min_k = 1, max_k = 3, center = TRUE, scale = FALSE,
-  ncores = max(parallel::detectCores()/2, 1), ...)
+  shrink_method = "GSURE", ...)
+}
+\arguments{
+\item{X}{the data matrix and instance of class \code{block_matrix}}
+
+\item{est_method}{the pca method to apply to each block}
+
+\item{ncomp}{the number of components to extract from each block (can vary by block or be fixed)}
+
+\item{min_k}{the minimum number of components in each block}
+
+\item{max_k}{the maximum number of components in each block}
+
+\item{center}{whether to center columns}
+
+\item{scale}{whether to scale columns}
 }
 \description{
 block_pca

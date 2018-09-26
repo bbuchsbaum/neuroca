@@ -1,8 +1,9 @@
 
-#' Given a set of factor scores and a set of reference scores, compute one of several performance metrics.
+
+#' Given a set of projected scores and a set of reference scores, compute one of several performance metrics.
 #' 
 #' @param fscores the projected scores to be compared to the reference scores
-#' @param scores the reference scores
+#' @param scores the original scores from the fitted model
 #' @param type the type of metric to compute
 #' @param ncomp the number of dimensions to use
 #' @export

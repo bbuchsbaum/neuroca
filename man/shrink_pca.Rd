@@ -8,5 +8,5 @@ shrink_pca(X, center = TRUE, scale = FALSE, method = c("GSURE", "QUT",
   "SURE"), ...)
 }
 \description{
-adaptive shrinakge pca from the \code{denoiseR} package
+adaptive shrinkage pca from the \code{denoiseR} package
 }

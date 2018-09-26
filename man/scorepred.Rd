@@ -2,7 +2,7 @@
 % Please edit documentation in R/scorepred.R
 \name{scorepred}
 \alias{scorepred}
-\title{Given a set of factor scores and a set of reference scores, compute one of several performance metrics.}
+\title{Given a set of projected scores and a set of reference scores, compute one of several performance metrics.}
 \usage{
 scorepred(fscores, scores, type = c("class", "prob", "scores", "cosine",
   "distance", "r2"), ncomp = ncol(fscores), class_name = TRUE)
@@ -10,12 +10,12 @@ scorepred(fscores, scores, type = c("class", "prob", "scores", "cosine",
 \arguments{
 \item{fscores}{the projected scores to be compared to the reference scores}
 
-\item{scores}{the reference scores}
+\item{scores}{the original scores from the fitted model}
 
 \item{type}{the type of metric to compute}
 
 \item{ncomp}{the number of dimensions to use}
 }
 \description{
-Given a set of factor scores and a set of reference scores, compute one of several performance metrics.
+Given a set of projected scores and a set of reference scores, compute one of several performance metrics.
 }

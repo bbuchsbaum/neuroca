@@ -10,7 +10,7 @@
 #' @param center whether to center columns
 #' @param scale whether to scale columns
 #' @importFrom furrr future_map
-block_pca <- function(X, est_method=c("gcv", "shrink", "fixed"), 
+block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"), 
                    ncomp=2, min_k=1, max_k=3, 
                    center=TRUE, scale=FALSE, shrink_method="GSURE", ...) {
   
@@ -28,6 +28,7 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed"),
   }
 
   fits <- if (est_method == "gcv") {
+
     fits <- furrr::future_map(seq(1,nblocks(X)), function(i) {
       xb <- get_block(X, i)
       est <- fast_estim_ncomp(xb, ncp.min=min_k, ncp.max=max_k)
@@ -48,6 +49,102 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed"),
   
   bm <- block_projector(fits)
 
+}
+
+
+multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
+                           center=TRUE, scale=FALSE, shrink_method="GSURE") {
+  
+  est_method <- match.arg(est_method)
+  preproc <- pre_processor(X, center=center, scale=scale)
+  Xp <- pre_process(preproc, X)
+ 
+  
+  #offset <- rowMeans(Xp)
+  #Xp <- sweep(Xp, 1, offset, "-")
+
+  do_pca <- function(x, level, cind) {
+    isplit <- split(1:length(cind), cind)
+    lens <- sapply(isplit, length)
+    
+    ## rescale x to match number of elements in each cluster
+    x <- sweep(x, 2, sqrt(lens), "*")
+  
+    fit <- if (est_method == "fixed") {
+      print(ncomp[level])
+      pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
+    } else if (est_method == "gcv") {
+      #est <- fast_estim_ncomp(x)
+      est <- FactoMineR::estim_ncp(x)
+      bestcomp <- est$ncp
+      print(paste("best", bestcomp))
+      if (bestcomp == 0) {
+        ## 0 comps, return dummy pca
+        pseudo_svd(u=matrix(rep(0, nrow(x))), v=matrix(rep(0,ncol(x))), d=0)
+      } else {
+        pca(x, ncomp=bestcomp, center=FALSE, scale=FALSE)
+      }
+    } else {
+      shrink_pca(x, center=FALSE, scale=FALSE, method=shrink_method)
+    }
+    
+  
+    
+    out <- matrix(0, length(cind), ncomp(fit))
+    
+    for (i in 1:length(isplit)) {
+      ind <- isplit[[i]]
+      v <- fit$v[i,,drop=FALSE]
+      vex <- apply(v, 2, rep, length(ind))
+      vex <- apply(vex, 2, function(vals) vals/sqrt(length(ind)))
+      out[ind,] <- vex
+    }
+    
+    nout <- apply(out, 2, function(vals) vals/ norm(as.matrix(vals), "F"))
+    
+    ## expanded X
+    #Xex <- x[,cind]
+  
+    #browser()
+    #sc <- fit$scores
+    #denom <- sqrt(sapply(isplit, length))
+    #sweep(sc, 1, denom, "*")
+    proj <- bi_projector(preproc=pre_processor(matrix(), center=FALSE, scale=FALSE),
+                 ncomp=ncomp(fit),
+                 v=nout,
+                 u=fit$u,
+                 d=fit$d,
+                 scores=fit$scores,
+                 classes="expanded_pca")
+    
+    proj
+  }
+                 
+  fits <- list(ncol(cutmat))
+  Xresid <- t(Xp)
+  
+  for (i in 1:ncol(cutmat)) {
+    print(i)
+    cind <- cutmat[,i]
+    Xbar <- t(group_means(cind, Xresid))
+    #offset <- rowMeans(Xbar) 
+    #Xbar <- sweep(Xbar, 1, offset, "-")
+    
+    fits[[i]] <- do_pca(Xbar, i, cind)
+    
+    supp_lds <- project_cols(fits[[i]], t(Xresid))
+    recon <- scores(fits[[i]]) %*% t(supp_lds)
+    Xresid <- Xresid - t(recon)
+    #Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
+    #  xb <- Xbar[j,]
+    #  Xresid[,j] - xb[cind]
+    #})))
+    
+    print(sqrt(sum(Xresid^2)))
+   
+  }
+    
+  
 }
 
 
