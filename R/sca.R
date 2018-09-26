@@ -1,5 +1,6 @@
 
 #' @importFrom multiway sca
+#' @export
 sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
                 type=c("sca-p","sca-pf2","sca-ind","sca-ecp"), ...) {
   
@@ -37,12 +38,9 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
     center=center,
     scale=scale,
     ncomp=length(d),
-    rank_k=rank_k,
     block_indices=bind,
     nvars=ncol(X),
-    ntables=length(block_lengths(X)),
-    is_reduced=is_reduced,
-    reducer=reducer)
+    ntables=length(block_lengths(X)))
   
   class(ret) <- c("sca", "multiblock", "list")
   ret  

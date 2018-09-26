@@ -25,14 +25,15 @@ loadings <- function(x,...) UseMethod("loadings")
 ncomp <- function(x) UseMethod("ncomp")
 
 
-ncol          <- function(x) UseMethod("ncol") 
-ncol.default  <- base::ncol
+#ncol          <- function(x) UseMethod("ncol") 
+#ncol.default  <- base::ncol
 
-nrow          <- function(x) UseMethod("nrow") 
-nrow.default  <- base::nrow
 
-dim          <- function(x) UseMethod("dim") 
-dim.default  <- base::dim
+#nrow          <- function(x) UseMethod("nrow") 
+#nrow.default  <- base::nrow
+
+#dim          <- function(x) UseMethod("dim") 
+#dim.default  <- base::dim
 
 
 
