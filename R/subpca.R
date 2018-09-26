@@ -2,14 +2,13 @@
 
 #' block_pca
 #' 
-#' @param X
-#' @param groups
-#' @param method
-#' @param ncomp
-#' @param min_k
-#' @param max_k
-#' @param center
-#' @param scale
+#' @param X the data matrix and instance of class \code{block_matrix}
+#' @param est_method the pca method to apply to each block
+#' @param ncomp the number of components to extract from each block (can vary by block or be fixed)
+#' @param min_k the minimum number of components in each block
+#' @param max_k the maximum number of components in each block
+#' @param center whether to center columns
+#' @param scale whether to scale columns
 #' @importFrom furrr future_map
 block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"), 
                    ncomp=2, min_k=1, max_k=3, 
@@ -29,14 +28,15 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
   }
 
   fits <- if (est_method == "gcv") {
-    fits <- furrr::future_map(1:nblocks(X), function(i) {
+
+    fits <- furrr::future_map(seq(1,nblocks(X)), function(i) {
       xb <- get_block(X, i)
       est <- fast_estim_ncomp(xb, ncp.min=min_k, ncp.max=max_k)
       pca(xb, ncomp=max(min_k, est$bestcomp), center=center, scale=scale)
     })
   } else if (est_method == "fixed") {
     ## method is fixed
-    furrr::future_map(1:nblocks(X), function(i) {
+    furrr::future_map(seq(1, nblocks(X)), function(i) {
       xb <- get_block(X, i)
       pca(xb, ncomp=ncomp[i], center=center, scale=scale)
     })
@@ -50,7 +50,6 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
   bm <- block_projector(fits)
 
 }
-
 
 
 multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
@@ -153,10 +152,13 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
 #' 
 #' A type of pca that uses a hierarchical clustering to define a set of nested regions for pca compression.
 #'   
-#' @param X the input matrix
+#' @param X the data matrix
 #' @param hclus a hierarchical clustering instance with as many objects as there are rows in \code{X}
 #' @param cuts desired number of clusters at each level of the hierarchy (must be increasing)
-#' @param k the number of components to estimate at each level
+#' @param ncomp the number of components to estimate at each level
+#' @param center
+#' @param scale
+#' @param shrink_method
 #' @examples 
 #' 
 #' grid <- expand.grid(1:10, 1:10)

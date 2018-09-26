@@ -9,13 +9,13 @@ hpca(X, hclus, cuts, est_method = c("fixed", "gcv", "shrink"),
   shrink_method = "GSURE")
 }
 \arguments{
-\item{X}{the input matrix}
+\item{X}{the data matrix}
 
 \item{hclus}{a hierarchical clustering instance with as many objects as there are rows in \code{X}}
 
 \item{cuts}{desired number of clusters at each level of the hierarchy (must be increasing)}
 
-\item{k}{the number of components to estimate at each level}
+\item{ncomp}{the number of components to estimate at each level}
 }
 \description{
 A type of pca that uses a hierarchical clustering to define a set of nested regions for pca compression.

@@ -15,6 +15,7 @@ prox <- function(X, u, Lu, v, Su, lambda, conv=1e-5) {
   u
 }
 
+
 #' @param X the data matrix
 #' @param ncomp numbe rof components to estimate
 #' @param lu lambda sparsity parameter for the rows
@@ -24,6 +25,7 @@ prox <- function(X, u, Lu, v, Su, lambda, conv=1e-5) {
 #' @param Pu optional penalty matrix for rows
 #' @param Pv optional penalty matrix for columns
 sfpca <- function(X, ncomp=2, lu=1, lv=1, au=1, av=1, coords, Pu=NULL, Pv=NULL, conv=1e-5) {
+
 
   if (is.null(Pv)) {
     Pv <- neighborweights::spatial_laplacian(coords, nnk=ncol(coords)^2, weight_mode="binary")
