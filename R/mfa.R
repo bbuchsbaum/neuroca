@@ -259,17 +259,18 @@ impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,
   criterion <- Inf
   iter <- 1
   
-  while(iter < iter_max & criterion > threshold) {
+  while(iter < iter_max && criterion > threshold) {
     mres <- mfa(Ximp, ncomp=ncomp, center=center, scale=scale, normalization=normalization)
     recon <- reconstruct(mres)
     
     Xnew <- X
     Xnew[missing_ind] <- recon[missing_ind]
     
-    obj <- sum((X[-missing_1d] - recon[-missing_1d])^2)
+    obj <- sum((Xnew[-missing_1d] - recon[-missing_1d])^2)
    
     Ximp <- Xnew
     criterion <- abs(1 - obj/old)
+    message("iter: ", obj)
     print(criterion)
     old <- obj
     iter <- iter+1
