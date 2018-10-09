@@ -28,7 +28,7 @@ project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, bl
     ind <- x$block_indices[[block_index]]
     assert_that(length(ind) == ncol(newdata))
     xnewdat <- if (pre_process) reprocess(x, newdata, block_index) else newdata
-    x$ntables * project(x$fit, xnewdat, comp=comp, subind=ind)
+    x$ntables * project(x$fit, xnewdat, comp=comp, colind=ind)
     
   } else {
     stop("block_index must have length of 1 or length equal to ntables")
@@ -101,7 +101,7 @@ block_index_list.multiblock <- function(x) x$block_indices
 partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
   bind <- block_index_list(x)
   res <- lapply(block_index, function(i) {
-    x$ntables * project(x$fit, get_block(Xr, i), subind=bind[[i]])
+    x$ntables * project(x$fit, get_block(Xr, i), colind=bind[[i]])
   })
   
   names(res) <- paste0("Block_", block_index)
@@ -112,7 +112,7 @@ reprocess.multiblock <- function(x, newdat, block_index=NULL) {
   ## given a new observation(s), pre-process it in the same way the original observations were processed
   if (!is.null(block_index)) {
     subind <- block_index_list(x)[[block_index]]
-    pre_process(x$preproc, newdat, subind=subind)
+    pre_process(x$preproc, newdat, colind=subind)
   } else {
     pre_process(x$preproc, newdat)
   }

@@ -166,7 +166,7 @@ reconstruct <- function(x, newdata, comp,...) UseMethod("reconstruct")
 residuals <- function(x, ncomp, ...) UseMethod("residuals")
 
 
-#' project
+#' project_cols
 #' 
 #' project supplementary variables in to the subspace defined by the model
 #' 
@@ -194,7 +194,7 @@ project <- function(x, newdata, ...) UseMethod("project")
 #' return a function that projects data to lower-dimensional space
 #' 
 #' @export
-projection_fun <- function(x, subind, ...) UseMethod("projection_fun")
+projection_fun <- function(x, colind, ...) UseMethod("projection_fun")
 
 #' project_table
 #' 

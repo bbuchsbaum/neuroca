@@ -121,7 +121,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
   bind <- block_index_list(x)
   res <- lapply(block_index, function(i) {
     ## FIXME
-    x$ntables * project(x$fit, get_block(x$Xr, i), subind=bind[[i]], pre_process=FALSE)
+    x$ntables * project(x$fit, get_block(x$Xr, i), colind=bind[[i]], pre_process=FALSE)
   })
   
   names(res) <- paste0("Block_", block_index)
@@ -138,7 +138,7 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
     assert_that(length(block_index) == 1, msg="block_index must have length of 1")
     subind <- block_index_list(x$X)[[block_index]]
     newdat <- reprocess(x, newdata, block_index)
-    x$ntables * project(x$fit, unclass(newdat), comp=comp, subind=subind)
+    x$ntables * project(x$fit, unclass(newdat), comp=comp, colind=subind)
   } else {
     # new data must have same number of columns as original data
     assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
@@ -226,7 +226,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
       newdata
     }
 
-    fscores <- project(x$fit, Xp, comp=1:ncomp, subind=ind) * x$ntables
+    fscores <- project(x$fit, Xp, comp=1:ncomp, colind=ind) * x$ntables
 
   }
   

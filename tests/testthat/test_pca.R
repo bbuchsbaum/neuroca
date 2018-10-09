@@ -33,7 +33,7 @@ test_that("can run a triply nested pca", {
 test_that("can partially project a plain pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=4)
-  p <- project(pca1, mat1[,1:2], subind=1:2)
+  p <- project(pca1, mat1[,1:2], colind=1:2)
   expect_equal(dim(p), c(10, 4))
 })
 

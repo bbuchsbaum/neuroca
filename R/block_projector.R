@@ -152,7 +152,7 @@ compose.block_projector <- function(x, y) {
     function(newdata=NULL) {
       oind <- attr(x, "proj_indices")[i,]
       oind <- seq(oind[1], oind[2])
-      project(y, project(x, newdata, block_index=i), subind=oind)
+      project(y, project(x, newdata, block_index=i), colind=oind)
     }
   })
 

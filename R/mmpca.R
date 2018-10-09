@@ -1,14 +1,74 @@
 
+
+lda_outer <- function (X) {
+  p = ncol(X)
+  output = array(0, c(p, p))
+  for (i in 1:nrow(X)) {
+    output = output + outer(X[i, ], X[i, ])
+  }
+  return(output)
+}
+
+
+mmsd <- function(X, Y, ncomp=min(dim(X)), scale=FALSE, c=1) {
+  Y <- as.factor(Y)
+  preproc <- pre_processor(X, center=FALSE, scale)
+  Xp <- pre_process(preproc, X)
+  
+  pcred <- pca(Xp, center=TRUE)
+  xscores <- scores(pcred)
+  
+  levs <- levels(Y)
+  ncount <- table(Y)
+  
+  p <- ncol(xscores)
+  Sw <- array(0, c(p, p))
+  for (i in 1:length(levs)) {
+    idxnow <- which(Y == levs[i])
+    gmean <- colMeans(xscores[idxnow,])
+    xs <- sweep(xscores[idxnow,], 2, gmean, "-")
+    Sw <- Sw + lda_outer(xs)
+  }
+  
+  
+  Sb = array(0, c(p, p))
+  m <- colMeans(xscores)
+  for (i in 1:length(levs)) {
+    idxnow = which(Y == levs[i])
+    Nk = length(idxnow)
+    mdiff = (colMeans(xscores[idxnow, ]) - m)
+    Sb = Sb + Nk * outer(mdiff, mdiff)
+  }
+  
+  SwSb <- Sb - c*Sw
+  
+  P <- loadings(pcred)
+  decomp <- eigen(P %*% SwSb %*% t(P))
+  
+  V <- t(P) %*% decomp$vectors
+  
+  fit <- projector(preproc=preproc,
+                   ncomp=ncomp,
+                   v=V,
+                   classes="mmsd",
+                   c=c)
+  fit$Y <- Y
+  fit
+  
+}
+
+
 #' @inheritsParams pca
-mmpca <- function(X, Y, ncomp=min(dim(X)), center=TRUE, scale=FALSE, knn=1) {
+mmpca <- function(X, Y, ncomp=min(dim(X)), center=TRUE, scale=FALSE, knn=1, sigma=.7) {
   assert_that(nrow(X) == length(Y))
   Y <- as.factor(Y)
   
   preproc <- pre_processor(X, center, scale)
   Xp <- pre_process(preproc, X)
   
-  nabes <- neighborweights::edge_weights(Xp, "knearest_misses", k=knn, labels=Y, type="asym")
+  nabes <- neighborweights::edge_weights(Xp, "knearest_misses", k=knn, labels=Y, type="asym", sigma=sigma)
   nnbc <- apply(nabes, 1, function(x) which(x > 0))
+  
   if (is.vector(nnbc)) {
     nnbc <- matrix(nnbc, ncol=nrow(X))
   }
