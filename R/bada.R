@@ -49,7 +49,7 @@ bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, sca
   Xr <- group_means(Y, X)
   fit <- pca(Xr, ncomp=ncomp, center=center, scale=scale, method="fast")
   ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
-  class(ret) <- c("bada")
+  class(ret) <- c("bada", "bi_projector", "projector")
   ret
 }
 
@@ -115,6 +115,15 @@ residuals.bada <- function(x, ncomp=x$ncomp) {
   recon_x <- mm %*% recon
   xresid <- x$X - recon_x
   xresid
+}
+
+ncol.bada <- function(x) {
+  nrow(x$fit$v)
+}
+
+#' @export
+nrow.bada <- function(x) {
+  nrow(x$fit$u)
 }
 
 

@@ -1,17 +1,3 @@
-#' @export
-ncomp.projector <- function(x) {
-  x$ncomp
-}
-
-#' @export
-nrow.projector <- function(x) {
-  nrow(scores(x))
-}
-
-#' @export
-dim.projector <- function(x) {
-  c(nrow(x), ncol(x))
-}
 
 #' @export
 is_transformer.projector <- function(x) TRUE

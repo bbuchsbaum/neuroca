@@ -43,13 +43,21 @@ mmsd <- function(X, Y, ncomp=min(dim(X)), scale=FALSE, c=1) {
   SwSb <- Sb - c*Sw
   
   P <- loadings(pcred)
-  decomp <- eigen(P %*% SwSb %*% t(P))
+  decomp <- RSpectra::eigs_sym(P %*% SwSb %*% t(P), k=ncomp)
   
-  V <- t(P) %*% decomp$vectors
+  posidx <- which(decomp$values > 1e-6)
+  ncomp <- length(posidx)
   
-  fit <- projector(preproc=preproc,
+  v <- t(P) %*% decomp$vectors[,posidx]
+  scores <- Xp %*% v
+  u <- apply(scores, 2, function(x) x/sqrt(sum(x^2)))
+ 
+  fit <- bi_projector(preproc=preproc,
                    ncomp=ncomp,
-                   v=V,
+                   u=u,
+                   v=v,
+                   d=apply(scores, 2, function(x) sum(x^2)),
+                   scores=scores,
                    classes="mmsd",
                    c=c)
   fit$Y <- Y

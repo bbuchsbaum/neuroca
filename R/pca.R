@@ -370,6 +370,13 @@ scores.bi_projector <- function(x) {
 
 
 #' @export
+dim.projector <- function(x) {
+  c(nrow(x$u), nrow(x$v))
+}
+
+
+
+#' @export
 
 
 truncate.bi_projector <- function(obj, ncomp) {
