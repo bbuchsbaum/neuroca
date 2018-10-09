@@ -68,7 +68,7 @@ kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, 
 }
 
 #' @export
-reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
@@ -78,10 +78,10 @@ reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, subind
   ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
   lds <- x$v[,comp,drop=FALSE]
   
-  if (is.null(subind)) {
+  if (is.null(colind)) {
     reverse_pre_process(x$preproc, newdata %*% t(lds))
   } else {
-    reverse_pre_process(x$preproc, newdata %*% t(lds)[,subind], subind=subind)
+    reverse_pre_process(x$preproc, newdata %*% t(lds)[,colind], colind=colind)
   }
 }
 
@@ -120,7 +120,7 @@ nneg_pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,  ...) {
 }
 
 #' @export
-reconstruct.nneg_pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+reconstruct.nneg_pca <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
@@ -130,10 +130,10 @@ reconstruct.nneg_pca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
   ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
   
   piv <- corpcor::pseudoinverse(loadings(x)[,comp,drop=FALSE])
-  if (is.null(subind)) {
+  if (is.null(colind)) {
     reverse_pre_process(x$preproc, newdata %*% piv)
   } else {
-    reverse_pre_process(x$preproc, newdata %*% piv[,subind], subind=subind)
+    reverse_pre_process(x$preproc, newdata %*% piv[,colind], colind=colind)
   }
 }
   
@@ -246,15 +246,14 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
 
 
 #' @export
-reprocess.bi_projector <- function(x, newdata, subind=NULL) {
-
-  if (is.null(subind)) {
+reprocess.bi_projector <- function(x, newdata, colind=NULL) {
+  if (is.null(colind)) {
     assert_that(ncol(newdata) == ncol(x))
     pre_process(x$preproc, newdata)
   } else {
-    assert_that(length(subind) == ncol(newdata), 
-                msg=paste("length of subind not equal to number of columns of newdata", length(subind), "!=", ncol(newdata)))
-    pre_process(x$preproc, newdata, subind)
+    assert_that(length(colind) == ncol(newdata), 
+                msg=paste("length of colind not equal to number of columns of newdata", length(colind), "!=", ncol(newdata)))
+    pre_process(x$preproc, newdata, colind)
   }
   
 }
@@ -264,21 +263,20 @@ singular_values.bi_projector <- function(x) {
   x$d
 }
 
-
+#' @export
 loadings.bi_projector <- function(x) {
   x$v
 }
 
 
 #' @export
-
 projection_fun.bi_projector <- function(x, comp=1:ncomp(x), pre_process=TRUE) {
   .comp <- comp
   .pre_process <- pre_process
   
-  function(newdata, subind=NULL) {
-    .subind <- subind
-    project(x, newdata, comp=.comp, pre_process=.pre_process, subind=.subind)
+  function(newdata, colind=NULL) {
+    .colind <- colind
+    project(x, newdata, comp=.comp, pre_process=.pre_process, colind=.colind)
   }
 }
 
@@ -299,8 +297,7 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 
 #' @export
 
-project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, subind=NULL) {
-  
+project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, colind=NULL) {
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
     return(scores(x)[,comp, drop=FALSE])
@@ -310,12 +307,12 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, sub
     newdata <- matrix(newdata,nrow=1)
   }
   
-  if (is.null(subind)) {
+  if (is.null(colind)) {
     reprocess(x, newdata) %*% loadings(x)[,comp, drop=FALSE]
   } else {
-    ## subind must be in the input space
-    assertthat::assert_that(max(subind) <= ncol(newdata))
-    reprocess(x, newdata, subind=subind) %*% (loadings(x)[subind, comp, drop=FALSE])
+    ## colind must be in the input space
+    assertthat::assert_that(max(colind) <= ncol(newdata))
+    reprocess(x, newdata, colind=colind) %*% (loadings(x)[colind, comp, drop=FALSE])
   }
 }
 
@@ -329,17 +326,24 @@ residuals.bi_projector <- function(x, ncomp=1, xorig) {
 
 
 #' @export
-reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
     newdata <- scores(x)[,comp, drop=FALSE]
   }
   
-  if (is.null(subind)) {
-    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]))
+  if (is.null(rowind)) {
+    rowind <- 1:nrow(newdata)
   } else {
-    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE])[,subind], subind=subind)
+    assert_that(all(rowind > 0) && max(rowind) < nrow(newdata))
+  }
+  
+  if (is.null(colind)) {
+    reverse_pre_process(x$preproc, newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+  } else {
+    reverse_pre_process(x$preproc, newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
+                        colind=colind)
   }
 }
 

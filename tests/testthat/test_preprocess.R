@@ -27,11 +27,11 @@ test_that("can preprocess a matrix center and scale", {
 })
 
 
-test_that("can preprocess a matrix with a subind", {
+test_that("can preprocess a matrix with a colind", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pp <- pre_processor(mat1,center=TRUE, scale=FALSE)
   
-  res <- pre_process(pp, newdata=mat1[,1:2], subind=1:2)
+  res <- pre_process(pp, newdata=mat1[,1:2], colind=1:2)
   
   expect_equal(res, scale(mat1[,1:2], center=TRUE))
 })

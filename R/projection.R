@@ -31,17 +31,17 @@ predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
 
 #' @export
 projection_fun.matrix <- function(x) {
-  function(newdata, subind=NULL) {
+  function(newdata, colind=NULL) {
     newdata <- as.matrix(newdata)
-    if (is.null(subind)) {
+    if (is.null(colind)) {
       assert_that(ncol(newdata) == ncol(x))
       newdata
     } else {
-      assert_that(max(subind) <= ncol(x))
-      assert_that(ncol(newdata) == length(subind))
+      assert_that(max(colind) <= ncol(x))
+      assert_that(ncol(newdata) == length(colind))
       newdata
-      #i <- rep(1:nrow(x), length(subind))
-      #j <- rep(subind, each=nrow(x))
+      #i <- rep(1:nrow(x), length(colind))
+      #j <- rep(colind, each=nrow(x))
       #sparseMatrix(i=i,j=j, x=as.vector(newdata), dims=dim(x))
     }
   }
@@ -49,15 +49,15 @@ projection_fun.matrix <- function(x) {
 
 #' @export
 projection_fun.Matrix <- function(x) {
-  function(newdata, subind=NULL) {
-    if (is.null(subind)) {
+  function(newdata, colind=NULL) {
+    if (is.null(colind)) {
       assert_that(ncol(newdata) == ncol(x))
       newdata
     } else {
-      assert_that(max(subind) <= ncol(x))
-      assert_that(ncol(newdata) == length(subind))
-      #i <- rep(1:nrow(x), length(subind))
-      #j <- rep(subind, each=nrow(x))
+      assert_that(max(colind) <= ncol(x))
+      assert_that(ncol(newdata) == length(colind))
+      #i <- rep(1:nrow(x), length(colind))
+      #j <- rep(colind, each=nrow(x))
       #sparseMatrix(i=i,j=j, x=as.vector(newdata), dims=dim(x))
       newdata
     }
@@ -76,25 +76,25 @@ ncomp.Matrix <- function(x) ncol(x)
 
 
 #' @export
-project.matrix <- function(x, newdata=NULL, subind=NULL) {
+project.matrix <- function(x, newdata=NULL, colind=NULL) {
   if (is.null(newdata)) {
-    if (is.null(subind)) {
+    if (is.null(colind)) {
       x
     } else {
-      assert_that(max(subind) <= ncol(x))
-      assert_that(all(subind > 0))
-      #i <- rep(1:nrow(x), length(subind))
-      #j <- rep(subind, each=nrow(x))
-      #sparseMatrix(i=i,j=j, x=as.vector(x[,subind]), dims=dim(x))
-      x[,subind]
+      assert_that(max(colind) <= ncol(x))
+      assert_that(all(colind > 0))
+      #i <- rep(1:nrow(x), length(colind))
+      #j <- rep(colind, each=nrow(x))
+      #sparseMatrix(i=i,j=j, x=as.vector(x[,colind]), dims=dim(x))
+      x[,colind]
     }
   } else {
-    if (is.null(subind)) {
+    if (is.null(colind)) {
       assert_that(dim(newdata) == dim(x))
       as.matrix(newdata)
     } else {
-      assert_that(max(subind) <= ncol(x))
-      assert_that(ncol(newdata) == length(subind))
+      assert_that(max(colind) <= ncol(x))
+      assert_that(ncol(newdata) == length(colind))
       newdata
     }
   }

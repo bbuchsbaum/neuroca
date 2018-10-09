@@ -49,7 +49,7 @@ bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, sca
   Xr <- group_means(Y, X)
   fit <- pca(Xr, ncomp=ncomp, center=center, scale=scale, method="fast")
   ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
-  class(ret) <- c("bada", "projector")
+  class(ret) <- c("bada")
   ret
 }
 
@@ -62,12 +62,12 @@ rotate.bada <- function(x, rot) {
 }
 
 #' @export
-project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
+project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
   if (is.null(newdata)) {
-    project(x$fit, newdata=x$X, comp=comp, subind=subind)
+    project(x$fit, newdata=x$X, comp=comp, colind=colind)
   } else {
     assert_that(ncol(newdata) == ncol(x$X))
-    project(x$fit, newdata, comp=comp, subind=subind)
+    project(x$fit, newdata, comp=comp, colind=colind)
   }
 }
 
@@ -86,8 +86,8 @@ loadings.bada <- function(x) loadings(x$fit)
 scores.bada <- function(x) scores(x$fit)
 
 #' @export
-reprocess.bada <- function(x, newdata, subind=NULL) {
-  reprocess(x$fit,newdata,subind)
+reprocess.bada <- function(x, newdata, colind=NULL) {
+  reprocess(x$fit,newdata,colind)
 }
 
 #' @export
