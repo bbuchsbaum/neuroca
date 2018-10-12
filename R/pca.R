@@ -248,7 +248,7 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
 #' @export
 reprocess.bi_projector <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
-    assert_that(ncol(newdata) == ncol(x))
+    assert_that(ncol(newdata) == nrow(loadings(x)))
     pre_process(x$preproc, newdata)
   } else {
     assert_that(length(colind) == ncol(newdata), 

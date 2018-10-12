@@ -4,7 +4,7 @@
 \alias{projection_fun}
 \title{projection_fun}
 \usage{
-projection_fun(x, subind, ...)
+projection_fun(x, colind, ...)
 }
 \description{
 return a function that projects data to lower-dimensional space

@@ -1,5 +1,85 @@
 
+#' @param x the model fit
+#' @param labels the training labels
+#' @param newdata an optional supplementary training set that is projeced in to the fitted space.
+#' @param ncomp the number of components to use.
+#' @param knn the number of nearest neighbors when classifiyng a new point. 
+#' @export
+classifier.bi_projector <- function(x, labels, newdata=NULL, ncomp=NULL, knn=1) {
 
+  if (is.null(ncomp)) {
+    ncomp <- ncomp(x)
+  }
+  if (is.null(newdata)) {
+    newdata <- scores(x)
+  } else {
+    newdata <- project(x, newdata, comp=1:ncomp)
+  }
+  
+  assert_that(length(labels) == nrow(newdata))
+  
+  structure(
+    list(
+      fit=x,
+      labels=labels,
+      scores=newdata,
+      knn=knn,
+      ncomp=ncomp),
+    class="classifier"
+  )
+
+}
+
+normalize_probs <- function(p) {
+  apply(p, 2, function(v) {
+    v2 <- v - min(v)
+    v2/sum(v2)
+  })
+}
+  
+avg_probs <- function(prob, labels) {
+  pmeans <- t(group_means(labels, prob))
+  t(apply(pmeans, 1, function(v) v/sum(v)))
+}
+
+nearest_class <- function(prob, labels,knn=1) {
+  
+  apply(prob, 2, function(v) {
+    ord <- order(v, decreasing=TRUE)[1:knn]
+    l <- labels[ord]
+    table(l)
+    names(which.max(table(l)))
+  })
+  
+}
+
+predict.classifier <- function(object, newdata, metric=c("cosine", "euclidean")) {
+  metric <- match.arg(metric)
+  
+  proj <- project(object$fit, newdata, comp=1:object$ncomp)
+  
+  doit <- functon(p) {
+    prob <- normalize_probs(p)
+    pmeans <- avg_probs(prob, object$labels)
+    cls <- nearest_class(prob, object$labels, object$knn)
+    
+    list(class=cls, prob=pmeans)
+  }
+    
+
+  if (metric == "cosine") {
+    p <- proxy::simil(as.matrix(object$scores), as.matrix(proj), method="cosine")
+    doit(p)
+
+  } else if (metric == "euclidean") {
+    D <- proxy::dist(as.matrix(object$scores), as.matrix(proj), method="Euclidean")
+    doit(exp(-D))
+  }
+  
+}
+
+
+  
 #' Given a set of projected scores and a set of reference scores, compute one of several performance metrics.
 #' 
 #' @param fscores the projected scores to be compared to the reference scores

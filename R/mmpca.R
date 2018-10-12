@@ -65,7 +65,11 @@ mmsd <- function(X, Y, ncomp=min(dim(X)), scale=FALSE, c=1) {
   
 }
 
-
+#' mmpca
+#' 
+#' @inheritParams bada
+#' @param knn the number of nearest neighbors used to form margin
+#' @export
 #' @inheritsParams pca
 mmpca <- function(X, Y, ncomp=min(dim(X)), center=TRUE, scale=FALSE, knn=1, sigma=.7) {
   assert_that(nrow(X) == length(Y))

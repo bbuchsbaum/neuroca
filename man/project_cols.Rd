@@ -2,7 +2,7 @@
 % Please edit documentation in R/all_generic.R
 \name{project_cols}
 \alias{project_cols}
-\title{project}
+\title{project_cols}
 \usage{
 project_cols(x, newdata, ...)
 }

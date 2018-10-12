@@ -1,13 +1,4 @@
 
-#' @export
-is_transformer.projector <- function(x) TRUE
-
-#' @export
-is_transformer.matrix <- function(x) FALSE
-
-#' @export
-is_transformer.Matrix <- function(x) FALSE
-
 
 #' @export
 predict.projector <- function(x, newdata, ncomp=ncomp(x)) {

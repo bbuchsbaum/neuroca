@@ -231,11 +231,15 @@ block_index_list <- function(object) UseMethod("block_index_list")
 #' @export
 project_copy <- function(x, ...) UseMethod("project_copy")
 
-#' @export
-is_transformer <- function(x) UseMethod("is_transformer")
 
+#' @param center whether to mean center the columns
+#' @param scale whether to scale the columns
 #' @export
 pre_processor <- function(x, center, scale) UseMethod("pre_processor")
+
+#' @param x the fitted object
+#' @export
+classifier <- function(x, ...) UseMethod("classifier")
 
 
 #' apply a rotation matrix to a solution
