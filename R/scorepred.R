@@ -58,7 +58,7 @@ predict.classifier <- function(object, newdata, metric=c("cosine", "euclidean"))
   
   proj <- project(object$fit, newdata, comp=1:object$ncomp)
   
-  doit <- functon(p) {
+  doit <- function(p) {
     prob <- normalize_probs(p)
     pmeans <- avg_probs(prob, object$labels)
     cls <- nearest_class(prob, object$labels, object$knn)

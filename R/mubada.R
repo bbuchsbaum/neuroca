@@ -202,7 +202,7 @@ predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp,
 }
 
 #' @export
-reprocess.multiblock_da <- function(x, newdat, block_index=NULL) {
+reprocess.multiblock_da <- function(x, newdat, block_index=NULL, colind=NULL) {
   reprocess(x$fit, newdat, block_index=block_index)
 }
 

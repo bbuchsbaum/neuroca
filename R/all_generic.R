@@ -25,15 +25,15 @@ loadings <- function(x,...) UseMethod("loadings")
 ncomp <- function(x) UseMethod("ncomp")
 
 
-ncol          <- function(x) UseMethod("ncol") 
-ncol.default  <- base::ncol
+#ncol          <- function(x) UseMethod("ncol") 
+#ncol.default  <- base::ncol
 
 
-nrow          <- function(x) UseMethod("nrow") 
-nrow.default  <- base::nrow
+#nrow          <- function(x) UseMethod("nrow") 
+#nrow.default  <- base::nrow
 
-dim          <- function(x) UseMethod("dim") 
-dim.default  <- base::dim
+#dim          <- function(x) UseMethod("dim") 
+#dim.default  <- base::dim
 
 
 
@@ -73,6 +73,7 @@ block_apply <- function(x, f, ...) UseMethod("block_apply")
 
 #' nblocks
 #' extract the number of blocks in a mutli-block data structure or model
+#' 
 #' @param x the object
 #' @export
 nblocks <- function(x) UseMethod("nblocks")
@@ -188,6 +189,15 @@ project_cols <- function(x, newdata, ...) UseMethod("project_cols")
 project <- function(x, newdata, ...) UseMethod("project")
 
 
+#' partial_projector
+#' 
+#' extract a partial projector from a fitted model
+#' 
+#' @param x the model fit
+#' @param colind a vector of unique subindices
+#' @param ... extra args
+#' @export
+partial_projector <- function(x, colind, ...) UseMethod("partial_projector")
 
 #' projection_fun
 #' 
@@ -249,4 +259,12 @@ classifier <- function(x, ...) UseMethod("classifier")
 #' @param ... extra arguments
 #' @export
 rotate <- function(x, rot,...) UseMethod("rotate")
+
+
+#' get_block
+#' 
+#' @export
+#' @param x the object to retrive the block of variables from.
+#' @param i the index of the block.
+get_block <- function (x, i,...) { UseMethod("get_block") }
 
