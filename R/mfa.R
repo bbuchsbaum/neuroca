@@ -3,7 +3,7 @@
 
 normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None")) {
   type <- match.arg(type)
-  
+  assert_that(inherits(block_mat, "block_matrix"))
   message("normalization type:", type)
   alpha <- if (type == "MFA") {
     unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="svds")$d[1]^2)))
@@ -114,14 +114,32 @@ loadings.mfa <- function(x) {
   loadings(x$fit)
 }
 
+projection_fun.mfa <- function(x, colind=NULL, block=NULL) {
+  if (!is.null(colind) && !is.null(block)) {
+    stop("projection_fun.mfa: cannot provide both 'colind' or 'block' arguments")
+  }
+  
+  if (!is.null(block)) {
+    colind <- res$block_indices[[block]]
+  }
 
+  if (is.null(colind)) {
+    stop("projection_fun.mfa: muust provide either 'colind' or 'block' argument")
+  }
+  
+  f <- function(newdata) {
+    project(x, newdata, colind=colind)
+  }
+}
+  
+  
 #' @export
 partial_scores.mfa <- function(x, block_index=x$ntables) {
  
   bind <- block_index_list(x)
   res <- lapply(block_index, function(i) {
     ## FIXME
-    x$ntables * project(x$fit, get_block(x$Xr, i), colind=bind[[i]], pre_process=FALSE)
+    x$ntables * project(x$fit, get_block(x$X, i), colind=bind[[i]], pre_process=FALSE)
   })
   
   names(res) <- paste0("Block_", block_index)
@@ -129,7 +147,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
 }
 
 #' @export
-project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL) {
+project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL, colind=NULL) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
@@ -141,8 +159,13 @@ project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_ind
     x$ntables * project(x$fit, unclass(newdat), comp=comp, colind=subind)
   } else {
     # new data must have same number of columns as original data
-    assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
-    project(x$fit, unclass(reprocess(x, newdata)), comp=comp)
+    if (is.null(colind)) {
+      assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
+    } else {
+      assert_that(ncol(newdata) == length(colind))
+    }
+    
+    project(x$fit, unclass(reprocess(x, newdata,colind=colind)), comp=comp, colind=colind)
   } 
 } 
 
@@ -251,8 +274,10 @@ impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,
     Ximp[missing_ind] <- Xbar[missing_ind[,2]]
   } else {
     assertthat::assert_that(all(dim(Xmiss_init) == dim(X)))
+    xtmp <- X
     xtmp[missing_ind] <- 0
-    Ximp <- xtmp + Xmiss_init
+    xtmp[missing_ind] <- xtmp[missing_ind] + Xmiss_init[missing_ind]
+    Ximp <- xtmp
   }
   
   old <- Inf

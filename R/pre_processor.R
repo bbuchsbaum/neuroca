@@ -78,12 +78,16 @@ reverse_pre_process.matrix_pre_processor <- function(x, newdata, colind=NULL) {
 }
 
 #' @export
-pre_process.block_matrix_pre_processor <- function(x, newdata=NULL,colind=NULL) {
-  if (is.null(newdata) && is.null(colind)) {
-    x$Xp
+pre_process.block_matrix_pre_processor <- function(x, newdata,colind=NULL) {
+  .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, colind)  
+}
+
+#' @export
+pre_process.no_op_block_matrix_pre_processor <- function(x, newdata, colind=NULL) {
+  if (is.null(colind)) {
+    newdata
   } else {
-    ## return a block_matrix
-    .center_scale(newdata, x$center_vec, x$scale_vec, x$center, x$scale, colind)  
+    newdata[,colind]
   }
 }
 
@@ -166,14 +170,24 @@ pre_processor.block_matrix <- function(X, center=TRUE, scale=FALSE) {
   center_vec <- if (center) colMeans(X) else rep(0, ncol(X))
   scale_vec <- if (scale) matrixStats::colSds(X) else rep(1, ncol(X))
   
-  structure(
-    list(
-      Xp=.center_scale(X, center_vec, scale_vec, center,scale),
-      center=center,
-      scale=scale,
-      center_vec=center_vec,
-      scale_vec=scale_vec),
+  if (!center && !scale) {
+    structure(
+      list(
+        center=center,
+        scale=scale,
+        center_vec=0,
+        scale_vec=1),
+      class="no_op_block_matrix_pre_processor")
+  } else {
+    
+    structure(
+      list(
+        center=center,
+        scale=scale,
+        center_vec=center_vec,
+        scale_vec=scale_vec),
     class="block_matrix_pre_processor")
+  }
   
 }
   
