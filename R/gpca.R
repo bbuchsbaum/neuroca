@@ -53,7 +53,7 @@
 #' diag(S) <- 1
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
-genpca <- function(X, A=rep(1, ncomp(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
+genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
                    center=TRUE, scale=FALSE) {
   
  
@@ -222,7 +222,10 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   xtilde.decomp <- if (k == min(n,p)) {
     eigen(RtinRt)
   } else {
-    RSpectra::eigs_sym(RtinRt, k=k)
+    #RSpectra::eigs_sym(RtinRt, k=k)
+    print("trlan")
+    ret <- svd::trlan.eigen(as.matrix(RtinRt), neig=k)
+    list(vectors=ret$u, values=ret$d)
   }
 
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
@@ -230,7 +233,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
   xtilde.decomp$values <- xtilde.decomp$values[1:k]
   
-  Rtilde.inv %*% xtilde.decomp$vectors
+  #Rtilde.inv %*% xtilde.decomp$vectors
   
   vgmd <- Rtilde.inv %*% xtilde.decomp$vectors
   dgmd <- sqrt(xtilde.decomp$values[1:k])
