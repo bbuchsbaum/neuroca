@@ -30,18 +30,23 @@ classifier.bi_projector <- function(x, labels, newdata=NULL, ncomp=NULL, knn=1) 
 
 }
 
+
+#' @keywords internal
 normalize_probs <- function(p) {
   apply(p, 2, function(v) {
     v2 <- v - min(v)
     v2/sum(v2)
   })
 }
-  
+
+#' @keywords internal
 avg_probs <- function(prob, labels) {
   pmeans <- t(group_means(labels, prob))
   t(apply(pmeans, 1, function(v) v/sum(v)))
 }
 
+
+#' @keywords internal
 nearest_class <- function(prob, labels,knn=1) {
   
   apply(prob, 2, function(v) {
@@ -53,6 +58,7 @@ nearest_class <- function(prob, labels,knn=1) {
   
 }
 
+#' @keywords internal
 predict.classifier <- function(object, newdata, metric=c("cosine", "euclidean")) {
   metric <- match.arg(metric)
   
