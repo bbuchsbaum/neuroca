@@ -5,11 +5,14 @@
 #' @export
 add_node <- function(x,...) UseMethod("add_node")
 
-#' prepare a dataset by applying pre-processing pipeline
+#' prepare a dataset by applying a pre-processing pipeline
+#' 
 #' @param the pipeline
 prep <- function(x, ...) UseMethod("prep")
 
-
+#' contains a series of pre-processing steps
+#' 
+#' @keywords internal
 prepper <- function() {
   steps <- list()
   ret <- list(steps=steps)
@@ -71,11 +74,17 @@ center <- function(preproc=prepper()) {
 }
 
 #' @export
-colscale <- function(preproc=prepper()) {
+colscale <- function(preproc=prepper(), type=c("unit", "z")) {
+  type <- match.arg(type)
   env=new.env()
   
   forward <- function(X) {
     sds <- matrixStats::colSds(X)
+    
+    if (type == "unit") {
+      sds <- sds * sqrt(nrow(X)-1)
+    }
+    
     env[["sds"]] <- sds
     sweep(X, 2, sds, "/")
   }

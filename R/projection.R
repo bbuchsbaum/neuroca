@@ -5,86 +5,13 @@ predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
   project(x, newdata, comp=1:ncomp)
 }
 
-
 #' @export
-projection_fun.matrix <- function(x) {
-  function(newdata, colind=NULL) {
-    newdata <- as.matrix(newdata)
-    if (is.null(colind)) {
-      assert_that(ncol(newdata) == ncol(x))
-      newdata
-    } else {
-      assert_that(max(colind) <= ncol(x))
-      assert_that(ncol(newdata) == length(colind))
-      newdata
-      #i <- rep(1:nrow(x), length(colind))
-      #j <- rep(colind, each=nrow(x))
-      #sparseMatrix(i=i,j=j, x=as.vector(newdata), dims=dim(x))
-    }
-  }
-}
-
-#' @export
-projection_fun.Matrix <- function(x) {
-  function(newdata, colind=NULL) {
-    if (is.null(colind)) {
-      assert_that(ncol(newdata) == ncol(x))
-      newdata
-    } else {
-      assert_that(max(colind) <= ncol(x))
-      assert_that(ncol(newdata) == length(colind))
-      #i <- rep(1:nrow(x), length(colind))
-      #j <- rep(colind, each=nrow(x))
-      #sparseMatrix(i=i,j=j, x=as.vector(newdata), dims=dim(x))
-      newdata
-    }
-  }
-}
-
-
-
-#' @export
-#' 
-ncomp.matrix <- function(x) ncol(x)
-
-#' @export
-#' 
-ncomp.Matrix <- function(x) ncol(x)
-
-
-#' @export
-project.matrix <- function(x, newdata=NULL, colind=NULL) {
-  if (is.null(newdata)) {
-    if (is.null(colind)) {
-      x
-    } else {
-      assert_that(max(colind) <= ncol(x))
-      assert_that(all(colind > 0))
-      #i <- rep(1:nrow(x), length(colind))
-      #j <- rep(colind, each=nrow(x))
-      #sparseMatrix(i=i,j=j, x=as.vector(x[,colind]), dims=dim(x))
-      x[,colind]
-    }
+scores.projector <- function(x) {
+  if (is.null(x$scores)) {
+    project(x, x$procres$Xp)
   } else {
-    if (is.null(colind)) {
-      assert_that(dim(newdata) == dim(x))
-      as.matrix(newdata)
-    } else {
-      assert_that(max(colind) <= ncol(x))
-      assert_that(ncol(newdata) == length(colind))
-      newdata
-    }
+    x$scores
   }
-}
-
-#' @export
-project.block_matrix <- function(x, newdata=NULL) {
-  stop()
-  #if (is.null(newdata)) {
-  #  as.matrix(x)
-  #} else {
-  #  as.matrix(newdata)
-  #}
 }
 
 compose_all <- function(...) {

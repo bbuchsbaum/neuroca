@@ -2,7 +2,12 @@
 
 ## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
 
-
+#' construct a `projector` instance
+#' @export
+#' @param preproc
+#' @param ncomp
+#' @param v
+#' @param classes
 projector <- function(preproc, ncomp, v, classes, ...) {
   out <- list(
     preproc=preproc,
@@ -14,6 +19,13 @@ projector <- function(preproc, ncomp, v, classes, ...) {
   out
 }
 
+
+#' construct a `projector` instance
+#' @export
+#' @inheritParams projector
+#' @param u
+#' @param d
+#' @param scores
 bi_projector <- function(preproc, ncomp, v, u, d, scores, classes, ...) {
   out <- list(
     preproc=preproc,
@@ -67,80 +79,9 @@ kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, 
   
 }
 
-#' @export
-reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
-  if (!is.null(newdata)) {
-    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
-  } else {
-    newdata <- x$scores[,comp, drop=FALSE]
-  }
-  
-  ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
-  lds <- x$v[,comp,drop=FALSE]
-  
-  if (is.null(colind)) {
-    reverse_pre_process(x$preproc, newdata %*% t(lds))
-  } else {
-    reverse_pre_process(x$preproc, newdata %*% t(lds)[,colind], colind=colind)
-  }
-}
 
 
 
-#' nneg_pca
-#' 
-#' non-negative pca
-#' 
-#'   
-#' @inheritParams pca
-#' @importFrom nsprcomp nsprcomp
-#' @export
-nneg_pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,  ...) {
-  preproc <- pre_processor(X, center, scale)
-  Xp <- pre_process(preproc, X)
-  
-  ret <- nsprcomp::nsprcomp(Xp, center=FALSE, scale=FALSE, nneg=TRUE, ...)
-  keep <- ret$sdev > 1e-06
-  
-  v=ret$rotation[,keep,drop=FALSE]
-  u=ret$x[,keep,drop=FALSE]
-  d=ret$sdev[keep] * 1/sqrt(max(1,nrow(X)-1))
-  
-  ret <- bi_projector(
-              preproc=preproc,
-              ncomp = length(d),
-              v=v, 
-              u=u,
-              d=d,
-              scores=ret$x,
-              classes=c("nneg_pca", "pca"))
-  
-  ret
-  
-}
-
-#' @export
-reconstruct.nneg_pca <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
-  if (!is.null(newdata)) {
-    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
-  } else {
-    newdata <- scores(x)[,comp, drop=FALSE]
-  }
-  
-  ##recon2 = predict(rst) %*% ginv(rst$rotation) + matrix(1,5,1) %*% rst$center
-  
-  piv <- corpcor::pseudoinverse(loadings(x)[,comp,drop=FALSE])
-  if (is.null(colind)) {
-    reverse_pre_process(x$preproc, newdata %*% piv)
-  } else {
-    reverse_pre_process(x$preproc, newdata %*% piv[,colind], colind=colind)
-  }
-}
-  
-  
-  
-  
-  
 #' shrink_pca
 #' 
 #' adaptive shrinkage pca from the \code{denoiseR} package
@@ -213,17 +154,19 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
   ret
 }
 
-
+#' principal components analysis
+#' 
 #' @param X
 #' @param ncomp
 #' @param center
 #' @param scale
 #' @export
-pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
+pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
-  preproc <- pre_processor(X, center=center,scale=scale)
-  Xp <- pre_process(preproc,X)
+  procres <- prep(preproc, X)
+  
+  Xp <- procres$Xp
   
   svdres <- svd_wrapper(Xp, ncomp, ...)
   
@@ -234,7 +177,7 @@ pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, ...) {
   }
   
   ret <- bi_projector(
-              preproc,
+              preproc=procres,
               length(svdres$d),
               v=svdres$v, 
               u=svdres$u, 
@@ -437,12 +380,10 @@ rotate.pca <- function(x, rot) {
 #' @export
 print.bi_projector <- function(object) {
   showk <- 1:min(object$ncomp, 5)
-  cat("bi_projector", "\n")
+  cat(class(pres)[1], "\n")
   cat("  number of components: ", object$ncomp, "\n")
   cat("  number of variables: ", nrow(object$v), "\n")
   cat("  number of observations: ", nrow(object$u), "\n")
-  cat("  center: ", object$preproc$center, "\n")
-  cat("  scale: ", object$preproc$scale, "\n")
   cat("  % variance explained (top 5): ", ((object$d[showk]^2)/sum(object$d^2)) * 100, "\n")
 }
 

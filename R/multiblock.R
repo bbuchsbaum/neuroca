@@ -94,6 +94,11 @@ scores.multiblock <- function(x) scores(x$fit)
 #' @export
 loadings.multiblock <- function(x) loadings(x$fit)
 
+#' @export
+block_indices <- function(x,i) {
+  x$block_indices[[i]]
+}
+
 #' @export 
 block_index_list.multiblock <- function(x) x$block_indices
 
