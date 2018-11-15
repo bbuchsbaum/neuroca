@@ -63,27 +63,24 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' Multiple Subjects Barycentric Discriminant Analysis
 #' 
 #' @importFrom assertthat assert_that 
-#' @param Y dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
+#' @param Y dependent \code{factor} variable. If All `X` matrices have same number of rows, `Y` can be a single factor vector.
 #'        If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.
 #' @param Xlist a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.
-#' @param ncomp number of common components to estimate
-#' @param center whether to center the variables
-#' @param scale whether to scale the variables by 1/sd
-#' @param normalization the type of normalization
-#' @param A a \code{vector} or symmetric matrix of custom column constraints
 #' @param ncomp number of common components to estimate.
 #' @param center whether to center the variables.
 #' @param scale whether to scale the variables by 1/sd.
 #' @param normalization the type of normalization.
-#' @param A optional constraint matrix for the columns used when \code{normalization} is "custom".
-#' 
+#' @param A a \code{vector} or symmetric matrix of custom column constraints
+#' @param M a \code{vector} or symmetric matrix of custom row constraints
+#' @param ncomp number of common components to estimate.
+#'
 #' @references
 #' Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
 #' 
 #' Abdi, H., Williams, L. J., Connolly, A. C., Gobbini, M. I., Dunlop, J. P., & Haxby, J. V. (2012). Multiple Subject Barycentric Discriminant Analysis (MUSUBADA): how to assign scans to categories without using spatial normalization. \emph{Computational and Mathematical Methods in Medicine}, 2012.
 #' @export
 mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
-                     normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
+                     normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL, M=NULL) {
 
 
   normalization <- match.arg(normalization)
@@ -128,7 +125,6 @@ refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) {
 
 #' @export
 scores.multiblock_da <- function(x) scores(x$fit) 
-
 
 #' @export
 contributions.multiblock_da <- function(x, type=c("table", "column", "row")) {
