@@ -107,6 +107,7 @@ colscale <- function(preproc=prepper()) {
 }
 
 #' dimension reduction as a pre-processing stage
+#' 
 #' @param preproc the pipeline
 #' @param method the dimension reduction method (e.g. pca)
 dim_reduce <- function(preproc=prepper(), method=pca, ...) {
@@ -130,11 +131,12 @@ dim_reduce <- function(preproc=prepper(), method=pca, ...) {
   }
   
   reverse=function(X, colind=NULL) {
+    fit <- env[["fit"]]
     if (is.null(colind)) {
-      env[["X"]]
+      reconstruct(fit, X)
     } else {
       assert_that(ncol(X) == length(colind))
-      env[["X"]][,colind,drop=FALSE]
+      reconstruct(fit, X)
     }
   }
   
@@ -142,9 +144,52 @@ dim_reduce <- function(preproc=prepper(), method=pca, ...) {
               forward=forward,
               reverse=reverse,
               apply=apply)
+  
   class(ret) <- c("dim_reduce", "pre_processor")
   add_node(preproc, ret)
 }
+
+
+#' @export
+standardize <- function(preproc=prepper()) {
+  env=new.env()
+  
+  forward <- function(X) {
+    sds <- matrixStats::colSds(X)
+    cmeans <- colMeans(X)
+    env[["sds"]] <- sds
+    env[["cmeans"]] <- cmeans
+    x1 <- sweep(X, 2, cmeans, "-")
+    sweep(x1, 2, sds, "/")
+  }
+  
+  apply <- function(X, colind=NULL) {
+    if (is.null(colind)) {
+      sweep(X, 2, env[["sids"]], "/")
+    } else {
+      assert_that(ncol(X) == length(colind))
+      x1 <- sweep(X, 2, cmeans[colind], "-")
+      sweep(x1, 2, env[["sds"]][colind], "/")
+    }
+  }
+  
+  reverse=function(X, colind=NULL) {
+    if (is.null(colind)) {
+      sweep(X, 2, env[["sds"]], "*")
+    } else {
+      assert_that(ncol(X) == length(colind))
+      sweep(X, 2, env[["sds"]][colind], "*")
+    }
+  }
+  
+  ret <- list(forward=forward,
+              reverse=reverse,
+              apply=apply)
+  
+  class(ret) <- c("colscale", "pre_processor")
+  add_node(preproc, ret)
+}
+
 
 
 

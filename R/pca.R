@@ -42,45 +42,6 @@ bi_projector <- function(preproc, ncomp, v, u, d, scores, classes, ...) {
     
 
 
-kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, scale=FALSE,  ...) {
-
-  preproc <- pre_processor(X, center, scale)
-  Xp <- pre_process(preproc, X)
-  
-  kres <- kmeans(t(Xp), centers=ncomp,...)
-  mat <- do.call(rbind, purrr::imap(split(1:ncol(Xp), kres$cluster), function(.x, .y) {
-  cbind(as.numeric(.x), as.numeric(.y), 1/length(.x))
-
-  }))
-  
-  v <- sparseMatrix(i=mat[,1], j=mat[,2], x=mat[,3])
-  
-  cen <- t(kres$centers)
-  u <- apply(cen, 2, function(vals) normalize(as.matrix(vals)))
-  
-  d <- apply(cen,2,function(x) sqrt(sum(x^2)))
-  dord <- order(d, decreasing=TRUE)
-  d <- d[dord]
-  
-  clus <- sapply(kres$cluster, function(i) { dord[i] })
-  ret <- bi_projector(
-                preproc=preproc,
-                ncomp=ncomp,
-                v=v[,dord],
-                u=u[,dord], 
-                d=d,
-                scores=cen[,dord],
-                clusters=clus,
-                withinss=kres$withinss[dord],
-                totss=kres$totss,
-                kres$betweenss,
-                classes=c("kmeans_projector"))
-  ret
-  
-}
-
-
-
 
 #' shrink_pca
 #' 
@@ -92,9 +53,11 @@ kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, 
 #' @param scale
 #' @importFrom denoiseR adashrink
 #' @export
-shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", "SURE"), ...) {
-  preproc <- pre_processor(X, center, scale)
-  Xp <- pre_process(preproc, X)
+shrink_pca <- function(X, preproc=center(), method = c("GSURE", "QUT", "SURE"), ...) {
+  assert_that(is.matrix(X) || inherits(X, "Matrix"))
+  
+  procres <- prep(preproc, X)
+  Xp <- procres$Xp
   
   res <- denoiseR::adashrink(Xp, method=method, center=FALSE, ...)
   
@@ -104,14 +67,12 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
     keep <- 1
   } 
   
-  
   v=res$low.rank$v[,keep,drop=FALSE]
   u=res$low.rank$u[,keep,drop=FALSE]
   d=res$low.rank$d[keep]
 
-
   ret <- bi_projector(
-              preproc=preproc,
+              preproc=procres,
               ncomp=length(d),
               v=v, 
               u=u,
@@ -122,13 +83,13 @@ shrink_pca <- function(X, center=TRUE, scale=FALSE,  method = c("GSURE", "QUT", 
 }
                        
 
-
 #' pseudo_svd
 #' 
 #' @param u the row weights
 #' @param v the column weights
 #' @param d the singular values
 #' @param rnames row names of observations
+#' @export
 pseudo_svd <- function(u, v, d, rnames=NULL) {
   
   scores <- t(t(as.matrix(u)) * d)
@@ -158,8 +119,7 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
 #' 
 #' @param X
 #' @param ncomp
-#' @param center
-#' @param scale
+#' @param preproc
 #' @export
 pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
@@ -189,14 +149,34 @@ pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
 
 
 #' @export
+rotate.pca <- function(x, rot) {
+  u_rot <- x$u %*% rot
+  v_rot <- x$v %*% rot
+  sc_rot <- scores(x) %*% rot
+  
+  ret <- bi_projector(
+    preproc=x$preproc,
+    ncomp=length(x$d),
+    v=v_rot, 
+    u=u_rot, 
+    d=apply(sc_rot, 2, function(x) sqrt(sum(x^2))),
+    scores=sc_rot, 
+    classes=c("rotated_pca", "pca"))
+  
+  ret
+  
+}
+
+
+#' @export
 reprocess.bi_projector <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
     assert_that(ncol(newdata) == nrow(loadings(x)))
-    pre_process(x$preproc, newdata)
+    x$preproc$transform(newdata)
   } else {
     assert_that(length(colind) == ncol(newdata), 
                 msg=paste("length of colind not equal to number of columns of newdata", length(colind), "!=", ncol(newdata)))
-    pre_process(x$preproc, newdata, colind)
+    x$preproc$transform(newdata, colind)
   }
   
 }
@@ -239,7 +219,6 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 }
 
 #' @export
-
 project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, colind=NULL) {
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
@@ -262,8 +241,7 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, col
 #' @export
 residuals.bi_projector <- function(x, ncomp=1, xorig) {
   recon <- reconstruct(x,comp=1:ncomp)
-  #recon <- scores(x)[,1:ncomp,drop=FALSE] %*% t(loadings(x)[,1:ncomp,drop=FALSE])
-  orig <- pre_process(x$preproc, xorig)
+  orig <- x$preproc$transform(xorig)
   orig - recon
 }
 
@@ -283,9 +261,9 @@ reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NUL
   }
   
   if (is.null(colind)) {
-    reverse_pre_process(x$preproc, newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+    x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
   } else {
-    reverse_pre_process(x$preproc, newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
+    x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
                         colind=colind)
   }
 }
@@ -320,8 +298,6 @@ dim.projector <- function(x) {
 
 
 #' @export
-
-
 truncate.bi_projector <- function(obj, ncomp) {
   if (ncomp >= obj$ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
@@ -334,7 +310,7 @@ truncate.bi_projector <- function(obj, ncomp) {
                 ncomp=ncomp, 
                 preproc=obj$preproc)
     
-    class(ret) <- c("pca", "projector", "list")
+    class(ret) <- c("bi_projector", "list")
   }
   
   ret
@@ -342,7 +318,7 @@ truncate.bi_projector <- function(obj, ncomp) {
 
 
 #' @export
-contributions.projector <- function(x, type=c("column", "row")) {
+contributions.projector <- function(x) {
   loadings(x)^2
 }
 
@@ -358,24 +334,7 @@ contributions.bi_projector <- function(x, type=c("column", "row")) {
 }
 
 
-#' @export
-rotate.pca <- function(x, rot) {
-  u_rot <- x$u %*% rot
-  v_rot <- x$v %*% rot
-  sc_rot <- scores(x) %*% rot
-  
-  ret <- bi_projector(
-              preproc=x$preproc,
-              ncomp=length(x$d),
-              v=v_rot, 
-              u=u_rot, 
-              d=apply(sc_rot, 2, function(x) sqrt(sum(x^2))),
-              scores=sc_rot, 
-              classes=c("rotated_pca", "pca"))
-              
-  ret
-  
-}
+
 
 #' @export
 print.bi_projector <- function(object) {

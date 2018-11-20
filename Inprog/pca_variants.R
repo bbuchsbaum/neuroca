@@ -111,3 +111,40 @@ nipals <- function(X, center=TRUE, scale=FALSE, ncomp=min(dim(X)), thresh=1e-5) 
   
   list(t=t, p=p)
 }
+
+kmeans_projector <- function(X, ncomp=max(as.integer(nrow(X)/2),2),center=TRUE, scale=FALSE,  ...) {
+  
+  preproc <- pre_processor(X, center, scale)
+  Xp <- pre_process(preproc, X)
+  
+  kres <- kmeans(t(Xp), centers=ncomp,...)
+  mat <- do.call(rbind, purrr::imap(split(1:ncol(Xp), kres$cluster), function(.x, .y) {
+    cbind(as.numeric(.x), as.numeric(.y), 1/length(.x))
+    
+  }))
+  
+  v <- sparseMatrix(i=mat[,1], j=mat[,2], x=mat[,3])
+  
+  cen <- t(kres$centers)
+  u <- apply(cen, 2, function(vals) normalize(as.matrix(vals)))
+  
+  d <- apply(cen,2,function(x) sqrt(sum(x^2)))
+  dord <- order(d, decreasing=TRUE)
+  d <- d[dord]
+  
+  clus <- sapply(kres$cluster, function(i) { dord[i] })
+  ret <- bi_projector(
+    preproc=preproc,
+    ncomp=ncomp,
+    v=v[,dord],
+    u=u[,dord], 
+    d=d,
+    scores=cen[,dord],
+    clusters=clus,
+    withinss=kres$withinss[dord],
+    totss=kres$totss,
+    kres$betweenss,
+    classes=c("kmeans_projector"))
+  ret
+  
+}
