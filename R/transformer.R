@@ -34,6 +34,29 @@ prep.prepper <- function(x, X) {
   
 }
 
+
+#' @export
+pass <- function(preproc=prepper()) {
+  forward <- function(X, colind) {
+    X
+  }
+  
+  reverse <- function(X, colind) {
+    X
+  }
+  
+  apply <- function(X, colind) {
+    X
+  }
+  
+  ret <- list(name="center",
+              forward=forward,
+              reverse=identity,
+              apply=apply)
+  class(ret) <- c("pass", "pre_processor")
+  add_node(preproc, ret)
+}
+
 #' @export
 center <- function(preproc=prepper()) {
   env=new.env()

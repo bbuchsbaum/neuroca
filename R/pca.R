@@ -339,7 +339,7 @@ contributions.bi_projector <- function(x, type=c("column", "row")) {
 #' @export
 print.bi_projector <- function(object) {
   showk <- 1:min(object$ncomp, 5)
-  cat(class(pres)[1], "\n")
+  cat(class(object)[1], "\n")
   cat("  number of components: ", object$ncomp, "\n")
   cat("  number of variables: ", nrow(object$v), "\n")
   cat("  number of observations: ", nrow(object$u), "\n")
