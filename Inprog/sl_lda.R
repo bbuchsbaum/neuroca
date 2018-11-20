@@ -29,17 +29,35 @@ weighted_group_means <- function(X, F) {
 
 soft_lda <- function(C, X, preproc=pass(), dp=min(dim(X)), di=dp, dl=ncol(C)-1) {
   assert_that(nrow(C) == nrow(X))
+  
   if (is.null(colnames(C))) {
     colnames(C) <- paste0("c_", 1:ncol(C))
   }
   
   assert_that(all(C >= 0), msg="all weights in 'C' must be positive")
-
+  
+  ## pre-process X 
+  procres <- prep(preproc, X)
+  Xp <- procres$Xp
+  
+  ## reduce Xp into dp dimensions
+  pca_red <- pca(Xp, ncomp=dp, preproc=center())
+  
+  ## get projection -- assumes Xp is centered...
+  proj_dp <- loadings(pca_red)
+  
+  ## get pca basis
+  Xpca <- scores(pca_red)
+  
+  ## row sums of soft-label matrix
   E <- diag(rowSums(C))
+  
+  ## column sums of soft-label matrix
   G <- diag(colSums(C))
+  
+  ## transposed weight matrix: each row is a weight vector for a class
   F <- t(as.matrix(C))
-  #e <- rep(1, nrow(dmat))
-
+ 
   FtGF <- (t(F) %*% diag(1/diag(G)) %*% F)
   
   sw_scatter <- function(X) {
@@ -54,15 +72,15 @@ soft_lda <- function(C, X, preproc=pass(), dp=min(dim(X)), di=dp, dl=ncol(C)-1) 
     num <- tcrossprod(diag(E), rep(1,ncol(E))) %*% E
     #denom <- t(e) %*% E %*% e
     denom <- sum(diag(E))
-    M <- FtGF - num/denom[,]
+    M <- FtGF - num/denom
     Xt %*% M %*% t(Xt)
   }
   
   
-  gmeans <- weighted_group_means(X, F)
+  gmeans <- weighted_group_means(Xpca, F)
   mu <- colMeans(gmeans)
-  Sw <- sw_scatter(X, F, gmeans)
-  Sb <- sb_scatter(X, F, gmeans,mu)
+  Sw <- sw_scatter(Xpca)
+  Sb <- sb_scatter(Xpca)
   
   E_i <- RSpectra::eigs_sym(Sw, k=di)
   
@@ -76,6 +94,7 @@ soft_lda <- function(C, X, preproc=pass(), dp=min(dim(X)), di=dp, dl=ncol(C)-1) 
   
   proj_final <- proj_dp %*% proj_di %*% proj_dl
   
+  projector(procres, ncomp=ncol(proj_final), v=proj_final, classes="sl_lda")
   
   #St <- st_scatter(X, F, mu)
   
