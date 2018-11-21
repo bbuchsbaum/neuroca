@@ -53,28 +53,36 @@
 #' diag(S) <- 1
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
-genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)), 
-                   center=TRUE, scale=FALSE) {
+genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
+                   preproc=center()) {
   
  
+  if (is.null(A)) {
+    A <- sparseMatrix(i=1:ncol(X), j=1:ncol(X),x=rep(1, ncol(X)))
+  }
+  
+  if (is.null(M)) {
+    M <- sparseMatrix(i=1:nrow(X), j=1:nrow(X),x=rep(1,nrow(X)))
+  }
+  
   if (is.vector(A)) {
-    assert_that(length(A) == ncomp(X))
+    assert_that(length(A) == ncol(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
   } else {
-    assert_that(nrow(A) == ncol(A))
-    assert_that(nrow(A) == ncomp(X))
+    assert_that(nrow(A) == ncol(X))
+    assert_that(ncol(A) == ncol(X))
   }
   
   if (is.vector(M)) {
     assert_that(length(M) == nrow(X))
     M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
   } else {
-    assert_that(nrow(M) == ncol(M))
     assert_that(nrow(M) == nrow(X))
+    assert_that(ncol(M) == nrow(X))
   }
   
-  preproc <- pre_processor(X, center=center,scale=scale)
-  Xp <- pre_process(preproc, X)
+  procres <- prep(preproc, X)
+  Xp <- procres$Xp
   
   assert_that(ncomp > 0)
   ncomp <- min(min(dim(Xp)), ncomp)
@@ -85,10 +93,9 @@ genpca <- function(X, A=rep(1, ncol(X)), M=rep(1,nrow(X)), ncomp=min(dim(X)),
   if(n < p){
     ret = gmdLA(t(Xp), A,M, ncomp,p,n)
     svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
-  }else{
+  } else{
     svdfit = gmdLA(Xp, M,A,ncomp,n,p)
   }
-  
   
   scores <- t(t(as.matrix(M %*% svdfit$u)) * svdfit$d)
   col_scores <- t(t(as.matrix(A %*% svdfit$v)) * svdfit$d)
@@ -200,16 +207,21 @@ project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, colind=
 gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
 
-  decomp <- eigen(R)
-  keep <- which(abs(decomp$values) > 1e-7)
+  if (isDiagonal(R)) {
+    Rtilde <- Matrix::Diagonal(x=sqrt(diag(R)))
+    Rtilde.inv = Matrix::Diagonal(x=1/sqrt(diag(R)))
+  } else {
+    decomp <- eigen(R)
+    keep <- which(abs(decomp$values) > 1e-7)
   
-  decomp$vectors <- decomp$vectors[, keep]
-  decomp$values <- decomp$values[keep]
+    decomp$vectors <- decomp$vectors[, keep]
+    decomp$values <- decomp$values[keep]
   
-  Rtilde <- decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
+    Rtilde <- decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
   
-  inv.values = 1 / sqrt(decomp$values)
-  Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
+    inv.values = 1 / sqrt(decomp$values)
+    Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
+  }
   
  
   inmat <- Matrix::crossprod(X, Q) %*% X
@@ -223,9 +235,8 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     eigen(RtinRt)
   } else {
     #RSpectra::eigs_sym(RtinRt, k=k)
-    print("trlan")
-    ret <- svd::trlan.eigen(as.matrix(RtinRt), neig=k)
-    list(vectors=ret$u, values=ret$d)
+    ret <- RSpectra::eigs_sym(RtinRt, k=k+1)
+    list(vectors=ret$vectors, values=ret$values)
   }
 
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
