@@ -69,13 +69,15 @@ doit <- function(keep) {
   ids <- which(des_enc$sid %in% sids[keep])
   destmp <- des_enc[ids,]
 
-  Smod <- (Svideo * SSubject) + Svideo/20
+  #Sr <- Srepnum*Svideo
+  #Sr <- (Sr + t(Sr))/2
+  Smod <- (Svideo * SSubject) + Svideo
   Smod <- Smod/RSpectra::eigs_sym(Smod,k=1)$values[1]
   fit <- genpca(Xencall,M=Smod[ids,ids], preproc=pass(), ncomp=4)
   list(fit=fit, destmp=destmp)
 }
 
-fit2 <- doit(young | old)
+fit2 <- doit(young)
 qplot(fit2$fit$scores[,1], fit2$fit$scores[,2], colour=Video, data=fit2$destmp, geom=c("blank")) +
   geom_text(aes(x=fit2$fit$scores[,1], y=fit2$fit$scores[,2], label=sid),data=fit2$destmp)
 
