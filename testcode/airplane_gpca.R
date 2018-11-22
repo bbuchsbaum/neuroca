@@ -78,8 +78,18 @@ doit <- function(keep) {
 }
 
 fit2 <- doit(young)
-qplot(fit2$fit$scores[,1], fit2$fit$scores[,2], colour=Video, data=fit2$destmp, geom=c("blank")) +
-  geom_text(aes(x=fit2$fit$scores[,1], y=fit2$fit$scores[,2], label=sid),data=fit2$destmp)
+
+qplot(fit2$fit$scores[,3], fit2$fit$scores[,4], colour=Video, data=fit2$destmp, geom=c("blank")) +
+  geom_text(aes(x=fit2$fit$scores[,1], y=fit2$fit$scores[,4], label=sid),data=fit2$destmp)
+
+# fit encoding + recall model
+# weight by 1/group size -- diagonal
+# shrink video towards themselves for both encoding and retrieval
+# shrink encoding more than recall and vice versa
+# shrink subjects towards themselves
+# project original data onto solution for each repetition
+# compute rv with "full space"
+
 
 
 
