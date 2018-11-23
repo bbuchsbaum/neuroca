@@ -42,7 +42,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' res <- mfa(X, ncomp=3, normalization="MFA")
 #' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
-mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE, 
+mfa <- function(X, ncomp=2, preproc=center(), 
                 normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
@@ -54,13 +54,13 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   }
 
   ## pre-process the variables.
-  preproc <- pre_processor(X, center=center,scale=scale)
-  Xr <- pre_process(preproc,X)
+  procres <- prep(preproc, X)
+  Xp <- procres$Xp
 
   ## normalize the matrices 
   
   if (normalization != "custom") {
-    alpha <- normalization_factors(Xr, type=normalization)
+    alpha <- normalization_factors(Xp, type=normalization)
     A <- rep(alpha, block_lengths(X))
   } else {
     alpha <- rep(1, nblocks(X))
@@ -68,7 +68,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   bind <- block_index_list(X)
   
-  fit <- genpca(unclass(Xr), 
+  fit <- genpca(unclass(Xp), 
                     A=A, 
                     ncomp=ncomp, 
                     center=FALSE, 
@@ -76,7 +76,7 @@ mfa <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   
   result <- list(
-    X=Xr,
+    X=Xp,
     preproc=preproc,
     ntables=nblocks(X),
     fit=fit,
@@ -207,7 +207,7 @@ procrusteanize.mfa <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   
   res <- lapply(1:length(x$Xlist), function(i) {
-    xcur <- get_block(x$Xr[[i]])
+    xcur <- get_block(x$Xp[[i]])
     xp <- project(x, xcur, comp=1:ncomp, block_index=i)
     pres <- vegan::procrustes(F, xp)
     list(H=pres$rotation,

@@ -6,7 +6,7 @@ reduce_rows <- function(Xlist, Ylist) {
   assert_that(length(Xlist) == length(Ylist))
 
   ## compute barycenters for each table, averaging over replications
-  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], project(Xlist[[i]])))
+  XB <- lapply(seq_along(Xlist), function(i) group_means(Ylist[[i]], Xlist[[i]]))
   Xr <- block_matrix(XB)
 }
 
@@ -79,7 +79,12 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' 
 #' Abdi, H., Williams, L. J., Connolly, A. C., Gobbini, M. I., Dunlop, J. P., & Haxby, J. V. (2012). Multiple Subject Barycentric Discriminant Analysis (MUSUBADA): how to assign scans to categories without using spatial normalization. \emph{Computational and Mathematical Methods in Medicine}, 2012.
 #' @export
-mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,  
+#' @examples 
+#' 
+#' Y <- replicate(3, factor(sample(letters[1:3], 20, replace=TRUE)), simplify=FALSE)
+#' Xlist <- replicate(3, matrix(rnorm(20*100),20,100), simplify=FALSE)
+#' mures <- mubada(Y, Xlist)
+mubada <- function(Y, Xlist, ncomp=2, preproc=center(),  
                      normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL, M=NULL) {
 
 
@@ -87,14 +92,15 @@ mubada <- function(Y, Xlist, ncomp=2, center=TRUE, scale=FALSE,
   
   assert_that(inherits(Xlist, "list"))
 
-  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x))))
+  assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x) || inherits(x, "Matrix"))))
   
+  ## compute barycenters
   mu_prep <- prep_multiblock_da(Y, Xlist)
   
   block_indices <- block_indices(Xlist)
   
-  
-  fit <- mfa(mu_prep$Xr, ncomp=ncomp, center=center, scale=scale, normalization=normalization, A=A)
+  ## run MFA on the condition means
+  fit <- mfa(mu_prep$Xr, ncomp=ncomp, preproc=preproc, normalization=normalization, A=A, M=M)
   
   result <- list(
     Xlist=mu_prep$Xlist,
