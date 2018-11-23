@@ -208,8 +208,8 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation
 
   if (isDiagonal(R)) {
-    Rtilde <- Matrix::Diagonal(x=sqrt(diag(R)))
-    Rtilde.inv = Matrix::Diagonal(x=1/sqrt(diag(R)))
+    Rtilde <- Matrix::Diagonal(x=sqrt(Matrix::diag(R)))
+    Rtilde.inv = Matrix::Diagonal(x=1/sqrt(Matrix::diag(R)))
   } else {
     decomp <- eigen(R)
     keep <- which(abs(decomp$values) > 1e-7)

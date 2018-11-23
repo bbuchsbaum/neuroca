@@ -103,6 +103,8 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
   fit <- mfa(mu_prep$Xr, ncomp=ncomp, preproc=preproc, normalization=normalization, A=A, M=M)
   
   result <- list(
+    preproc=preproc,
+    procres=procres,
     Xlist=mu_prep$Xlist,
     Y=mu_prep$Yl,
     Y_reps=mu_prep$Y_reps,
@@ -112,12 +114,9 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
     ntables=length(mu_prep$Xlist),
     ncond=nrow(mu_prep$Xr),
     fit=fit,
-    center=center,
-    scale=scale,
     ncomp=fit$ncomp,
     block_indices=fit$block_indices,
-    normalization=normalization,
-    A=fit$A
+    normalization=normalization
   )
   
   class(result) <- c("mubada", "multiblock_da", "list")
@@ -125,8 +124,19 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
 }
 
 #' @export
+print.mubada <- function(object) {
+  cat(class(object)[1], "\n")
+  cat("  number of tables: ", object$ntables, "\n")
+  cat("  number of conditions: ", object$ncond, "\n")
+  cat("  number of components: ", object$ncomp, "\n")
+  cat("  conditions: ", paste(levels(object$Y[[1]]), collapse=" "), "\n")
+  cat("  normalization type: ", object$normalization, "\n")
+  
+}
+
+#' @export
 refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
-  mubada(Y, Xlist, ncomp=ncomp, center=x$center, scale=x$scale, normalization=x$normalization, A=x$A) 
+  mubada(Y, Xlist, ncomp=ncomp, x$preproc, normalization=x$normalization, A=x$fit$A, M=x$fit$M) 
 }
 
 #' @export
@@ -169,19 +179,15 @@ project_cols.multiblock_da <- function(x, newdata=NULL, comp=1:x$ncomp) {
 
  
 #' @importFrom abind abind
-project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, block_index=1:x$ntables) {
-  assert_that(length(block_index) == 1 || length(block_index) == x$ntables)
+project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, colind=NULL) {
   if (missing(newdata)) {
     scores(x)
-  } else if (length(block_index) == 1) {
-    ind <- x$block_indices[[block_index]]
-    assert_that(ncol(newdata) == length(ind))
-    project(x$fit, newdata, comp=comp, block_index=block_index)
+  } else if (!is.null(colind)) {
+    assert_that(ncol(newdata) == length(colind))
+    project(x$fit, newdata, comp=comp, colind=colind)
   } else {
     assert_that(ncol(newdata) == length(unlist(x$block_indices)))
-    project(x$fit, newdata, comp=comp)
   }
-  
 }
   
 ## project from existing table
@@ -204,8 +210,8 @@ predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp,
 }
 
 #' @export
-reprocess.multiblock_da <- function(x, newdat, block_index=NULL, colind=NULL) {
-  reprocess(x$fit, newdat, block_index=block_index)
+reprocess.multiblock_da <- function(x, newdat, colind=NULL) {
+  reprocess(x$fit, newdat, colind=colind)
 }
 
 

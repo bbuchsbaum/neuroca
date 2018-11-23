@@ -146,27 +146,22 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
 }
 
 #' @export
-project.mfa <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL, colind=NULL) {
+block_project.mfa <- function(x, newdata, block, comp=1:ncomp(x)) {
+  assert_that(length(block_index) == 1, msg="block_index must have length of 1")
+  subind <- block_index_list(x$X)[[block]]
+  newdat <- reprocess(x, newdata, subind)
+  project(x$fit, unclass(newdat), comp=comp, colind=subind)
+}
+
+#' @export
+project.mfa <- function(x, newdata, comp=1:ncomp(x)) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
-  
-  if (!is.null(block_index)) {
-    assert_that(length(block_index) == 1, msg="block_index must have length of 1")
-    subind <- block_index_list(x$X)[[block_index]]
-    newdat <- reprocess(x, newdata, block_index)
-    x$ntables * project(x$fit, unclass(newdat), comp=comp, colind=subind)
-  } else {
-    # new data must have same number of columns as original data
-    if (is.null(colind)) {
-      assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
-    } else {
-      assert_that(ncol(newdata) == length(colind))
-    }
-    
-    project(x$fit, unclass(reprocess(x, newdata,colind=colind)), comp=comp, colind=colind)
-  } 
+  assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
+  project(x$fit, unclass(reprocess(x, newdata,colind=colind)), comp=comp)
 } 
+
 
 #' @export
 project_cols.mfa <- function(x, newdata=NULL, comp=1:x$ncomp) {

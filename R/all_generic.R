@@ -189,6 +189,22 @@ project_cols <- function(x, newdata, ...) UseMethod("project_cols")
 project <- function(x, newdata, ...) UseMethod("project")
 
 
+#' project a selected subset of indices onto the subspace
+#' 
+#' @inheritParams project
+#' @param the column indices to select in the projection matrix
+#' @export
+partial_project <- function(x, newdata, colind) UseMetod("partial_project")
+
+
+#' project a single 'block' of data onto the subspace
+#' 
+#' @inheritParams project
+#' @param block the block id to select in the block projection matrix
+#' @export
+block_project <- function(x, newdata, block) UseMetod("block_project")
+
+
 #' partial_projector
 #' 
 #' extract a partial projector from a fitted model

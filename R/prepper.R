@@ -31,9 +31,14 @@ prep.prepper <- function(x, X) {
   ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
   Xp <- ff(X)
   
-  list(Xp=Xp,
+  
+  ret <- list(
+       preproc=x,
+       Xp=Xp,
        transform=do.call(compose, lapply(x$steps, "[[", "apply")),
        reverse_transform=do.call(compose, rev(lapply(x$steps, "[[", "reverse"))))
+  
+  class(ret) <- "pre_processor"
   
 }
 

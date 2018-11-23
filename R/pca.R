@@ -219,7 +219,7 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 }
 
 #' @export
-project.projector <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, colind=NULL) {
+project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
     return(scores(x)[,comp, drop=FALSE])
