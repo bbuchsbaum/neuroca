@@ -102,40 +102,35 @@ soft_lda <- function(C, X, preproc=pass(), dp=min(dim(X)), di=dp, dl=ncol(C)-1) 
   
   
   
-  
 
-
-
-  
-
-
-
-
-sw_scatter_naive <- function(X, F, gmeans) {
-  Reduce("+", lapply(1:nrow(gmeans), function(i) {
-    Reduce("+", lapply(1:nrow(X), function(j) {
-      d <- X[j,] - gmeans[i,]
-      F[i,j] * outer(d,d)
-    }))
-  }))
-}
-
-sb_scatter_naive <- function(X, F, gmeans, mu) {
-  Reduce("+", lapply(1:nrow(gmeans), function(i) {
-    d <- gmeans[i,] - mu
-    Reduce("+", lapply(1:nrow(X), function(j) {
-      F[i,j] * outer(d,d)
-    }))
-  }))
-}
-
-st_scatter_naive <- function(X, F, mu) {
-  Reduce("+", lapply(1:nrow(F), function(i) {
-    Reduce("+", lapply(1:nrow(X), function(j) {
-      d <- X[j,] - mu
-      F[i,j] * outer(d,d)
-    }))
-  }))
-}
+# 
+# 
+# 
+# sw_scatter_naive <- function(X, F, gmeans) {
+#   Reduce("+", lapply(1:nrow(gmeans), function(i) {
+#     Reduce("+", lapply(1:nrow(X), function(j) {
+#       d <- X[j,] - gmeans[i,]
+#       F[i,j] * outer(d,d)
+#     }))
+#   }))
+# }
+# 
+# sb_scatter_naive <- function(X, F, gmeans, mu) {
+#   Reduce("+", lapply(1:nrow(gmeans), function(i) {
+#     d <- gmeans[i,] - mu
+#     Reduce("+", lapply(1:nrow(X), function(j) {
+#       F[i,j] * outer(d,d)
+#     }))
+#   }))
+# }
+# 
+# st_scatter_naive <- function(X, F, mu) {
+#   Reduce("+", lapply(1:nrow(F), function(i) {
+#     Reduce("+", lapply(1:nrow(X), function(j) {
+#       d <- X[j,] - mu
+#       F[i,j] * outer(d,d)
+#     }))
+#   }))
+# }
 
 
