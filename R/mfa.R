@@ -32,9 +32,10 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' 
 #' @param X a \code{block_matrix} or a \code{block_projection_matrix} object
 #' @param ncomp the number of components to estimate
-#' @param center whether to mean center the variables
-#' @param scale whether to standardize the variables
+#' @param preproc a preprocessing pipeline, default is `center()`
 #' @param normalization the normalization method: MFA, RV, RV-MFA, or None (see details).
+#' @param A custom weight matrix for the columns
+#' @param M custom weight matrix for the rows
 #' @export
 #' @examples 
 #' 
@@ -43,7 +44,8 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, preproc=center(), 
-                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL) {
+                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), M=NULL, A=NULL) {
+
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
   
@@ -70,27 +72,24 @@ mfa <- function(X, ncomp=2, preproc=center(),
   
   fit <- genpca(unclass(Xp), 
                     A=A, 
-                    ncomp=ncomp, 
-                    center=FALSE, 
-                    scale=FALSE)
+                    ncomp=ncomp)
   
-  
+
   result <- list(
     X=Xp,
-    preproc=preproc,
+    preproc=procres,
     ntables=nblocks(X),
     fit=fit,
     ncomp=fit$ncomp,
-    center=center,
-    scale=scale,
     block_indices=bind,
     alpha=alpha,
     normalization=normalization,
     table_names=names(X),
-    A=A
+    A=A,
+    M=M
   )
   
-  class(result) <- c("mfa", "multiblock", "projector", "list")
+  class(result) <- c("mfa", "multiblock", "bi_projector", "list")
   result
 }
 

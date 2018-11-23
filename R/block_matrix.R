@@ -1,5 +1,8 @@
 
-block_indices <- function(Xlist) {
+
+
+#' @keywords internal
+get_block_indices <- function(Xlist) {
   ncols <- sapply(Xlist, ncol)
   csum <- cumsum(ncols)
   csum1 <- c(0, csum[-length(csum)])
@@ -66,7 +69,7 @@ block_matrix <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
   
-  blockInd <- block_indices(Xs)
+  blockInd <- get_block_indices(Xs)
   P <- sum(sapply(Xs, ncol))
   
   X <- do.call(cbind, Xs)
