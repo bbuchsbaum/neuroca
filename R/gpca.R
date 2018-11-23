@@ -105,7 +105,7 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   #norm_loadings <- t(t(as.matrix(svdfit$v)) * svdfit$d)
   
   ret <- bi_projector(
-              preproc=preproc,
+              preproc=procres,
               ncomp=length(svdfit$d),
               v=svdfit$v, 
               u=svdfit$u, 

@@ -53,6 +53,7 @@ center <- function(preproc=prepper()) {
   }
   
   apply <- function(X, colind=NULL) {
+    cmeans <- env[["cmeans"]] 
     if (is.null(colind)) {
       sweep(X, 2, cmeans, "-")
     } else {

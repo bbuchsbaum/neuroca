@@ -202,7 +202,7 @@ partial_project <- function(x, newdata, colind) UseMetod("partial_project")
 #' @inheritParams project
 #' @param block the block id to select in the block projection matrix
 #' @export
-block_project <- function(x, newdata, block) UseMetod("block_project")
+block_project <- function(x, newdata, block,...) UseMethod("block_project")
 
 
 #' partial_projector

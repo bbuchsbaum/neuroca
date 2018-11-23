@@ -134,6 +134,12 @@ print.mubada <- function(object) {
   
 }
 
+
+#' @export
+ncomp.mubada <- function(x) {
+  x$ncomp
+}
+
 #' @export
 refit.mubada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
   mubada(Y, Xlist, ncomp=ncomp, x$preproc, normalization=x$normalization, A=x$fit$A, M=x$fit$M) 
@@ -176,6 +182,13 @@ loadings.multiblock_da <- function(x) loadings(x$fit)
 project_cols.multiblock_da <- function(x, newdata=NULL, comp=1:x$ncomp) {
   project_cols(x$fit,newdata,comp=comp)
 }
+
+#' @export
+block_project.multiblock_da <- function(x, newdata, block=1, comp=1:ncomp(x)) {
+  assert_that(length(block) == 1, msg="block_index must have length of 1")
+  block_project(x$fit, unclass(newdata), comp=comp, block=block)
+}
+
 
  
 #' @importFrom abind abind

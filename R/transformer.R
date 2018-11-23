@@ -68,6 +68,7 @@ center <- function(preproc=prepper()) {
   }
   
   apply <- function(X, colind=NULL) {
+    cmeans <- env[["cmeans"]] 
     if (is.null(colind)) {
       sweep(X, 2, cmeans, "-")
     } else {
@@ -105,10 +106,10 @@ colscale <- function(preproc=prepper()) {
   
   apply <- function(X, colind=NULL) {
     if (is.null(colind)) {
-      sweep(X, 2, env[["sids"]], "/")
+      sweep(X, 2, env[["sds"]], "/")
     } else {
       assert_that(ncol(X) == length(colind))
-      sweep(X, 2, env[["sids"]][colind], "/")
+      sweep(X, 2, env[["sds"]][colind], "/")
     }
   }
   

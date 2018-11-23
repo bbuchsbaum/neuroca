@@ -115,13 +115,14 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
 
 
 #' @export
-reprocess.multiblock <- function(x, newdat, colind=NULL) {
+reprocess.multiblock <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
     assert_that(ncol(newdata) == nrow(loadings(x)))
     x$preproc$transform(newdata)
   } else {
     assert_that(length(colind) == ncol(newdata), 
-                msg=paste("length of colind not equal to number of columns of newdata", length(colind), "!=", ncol(newdata)))
+                msg=paste("length of colind not equal to number of columns of newdata", 
+                          length(colind), "!=", ncol(newdata)))
     x$preproc$transform(newdata, colind)
   }
   
