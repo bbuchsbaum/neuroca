@@ -89,8 +89,13 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   
   
   if (deflation) {
-    svdfit <- gmd_deflation_cpp(X, M, A, ncomp, nrow(X), ncol(X))
-    svdfit$d <- svdfit$d[,1]
+    if (n < p) {
+      svdfit <- gmd_deflation_cpp(t(X), A, M, ncomp)
+      svdfit$d <- svdfit$d[,1]
+    } else {
+      svdfit <- gmd_deflation_cpp(X, M, A, ncomp)
+      svdfit$d <- svdfit$d[,1]
+    }
   } else { 
     if(n < p){
       ret = gmdLA(t(Xp), A,M, ncomp,p,n)

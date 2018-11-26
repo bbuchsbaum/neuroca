@@ -222,6 +222,15 @@ predict.multiblock_da <- function(x, newdata, ncomp=x$ncomp,
   
 }
 
+# @export
+supplementary_loadings.mubada <- function(x, suptab, ncomp=x$ncomp) {
+  
+  suptab <- x$reprocess(suptab)
+  Qsup <- t(suptab) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$pca_fit$d[1:ncomp])
+}
+
+
+
 #' @export
 reprocess.multiblock_da <- function(x, newdat, colind=NULL) {
   reprocess(x$fit, newdat, colind=colind)
@@ -528,11 +537,7 @@ my_procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE, scores = "site
 #   list(scores=Fsup, loadings=Qsup)
 # }
 
-# @export
-# supplementary_loadings.mubada <- function(x, suptab, ncomp=x$ncomp) {
-#   suptab <- x$reprocess(suptab)
-#   Qsup <- t(suptab) %*% (x$pca_fit$u[,1:ncomp,drop=FALSE]) %*% diag(1/x$pca_fit$d[1:ncomp])
-# }
+
 
 # @export
 # correlations.mubada <-

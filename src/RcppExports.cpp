@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // gmd_deflation_cpp
-List gmd_deflation_cpp(const arma::mat& X, arma::sp_mat Q, arma::sp_mat R, int k, int n, int p);
-RcppExport SEXP _neuroca_gmd_deflation_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP, SEXP nSEXP, SEXP pSEXP) {
+List gmd_deflation_cpp(const arma::mat& X, arma::sp_mat Q, arma::sp_mat R, int k, double thr);
+RcppExport SEXP _neuroca_gmd_deflation_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP, SEXP thrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -16,15 +16,29 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::sp_mat >::type Q(QSEXP);
     Rcpp::traits::input_parameter< arma::sp_mat >::type R(RSEXP);
     Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< int >::type p(pSEXP);
-    rcpp_result_gen = Rcpp::wrap(gmd_deflation_cpp(X, Q, R, k, n, p));
+    Rcpp::traits::input_parameter< double >::type thr(thrSEXP);
+    rcpp_result_gen = Rcpp::wrap(gmd_deflation_cpp(X, Q, R, k, thr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gmdLA_cpp
+List gmdLA_cpp(const arma::mat& X, arma::sp_mat Q, arma::mat R, int k);
+RcppExport SEXP _neuroca_gmdLA_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type R(RSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(gmdLA_cpp(X, Q, R, k));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_neuroca_gmd_deflation_cpp", (DL_FUNC) &_neuroca_gmd_deflation_cpp, 6},
+    {"_neuroca_gmd_deflation_cpp", (DL_FUNC) &_neuroca_gmd_deflation_cpp, 5},
+    {"_neuroca_gmdLA_cpp", (DL_FUNC) &_neuroca_gmdLA_cpp, 4},
     {NULL, NULL, 0}
 };
 

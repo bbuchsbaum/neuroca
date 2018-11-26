@@ -28,6 +28,8 @@ add_node.prepper <- function(preproc, step) {
   preproc
 }
 
+
+#' @importFrom purrr compose
 #' @export
 prep.prepper <- function(x, X) {
   ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
@@ -37,10 +39,11 @@ prep.prepper <- function(x, X) {
   ret <- list(
        preproc=x,
        Xp=Xp,
-       transform=do.call(compose, lapply(x$steps, "[[", "apply")),
-       reverse_transform=do.call(compose, rev(lapply(x$steps, "[[", "reverse"))))
+       transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply")),
+       reverse_transform=do.call(purrr::compose, rev(lapply(x$steps, "[[", "reverse"))))
   
   class(ret) <- "pre_processor"
+  ret
   
 }
 
@@ -126,6 +129,8 @@ colscale <- function(preproc=prepper(), type=c("unit", "z")) {
 #' dimension reduction as a pre-processing stage
 #' @param preproc the pipeline
 #' @param method the dimension reduction method (e.g. pca)
+#' @param ... args to be passed to the dimension reduction method
+#' @export
 dim_reduce <- function(preproc=prepper(), method=pca, ...) {
   env=new.env()
   args <- list(...)
