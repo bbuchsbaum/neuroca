@@ -4,21 +4,13 @@
 \alias{genpca}
 \title{Generalized Principal Components Analysis}
 \usage{
-genpca(X, A = rep(1, ncomp(X)), M = rep(1, nrow(X)), ncomp = min(dim(X)),
-  center = TRUE, scale = FALSE)
+genpca(X, A = NULL, M = NULL, ncomp = min(dim(X)), preproc = center(),
+  deflation = FALSE)
 }
 \arguments{
-\item{X}{the data matrix}
-
 \item{A}{the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.}
 
 \item{M}{the row constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{nrow(X)} rows and columns.}
-
-\item{ncomp}{the number of components to estimate}
-
-\item{center}{whether to center the columns}
-
-\item{scale}{whether to standardize the columns}
 }
 \description{
 Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
@@ -47,7 +39,7 @@ gp2 <- genpca(as.matrix(Xs), ncomp=2, center=FALSE)
 
 X <- matrix(rnorm(50*100), 50, 100)
 colind <- rep(1:10, 10)
-S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=1, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="binary")
+S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=4, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="heat")
 diag(S) <- 1
 S <- S/RSpectra::svds(S,k=1)$d
 gp1 <- genpca(X, A=S, ncomp=2)

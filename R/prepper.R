@@ -8,6 +8,8 @@ add_node <- function(x,...) UseMethod("add_node")
 #' prepare a dataset by applying a pre-processing pipeline
 #' 
 #' @param the pipeline
+#' @param ... extra args
+#' @export
 prep <- function(x, ...) UseMethod("prep")
 
 #' contains a series of pre-processing steps

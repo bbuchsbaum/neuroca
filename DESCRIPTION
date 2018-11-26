@@ -27,3 +27,4 @@ Depends:
     methods
 RoxygenNote: 6.0.1.9000
 Suggests: testthat
+LinkingTo: Rcpp, RcppArmadillo

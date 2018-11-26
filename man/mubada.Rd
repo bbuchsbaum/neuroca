@@ -4,37 +4,37 @@
 \alias{mubada}
 \title{Multiple Subjects Barycentric Discriminant Analysis}
 \usage{
-mubada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
-  normalization = c("MFA", "RV", "None", "RV-MFA", "custom"), A = NULL)
+mubada(Y, Xlist, ncomp = 2, preproc = center(), normalization = c("MFA",
+  "RV", "None", "RV-MFA", "custom"), A = NULL, M = NULL)
 }
 \arguments{
-\item{Y}{dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.
+\item{Y}{dependent \code{factor} variable. If All `X` matrices have same number of rows, `Y` can be a single factor vector.
 If there are a different number of rows (e.g. different numbers of replications per subject), Y can be a list of factors.}
 
 \item{Xlist}{a \code{list} of X matrices, one per subject, or it is a \code{list} of \code{projector} objects.}
 
-\item{ncomp}{number of common components to estimate}
+\item{ncomp}{number of common components to estimate.}
 
-\item{center}{whether to center the variables}
-
-\item{scale}{whether to scale the variables by 1/sd}
-
-\item{normalization}{the type of normalization}
+\item{normalization}{the type of normalization.}
 
 \item{A}{a \code{vector} or symmetric matrix of custom column constraints}
 
-\item{ncomp}{number of common components to estimate.}
+\item{M}{a \code{vector} or symmetric matrix of custom row constraints}
 
 \item{center}{whether to center the variables.}
 
 \item{scale}{whether to scale the variables by 1/sd.}
 
-\item{normalization}{the type of normalization.}
-
-\item{A}{optional constraint matrix for the columns used when \code{normalization} is "custom".}
+\item{ncomp}{number of common components to estimate.}
 }
 \description{
 Multiple Subjects Barycentric Discriminant Analysis
+}
+\examples{
+
+Y <- replicate(3, factor(sample(letters[1:3], 20, replace=TRUE)), simplify=FALSE)
+Xlist <- replicate(3, matrix(rnorm(20*100),20,100), simplify=FALSE)
+mures <- mubada(Y, Xlist)
 }
 \references{
 Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.

@@ -4,19 +4,21 @@
 \alias{mfa}
 \title{multiple factor analysis}
 \usage{
-mfa(X, ncomp = 2, center = TRUE, scale = FALSE, normalization = c("MFA",
-  "RV", "None", "RV-MFA", "custom"), A = NULL)
+mfa(X, ncomp = 2, preproc = center(), normalization = c("MFA", "RV",
+  "None", "RV-MFA", "custom"), M = NULL, A = NULL)
 }
 \arguments{
 \item{X}{a \code{block_matrix} or a \code{block_projection_matrix} object}
 
 \item{ncomp}{the number of components to estimate}
 
-\item{center}{whether to mean center the variables}
-
-\item{scale}{whether to standardize the variables}
+\item{preproc}{a preprocessing pipeline, default is `center()`}
 
 \item{normalization}{the normalization method: MFA, RV, RV-MFA, or None (see details).}
+
+\item{M}{custom weight matrix for the rows}
+
+\item{A}{custom weight matrix for the columns}
 }
 \description{
 mfa

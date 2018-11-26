@@ -8,14 +8,11 @@
 #' 
 #' Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
 #' 
-#' @param X the data matrix
+#' @inheritParams pca
 #' @param A the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.
 #' @param M the row constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{nrow(X)} rows and columns.
-#' @param ncomp the number of components to estimate
-#' @param center whether to center the columns
-#' @param scale whether to standardize the columns
 #' @importFrom assertthat assert_that
-#' @importFrom Matrix sparseMatrix t
+#' @importFrom Matrix sparseMatrix t isDiagonal
 #' @export
 #' 
 #' @references 
@@ -49,12 +46,12 @@
 #' 
 #' X <- matrix(rnorm(50*100), 50, 100)
 #' colind <- rep(1:10, 10)
-#' S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=1, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="binary")
+#' S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=4, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="heat")
 #' diag(S) <- 1
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
-                   preproc=center()) {
+                   preproc=center(), deflation=FALSE) {
   
  
   if (is.null(A)) {
@@ -90,11 +87,17 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   n = nrow(Xp)
   p = ncol(Xp)
   
-  if(n < p){
-    ret = gmdLA(t(Xp), A,M, ncomp,p,n)
-    svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
-  } else{
-    svdfit = gmdLA(Xp, M,A,ncomp,n,p)
+  
+  if (deflation) {
+    svdfit <- gmd_deflation_cpp(X, M, A, ncomp, nrow(X), ncol(X))
+    svdfit$d <- svdfit$d[,1]
+  } else { 
+    if(n < p){
+      ret = gmdLA(t(Xp), A,M, ncomp,p,n)
+      svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
+    } else{
+      svdfit = gmdLA(Xp, M,A,ncomp,n,p)
+    }
   }
   
   scores <- t(t(as.matrix(M %*% svdfit$u)) * svdfit$d)
@@ -223,12 +226,13 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
   }
   
- 
+  
   inmat <- Matrix::crossprod(X, Q) %*% X
   
   RtinRt <- Rtilde %*% inmat %*% Rtilde
   
   XR <- X %*% R
+  ## nXn * n*n * pXp
   RnR <- R %*% inmat %*% R
   
   xtilde.decomp <- if (k == min(n,p)) {
@@ -240,7 +244,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   }
 
   keep <- which(abs(xtilde.decomp$values) > 1e-7)
-  k <- length(keep)
+  k <- min(k, length(keep))
   xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
   xtilde.decomp$values <- xtilde.decomp$values[1:k]
   

@@ -4,9 +4,9 @@
 \name{neuroca}
 \alias{neuroca}
 \alias{neuroca-package}
-\title{neuroca - multiblock component analysis methods for neuroimaging data}
+\title{neuroca - multivariate component analysis methods for neuroimaging data}
 \description{
-neuroca - multiblock component analysis methods for neuroimaging data
+neuroca - multivariate component analysis methods for neuroimaging data
 }
 \author{
 Bradley Buchsbaum <brad.buchsbaum@gmail.com>

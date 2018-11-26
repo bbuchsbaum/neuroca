@@ -1,4 +1,5 @@
 
+
 soft_threshold <- function(x,d) return(sign(x)*pmax(0, abs(x)-d))
 
 
@@ -32,36 +33,48 @@ sfpca <- function(X, ncomp=2, lu=1, lv=1, au=1, av=1, coords, Pu=NULL, Pv=NULL, 
   }
   
   Sv <- Matrix::Diagonal(n=ncol(X)) + av*Pv
-  Lv <- RSpectra::eigs(Sv,1)$values
+  Lv <- RSpectra::eigs(Sv,1)$values + .01
 
   if (is.null(Pu)) {
     Pu <- neighborweights::temporal_laplacian(1:nrow(X))
   }
   
   Su <- Matrix::Diagonal(n=nrow(X)) + au*Pu
-  Lu <- RSpectra::eigs(Su,1)$values
+  Lu <- RSpectra::eigs(Su,1)$values + .01
   
   init_svd <- RSpectra::svds(X, 1)
   v <- init_svd$v
   u <- init_svd$u
   criterion <- Inf
+  Xhat <- X
+  
+  vout <- matrix(0, length(v), ncomp)
+  uout <- matrix(0, length(u), ncomp)
+  dout <- length(ncomp)
+  for (i in 1:ncomp) {
 
-  while (criterion > conv) {
-    u_new <- prox(X, u, Lu, v, Su, lu)
-    v_new <- prox(t(X), v, Lv, u, Sv, lv)
+    while (criterion > conv) {
+      u_new <- prox(Xhat, u, Lu, v, Su, lu)
+      v_new <- prox(t(Xhat), v, Lv, u, Sv, lv)
     
-    v_new <- v_new/sqrt(t(v_new) %*% Sv %*% v_new)[1,1]
-    u_new <- u_new/sqrt(t(u_new) %*% Su %*% u_new)[1,1]
+      v_new <- v_new/sqrt(t(v_new) %*% Sv %*% v_new)[1,1]
+      u_new <- u_new/sqrt(t(u_new) %*% Su %*% u_new)[1,1]
     
-    criterion <- max(sum( (v_new - v)^2), sum((u_new - u)^2))
-    print(criterion)
-    u <- u_new
-    v <- v_new
+      criterion <- max(sum( (v_new - v)^2), sum((u_new - u)^2))
+      print(criterion)
+      u <- u_new
+      v <- v_new
+    }
+  
+    v <- v/sum(v^2)
+    u <- u/sum(u^2)
+    d <- t(u) %*% Xhat %*% v
+    vout[,i] <- v
+    uout[,i] <- u
+    dout[i] <- d
+    
+    Xhat = Xhat - d %*% u  %*% t(v)
   }
   
-  v <- v/sum(v^2)
-  u <- u/sum(u^2)
-  
-  
-  ##Ou <- 
+    ##Ou <- 
 }

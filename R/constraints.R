@@ -3,7 +3,8 @@
 #' @param nblocks the number of repeated coordinate blocks
 #' @param sigma the standard deviation of the within-block smoother
 #' @param shrinkage_factor 
-spatial_constraints <- function(coords, nblocks=1, sigma=5, shrinkage_factor=.1, shrinkage_radius=1, global_weights=rep(1, ncol(coords)*nblocks)) {
+spatial_constraints <- function(coords, nblocks=1, sigma=5, shrinkage_factor=.1, shrinkage_radius=1, 
+                                global_weights=rep(1, ncol(coords)*nblocks)) {
   cds2 <- do.call(rbind, lapply(nblocks, function(i) cbind(coords, i*50)))
   
   ##Sw <- neighborweights::spatial_smoother(coords, sigma=sigma, nnk=27, stochastic = TRUE)
