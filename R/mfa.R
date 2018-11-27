@@ -149,7 +149,7 @@ partial_scores.mfa <- function(x, block_index=x$ntables) {
 block_project.mfa <- function(x, newdata, block=1, comp=1:ncomp(x)) {
   assert_that(length(block) == 1, msg="block must have length of 1")
   subind <- block_index_list(x$X)[[block]]
-  newdat <- reprocess(x, newdata, subind)
+  newdat <- reprocess(x, newdata, colind=subind)
   project(x$fit, unclass(newdata), comp=comp, colind=subind)
 }
 
