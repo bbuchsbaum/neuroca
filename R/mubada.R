@@ -103,8 +103,6 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
   fit <- mfa(mu_prep$Xr, ncomp=ncomp, preproc=preproc, normalization=normalization, A=A, M=M)
   
   result <- list(
-    preproc=preproc,
-    procres=procres,
     Xlist=mu_prep$Xlist,
     Y=mu_prep$Yl,
     Y_reps=mu_prep$Y_reps,
