@@ -115,7 +115,7 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
 
 
 #' @export
-reprocess.multiblock <- function(x, newdat, colind=NULL) {
+reprocess.multiblock <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
     assert_that(ncol(newdata) == nrow(loadings(x)))
     x$preproc$transform(newdata)
