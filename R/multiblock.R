@@ -113,13 +113,16 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
   res
 }
 
-reprocess.multiblock <- function(x, newdat, block_index=NULL, colind=NULL) {
-  ## given a new observation(s), pre-process it in the same way the original observations were processed
-  if (!is.null(block_index)) {
-    subind <- block_index_list(x)[[block_index]]
-    pre_process(x$preproc, newdat, colind=subind)
+
+#' @export
+reprocess.multiblock <- function(x, newdata, colind=NULL) {
+  if (is.null(colind)) {
+    assert_that(ncol(newdata) == nrow(loadings(x)))
+    x$preproc$transform(newdata)
   } else {
-    pre_process(x$preproc, newdat, colind)
+    assert_that(length(colind) == ncol(newdata), 
+                msg=paste("length of colind not equal to number of columns of newdata", length(colind), "!=", ncol(newdata)))
+    x$preproc$transform(newdata, colind)
   }
   
 }

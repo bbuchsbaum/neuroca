@@ -103,8 +103,6 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
   fit <- mfa(mu_prep$Xr, ncomp=ncomp, preproc=preproc, normalization=normalization, A=A, M=M)
   
   result <- list(
-    preproc=preproc,
-    procres=procres,
     Xlist=mu_prep$Xlist,
     Y=mu_prep$Yl,
     Y_reps=mu_prep$Y_reps,
@@ -194,12 +192,20 @@ block_project.multiblock_da <- function(x, newdata, block=1, comp=1:ncomp(x)) {
 #' @importFrom abind abind
 project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, colind=NULL) {
   if (missing(newdata)) {
-    scores(x)
-  } else if (!is.null(colind)) {
+    return(scores(x))
+  } 
+  
+  if (!is.null(colind)) {
     assert_that(ncol(newdata) == length(colind))
     project(x$fit, newdata, comp=comp, colind=colind)
   } else {
+    p <- length(unlist(x$block_indices))
+    
+    if (is.vector(newdata) && length(newdata) == p) {
+      newdata <- matrix(newdata, nrow=1)
+    }
     assert_that(ncol(newdata) == length(unlist(x$block_indices)))
+    project(x$fit, newdata, comp=comp, colind=colind)
   }
 }
   
