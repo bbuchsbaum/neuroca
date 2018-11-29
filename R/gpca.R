@@ -211,6 +211,22 @@ project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, colind=
 }
 
 
+#' @export
+project_cols.genpca <- function(x, newdata, comp=1:ncomp(x)) {
+  
+  ## if no newdata, then simply return the loadings
+  if (missing(newdata)) {
+    return(loadings(x)[,comp, drop=FALSE])
+  } else {
+    if (is.vector(newdata)) {
+      newdata <- as.matrix(newdata, ncol=1)
+    }
+    assert_that(nrow(newdata) == nrow(x$u))
+    t(newdata) %*% x$M %*% (x$u[,comp,drop=FALSE]) %*% diag(1/x$d[comp], nrow=length(comp), ncol=length(comp))
+  }
+}
+
+
 #' @keywords internal
 gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   ##computation

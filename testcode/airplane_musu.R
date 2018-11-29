@@ -86,9 +86,17 @@ df_proj <- lapply(1:21, function(i) {
   })
     
 })
-  
+ 
+
+library(ggplot2)
+
 df_proj <- do.call(rbind, df_proj)
-writeRDS(df_proj, "mubada_proj.rds")
+saveRDS(df_proj, "mubada_proj.rds")
+
+df2 <- df_proj %>% group_by(condition, repnum, dim, group) %>% summarize(cosvals=mean(cosvals))
+
+qplot(repnum, cosvals, colour=group, data=subset(df2,group != "patient" & dim !=
+                                                   0 & dim < 5), facets = condition ~ dim,geom=c("point", "line"), se=FALSE)
 
 #sc=scorepred(t(scores(mures)), t(xx), type="cosine")
 #project_cols(mures, xx)
