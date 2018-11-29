@@ -6,8 +6,23 @@ base_path <- "/Users/bbuchsbaum/analysis/airplane_paper/gpca"
 
 dat <- readRDS(paste0(base_path, "/", "betas_loc_mvideo.rds"))
 sids <- sapply(dat, function(x) x$des$sid[1])
+keep <- substr(sids, 1,1) != "5"
+sids <- sids[keep]
+dat <- dat[keep]
+
+
 old <- substr(sids, 1,1) == "2"
 young <- substr(sids, 1,1) != "2"
+
+coords <- dat[[1]]$cds
+sweights <- rep(1, length(dat))
+sweights[old] <- 19/14
+sweights[young] <- 1
+
+S <- spatial_constraints(coords, nblocks=length(dat), sigma_within=3, shrinkage_factor=.3, variable_weights=rep(sweights, each=nrow(coords)))
+
+S2 <- Matrix::bdiag(S,S)
+
 
 master_df1 <- do.call(rbind, lapply(dat, function(x) {
   ret <- x$des %>% mutate(id=row_number()) %>% group_by(Condition, repnum,sid) %>% do({
@@ -43,14 +58,16 @@ df_proj <- lapply(1:21, function(i) {
     tibble(X=list(X), Y=list(Y), Condition=.$Condition[1], repnum=.$repnum[1])
   }) %>% ungroup() %>% mutate(block=row_number())
   
+  
+  
   Xl <- Xtr$X
   Yl <- Xtr$Y
   
-  mures <- mubada(Yl, Xl, ncomp=11, normalization="None")
+  mures <- mubada(Yl, Xl, ncomp=11, normalization="custom", A=S2)
   
   Xte %>% rowwise() %>% do({
     xp <- block_project(mures, Xte$X[[.$block]], .$block)
-    browser()
+    #browser()
     cvals <- sapply(1:ncol(xp), function(i) {
       sum(xp[,i] * mures$scores[,i]) / (sqrt(sum(xp[,i]^2))*sqrt(sum(mures$scores[,i]^2)))
     })

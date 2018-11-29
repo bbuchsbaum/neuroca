@@ -66,8 +66,8 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
     assert_that(length(A) == ncol(X))
     A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
   } else {
-    assert_that(nrow(A) == ncol(X))
-    assert_that(ncol(A) == ncol(X))
+    assert_that(nrow(A) == ncol(X), msg=paste("nrow(A) != ncol(X) -- ", nrow(A), " != ", ncol(X)))
+    assert_that(ncol(A) == ncol(X), msg=paste("ncol(A) != ncol(X) -- ", ncol(A), " != ", ncol(X)))
   }
   
   if (is.vector(M)) {

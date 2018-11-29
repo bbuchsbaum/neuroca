@@ -39,7 +39,7 @@ spatial_constraints <- function(coords, nblocks=1,
                                                  sigma=sigma_between,
                                                  normalize=FALSE,
                                                  nnk=nnk_between,
-                                                 include_diagonal=FALSE)
+                                                 include_diagonal=TRUE)
   Sbt <- as(Sb, "dgTMatrix")
   nvox <- nrow(coords)
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
@@ -61,7 +61,7 @@ spatial_constraints <- function(coords, nblocks=1,
  
   ## scale within matrix by variable weights
   if (any(variable_weights[1] != variable_weights)) {
-    Wg <- Diagonal(x=sqrt(global_weights))
+    Wg <- Diagonal(x=sqrt(variable_weights))
     Swithin <- Wg %*% Swithin %*% Wg
   }
   
