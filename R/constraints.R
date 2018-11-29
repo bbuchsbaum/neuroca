@@ -1,27 +1,36 @@
 
+
+#' construct a sparse matrix of spatial constraints for a set of blocks
+#' 
 #' @param coords the spatial coordinates as a matrix with rows as objects and columns as dimensions
 #' @param nblocks the number of repeated coordinate blocks
-#' @param sigma the standard deviation of the within-block smoother
-#' @param shrinkage_factor 
+#' @param sigma_within the bandwidth of the within-block smoother
+#' @param sigma_within the bandwidth of the between-block smoother
+#' @param shrinkage_factor the amount of shrinkage towards the spatially localized average
+#' @param nnk_within the maximum number of nearest neighbors for within block smoother 
+#' @param nnk_between the maximum number of nearest neighbors for between block smoother 
+#' @param weight_mode_within
+#' @param weight_mode_between
+#' @param variable_weights
 spatial_constraints <- function(coords, nblocks=1, 
                                 sigma_within=5, 
                                 sigma_between=1,
                                 shrinkage_factor=.1, 
                                 nnk_within=27,
                                 nnk_between=1,
-                                weight_mode_between="binary",
                                 weight_mode_within="heat",
-                                global_weights=rep(1, ncol(coords)*nblocks)) {
+                                weight_mode_between="binary",
+                                variable_weights=rep(1, ncol(coords)*nblocks)) {
   
   assert_that(shrinkage_factor > 0 & shrinkage_factor <= 1)
   
-  #cds2 <- do.call(rbind, lapply(1:nblocks, function(i) cbind(coords)))
+ 
   coords <- as.matrix(coords)
   
   Sw <- neighborweights::spatial_adjacency(coords, sigma=sigma_within, 
                                            weight_mode=weight_mode_within,
                                            nnk=nnk_within, stochastic = TRUE)
-  #Swithin <- neighborweights::spatial_smoother(cds2, sigma=sigma, nnk=50, stochastic = TRUE)
+ 
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)
   
@@ -29,8 +38,7 @@ spatial_constraints <- function(coords, nblocks=1,
                                                  weight_mode="binary", 
                                                  sigma=sigma_between,
                                                  normalize=FALSE,
-                                                 nnk=nblocks*nnk_between,
-                                                 dthresh=2.5,
+                                                 nnk=nnk_between,
                                                  include_diagonal=FALSE)
   Sbt <- as(Sb, "dgTMatrix")
   nvox <- nrow(coords)
@@ -52,35 +60,19 @@ spatial_constraints <- function(coords, nblocks=1,
   
  
   ## scale within matrix by variable weights
-  if (any(global_weights[1] != global_weights)) {
+  if (any(variable_weights[1] != variable_weights)) {
     Wg <- Diagonal(x=sqrt(global_weights))
     Swithin <- Wg %*% Swithin %*% Wg
   }
   
-  ## compute ration of witin to between weights
+  ## compute ratio of witin to between weights
   rat <- sum(Swithin)/sum(Sbfin)
   sfac <- 1/shrinkage_factor * rat
   
   ## balance within and between weights
   Stot <- (1-shrinkage_factor)*(1/rat)*Swithin + shrinkage_factor*Sbfin
-  
-  ## ratio of 
-  
   S <- Stot/(RSpectra::eigs_sym(Stot, k=1, which="LA")$values[1])
-  #S <- S + Sbetween*shrinkage_factor
-  #S <- S/(RSpectra::eigs_sym(S, k=1, which="LA")$values[1])
-  
+  S
  
 }
 
-# Swithin <- neighborweights::spatial_smoother(cds2,sigma=sigma,nnk=27,stochastic = TRUE)
-# Sbetween <- neighborweights::spatial_adjacency(as.matrix(indices),weight_mode="binary", 
-#                                                normalize=FALSE,dthresh=bdthresh, include_diagonal=FALSE)/length(perc_dat)
-# diag(Sbetween) <- 0
-# 
-# Wg <- Diagonal(x=sqrt(wg))
-# 
-# S <- Wg %*% Swithin %*% Wg
-# S <- S/(RSpectra::eigs_sym(S, k=1, which="LA")$values[1])
-# S <- S + Sbetween*bw
-# S <- S/(RSpectra::eigs_sym(S, k=1, which="LA")$values[1])
