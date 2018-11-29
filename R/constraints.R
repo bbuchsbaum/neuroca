@@ -18,7 +18,9 @@ spatial_constraints <- function(coords, nblocks=1,
   #cds2 <- do.call(rbind, lapply(1:nblocks, function(i) cbind(coords)))
   coords <- as.matrix(coords)
   
-  Sw <- neighborweights::spatial_adjacency(coords, sigma=sigma_within, nnk=nnk_within, stochastic = TRUE)
+  Sw <- neighborweights::spatial_adjacency(coords, sigma=sigma_within, 
+                                           weight_mode=weight_mode_within,
+                                           nnk=nnk_within, stochastic = TRUE)
   #Swithin <- neighborweights::spatial_smoother(cds2, sigma=sigma, nnk=50, stochastic = TRUE)
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)
