@@ -190,6 +190,7 @@ block_project.multiblock_da <- function(x, newdata, block=1, comp=1:ncomp(x)) {
 
  
 #' @importFrom abind abind
+#' @export
 project.multiblock_da <- function(x, newdata, comp=1:x$ncomp, colind=NULL) {
   if (missing(newdata)) {
     return(scores(x))

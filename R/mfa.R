@@ -72,6 +72,7 @@ mfa <- function(X, ncomp=2, preproc=center(),
   
   fit <- genpca(unclass(Xp), 
                     A=A, 
+                    M=M,
                     ncomp=ncomp)
   
 
