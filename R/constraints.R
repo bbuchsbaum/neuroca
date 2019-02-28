@@ -38,7 +38,7 @@ spatial_constraints <- function(coords, nblocks=1,
                                                  weight_mode=weight_mode_between, 
                                                  nnk=nnk_between, stochastic=TRUE)
   
-  browser()
+ 
   Sbt <- as(Sb, "dgTMatrix")
   nvox <- nrow(coords)
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
