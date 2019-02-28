@@ -236,7 +236,15 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     Rtilde.inv = Matrix::Diagonal(x=1/sqrt(Matrix::diag(R)))
   } else {
     decomp <- eigen(R)
-    keep <- which(abs(decomp$values) > 1e-7)
+    
+    if (length(decomp$values) > 1) {
+      v <- decomp$values
+      if (sum(v < 0) > 1) {
+        warning(paste("genpca: removing ", sum(v<0), 
+                      " negative eigenvalues when computing inverse of constraint matrix"))
+      }
+    }
+    keep <- which(decomp$values > 0 & abs(decomp$values) > 1e-7)
   
     decomp$vectors <- decomp$vectors[, keep]
     decomp$values <- decomp$values[keep]
