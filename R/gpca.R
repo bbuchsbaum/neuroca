@@ -244,6 +244,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
                       " negative eigenvalues when computing inverse of constraint matrix"))
       }
     }
+    
     keep <- which(decomp$values > 0 & abs(decomp$values) > 1e-7)
   
     decomp$vectors <- decomp$vectors[, keep]
