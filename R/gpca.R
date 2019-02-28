@@ -245,7 +245,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
       }
     }
     
-    keep <- which(decomp$values > 0 & abs(decomp$values) > 1e-7)
+    keep <- which(decomp$values > 0 & (abs(decomp$values) > 1e-6))
   
     decomp$vectors <- decomp$vectors[, keep]
     decomp$values <- decomp$values[keep]
@@ -273,7 +273,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     list(vectors=ret$vectors, values=ret$values)
   }
 
-  keep <- which(abs(xtilde.decomp$values) > 1e-7)
+  keep <- which(abs(xtilde.decomp$values) > 1e-6 & (xtilde.decomp$values > 0 ))
   k <- min(k, length(keep))
   xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
   xtilde.decomp$values <- xtilde.decomp$values[1:k]
