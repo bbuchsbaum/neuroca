@@ -36,9 +36,9 @@ spatial_constraints <- function(coords, nblocks=1,
   
   Sb <- neighborweights::spatial_adjacency(coords,sigma=sigma_between,
                                                  weight_mode=weight_mode_between, 
-                                                 normalize=FALSE,
-                                                 nnk=nnk_between,
-                                                 include_diagonal=TRUE)
+                                                 nnk=nnk_between, stochastic=TRUE)
+  
+  browser()
   Sbt <- as(Sb, "dgTMatrix")
   nvox <- nrow(coords)
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
