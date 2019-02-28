@@ -5,7 +5,7 @@
 #' @param coords the spatial coordinates as a matrix with rows as objects and columns as dimensions
 #' @param nblocks the number of repeated coordinate blocks
 #' @param sigma_within the bandwidth of the within-block smoother
-#' @param sigma_within the bandwidth of the between-block smoother
+#' @param sigma_between the bandwidth of the between-block smoother
 #' @param shrinkage_factor the amount of shrinkage towards the spatially localized average
 #' @param nnk_within the maximum number of nearest neighbors for within block smoother 
 #' @param nnk_between the maximum number of nearest neighbors for between block smoother 
@@ -34,9 +34,8 @@ spatial_constraints <- function(coords, nblocks=1,
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)
   
-  Sb <- neighborweights::spatial_adjacency(coords,
-                                                 weight_mode="binary", 
-                                                 sigma=sigma_between,
+  Sb <- neighborweights::spatial_adjacency(coords,sigma=sigma_between,
+                                                 weight_mode=weight_mode_between, 
                                                  normalize=FALSE,
                                                  nnk=nnk_between,
                                                  include_diagonal=TRUE)
@@ -65,7 +64,7 @@ spatial_constraints <- function(coords, nblocks=1,
     Swithin <- Wg %*% Swithin %*% Wg
   }
   
-  ## compute ratio of witin to between weights
+  ## compute ratio of within to between weights
   rat <- sum(Swithin)/sum(Sbfin)
   sfac <- 1/shrinkage_factor * rat
   
