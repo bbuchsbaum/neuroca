@@ -48,6 +48,28 @@ prep.prepper <- function(x, X) {
 }
 
 #' @export
+pass <- function(preproc=prepper()) {
+  forward <- function(X, colind) {
+    X
+  }
+  
+  reverse <- function(X, colind) {
+    X
+  }
+  
+  apply <- function(X, colind) {
+    X
+  }
+  
+  ret <- list(name="center",
+              forward=forward,
+              reverse=identity,
+              apply=apply)
+  class(ret) <- c("pass", "pre_processor")
+  add_node(preproc, ret)
+}
+
+#' @export
 center <- function(preproc=prepper()) {
   env=new.env()
   
@@ -170,12 +192,43 @@ dim_reduce <- function(preproc=prepper(), method=pca, ...) {
 
 
 
-# standardize <- function(f=identity) {
-#   print(f)
-#   force(f)
-#   function(X) {
-#     sweep(f(X), 2, apply(X,2,sd), "/")
-#   }
-# }
-
+#' @export
+standardize <- function(preproc=prepper()) {
+  env=new.env()
+  
+  forward <- function(X) {
+    sds <- matrixStats::colSds(X)
+    cmeans <- colMeans(X)
+    env[["sds"]] <- sds
+    env[["cmeans"]] <- cmeans
+    x1 <- sweep(X, 2, cmeans, "-")
+    sweep(x1, 2, sds, "/")
+  }
+  
+  apply <- function(X, colind=NULL) {
+    if (is.null(colind)) {
+      sweep(X, 2, env[["sids"]], "/")
+    } else {
+      assert_that(ncol(X) == length(colind))
+      x1 <- sweep(X, 2, cmeans[colind], "-")
+      sweep(x1, 2, env[["sds"]][colind], "/")
+    }
+  }
+  
+  reverse=function(X, colind=NULL) {
+    if (is.null(colind)) {
+      sweep(X, 2, env[["sds"]], "*")
+    } else {
+      assert_that(ncol(X) == length(colind))
+      sweep(X, 2, env[["sds"]][colind], "*")
+    }
+  }
+  
+  ret <- list(forward=forward,
+              reverse=reverse,
+              apply=apply)
+  
+  class(ret) <- c("colscale", "pre_processor")
+  add_node(preproc, ret)
+}
 
