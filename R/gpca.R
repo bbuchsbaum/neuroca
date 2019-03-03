@@ -236,7 +236,16 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     Rtilde.inv = Matrix::Diagonal(x=1/sqrt(Matrix::diag(R)))
   } else {
     decomp <- eigen(R)
-    keep <- which(abs(decomp$values) > 1e-7)
+    
+    if (length(decomp$values) > 1) {
+      v <- decomp$values
+      if (sum(v < 0) > 1) {
+        warning(paste("genpca: removing ", sum(v<0), 
+                      " negative eigenvalues when computing inverse of constraint matrix"))
+      }
+    }
+    
+    keep <- which(decomp$values > 0 & (abs(decomp$values) > 1e-6))
   
     decomp$vectors <- decomp$vectors[, keep]
     decomp$values <- decomp$values[keep]
@@ -264,7 +273,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     list(vectors=ret$vectors, values=ret$values)
   }
 
-  keep <- which(abs(xtilde.decomp$values) > 1e-7)
+  keep <- which(abs(xtilde.decomp$values) > 1e-6 & (xtilde.decomp$values > 0 ))
   k <- min(k, length(keep))
   xtilde.decomp$vectors <- xtilde.decomp$vectors[, 1:k]
   xtilde.decomp$values <- xtilde.decomp$values[1:k]

@@ -73,7 +73,7 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' @param A a \code{vector} or symmetric matrix of custom column constraints
 #' @param M a \code{vector} or symmetric matrix of custom row constraints
 #' @param ncomp number of common components to estimate.
-#'
+#' @param ... args to send to \code{genpca}
 #' @references
 #' Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
 #' 
@@ -85,7 +85,7 @@ prep_multiblock_da <- function(Y, Xlist) {
 #' Xlist <- replicate(3, matrix(rnorm(20*100),20,100), simplify=FALSE)
 #' mures <- mubada(Y, Xlist)
 mubada <- function(Y, Xlist, ncomp=2, preproc=center(),  
-                     normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL, M=NULL) {
+                     normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), A=NULL, M=NULL, ...) {
 
 
   normalization <- match.arg(normalization)
