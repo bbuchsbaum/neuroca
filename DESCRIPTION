@@ -12,7 +12,8 @@ Imports:
     FactoMineR,
     parallel,
     fields,
-    sda
+    sda,
+    denoiseR
 License: GPL (>= 2)
 Maintainer: Bradley Buchsbaum <brad.buchsbaum@gmail.com>
 Title: neuroca: multiblock component analysis for neuroimaging data
