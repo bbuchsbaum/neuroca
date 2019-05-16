@@ -118,6 +118,8 @@ colscale <- function(preproc=prepper(), type=c("unit", "z")) {
       sds <- sds * sqrt(nrow(X)-1)
     }
     
+    sds[sds == 0] <- 1
+    
     env[["sds"]] <- sds
     sweep(X, 2, sds, "/")
   }
