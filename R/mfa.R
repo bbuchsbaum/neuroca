@@ -71,6 +71,7 @@ mfa <- function(X, ncomp=2, preproc=center(),
   bind <- block_index_list(X)
   
   fit <- genpca(unclass(Xp), 
+                preproc=pass(),
                     A=A, 
                     M=M,
                     ncomp=ncomp)
