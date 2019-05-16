@@ -4,8 +4,8 @@
 \alias{scada}
 \title{scada}
 \usage{
-scada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE, rank_k = NULL,
-  type = c("sca-p", "sca-pf2", "sca-ind", "sca-ecp"))
+scada(Y, Xlist, ncomp = 2, center = TRUE, scale = FALSE,
+  rank_k = NULL, type = c("sca-p", "sca-pf2", "sca-ind", "sca-ecp"))
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. If All X matrices have same number of rows, Y can be a single factor.

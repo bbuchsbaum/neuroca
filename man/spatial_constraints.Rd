@@ -7,8 +7,8 @@
 spatial_constraints(coords, nblocks = 1, sigma_within = 5,
   sigma_between = 1, shrinkage_factor = 0.1, nnk_within = 27,
   nnk_between = 1, weight_mode_within = "heat",
-  weight_mode_between = "binary", variable_weights = rep(1, ncol(coords) *
-  nblocks))
+  weight_mode_between = "binary", variable_weights = rep(1,
+  ncol(coords) * nblocks))
 }
 \arguments{
 \item{coords}{the spatial coordinates as a matrix with rows as objects and columns as dimensions}
@@ -17,13 +17,13 @@ spatial_constraints(coords, nblocks = 1, sigma_within = 5,
 
 \item{sigma_within}{the bandwidth of the within-block smoother}
 
+\item{sigma_between}{the bandwidth of the between-block smoother}
+
 \item{shrinkage_factor}{the amount of shrinkage towards the spatially localized average}
 
 \item{nnk_within}{the maximum number of nearest neighbors for within block smoother}
 
 \item{nnk_between}{the maximum number of nearest neighbors for between block smoother}
-
-\item{sigma_within}{the bandwidth of the between-block smoother}
 }
 \description{
 construct a sparse matrix of spatial constraints for a set of blocks

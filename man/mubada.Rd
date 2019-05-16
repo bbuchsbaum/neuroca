@@ -4,8 +4,9 @@
 \alias{mubada}
 \title{Multiple Subjects Barycentric Discriminant Analysis}
 \usage{
-mubada(Y, Xlist, ncomp = 2, preproc = center(), normalization = c("MFA",
-  "RV", "None", "RV-MFA", "custom"), A = NULL, M = NULL)
+mubada(Y, Xlist, ncomp = 2, preproc = center(),
+  normalization = c("MFA", "RV", "None", "RV-MFA", "custom"), A = NULL,
+  M = NULL, ...)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. If All `X` matrices have same number of rows, `Y` can be a single factor vector.
@@ -20,6 +21,8 @@ If there are a different number of rows (e.g. different numbers of replications 
 \item{A}{a \code{vector} or symmetric matrix of custom column constraints}
 
 \item{M}{a \code{vector} or symmetric matrix of custom row constraints}
+
+\item{...}{args to send to \code{genpca}}
 
 \item{center}{whether to center the variables.}
 

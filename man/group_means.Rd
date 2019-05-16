@@ -2,7 +2,6 @@
 % Please edit documentation in R/group_means.R, R/utils.R
 \name{group_means}
 \alias{group_means}
-\alias{group_means}
 \title{group_means}
 \usage{
 group_means(Y, X)

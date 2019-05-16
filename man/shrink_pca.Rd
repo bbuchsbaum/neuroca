@@ -4,7 +4,8 @@
 \alias{shrink_pca}
 \title{shrink_pca}
 \usage{
-shrink_pca(X, preproc = center(), method = c("GSURE", "QUT", "SURE"), ...)
+shrink_pca(X, preproc = center(), method = c("GSURE", "QUT", "SURE"),
+  ...)
 }
 \description{
 adaptive shrinkage pca from the \code{denoiseR} package
