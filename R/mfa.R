@@ -44,7 +44,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, preproc=center(), 
-                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), M=NULL, A=NULL) {
+                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), M=NULL, A=NULL, ...) {
 
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
@@ -74,7 +74,8 @@ mfa <- function(X, ncomp=2, preproc=center(),
                 preproc=pass(),
                     A=A, 
                     M=M,
-                    ncomp=ncomp)
+                    ncomp=ncomp,
+                    ...)
   
 
   result <- list(
