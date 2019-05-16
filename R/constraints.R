@@ -20,19 +20,30 @@ spatial_constraints <- function(coords, nblocks=1,
                                 nnk_between=1,
                                 weight_mode_within="heat",
                                 weight_mode_between="binary",
-                                variable_weights=rep(1, ncol(coords)*nblocks)) {
+                                variable_weights=rep(1, ncol(coords)*nblocks), verbose=FALSE) {
   
   assert_that(shrinkage_factor > 0 & shrinkage_factor <= 1)
   
  
   coords <- as.matrix(coords)
   
+  if (verbose) {
+    message("spatial_contraints: computing spatial adjacency (within)")
+  }
+  
   Sw <- neighborweights::spatial_adjacency(coords, sigma=sigma_within, 
                                            weight_mode=weight_mode_within,
                                            nnk=nnk_within, stochastic = TRUE)
  
+  if (verbose) {
+    message("spatial_contraints: replicating within blocks")
+  }
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)
+  
+  if (verbose) {
+    message("spatial_contraints: computing spatial adjacency (between)")
+  }
   
   Sb <- neighborweights::spatial_adjacency(coords,sigma=sigma_between,
                                                  weight_mode=weight_mode_between, 
@@ -54,7 +65,14 @@ spatial_constraints <- function(coords, nblocks=1,
     }))
   }))
   
+  if (verbose) {
+    message("spatial_contraints: building between matrix")
+  }
   Sbfin <- sparseMatrix(i=out[,1], j=out[,2], x=out[,3], dims=c(nvox*nblocks, nvox*nblocks))
+  
+  if (verbose) {
+    message("spatial_contraints: making doubly stochastic")
+  }
   Sbfin <- neighborweights::make_doubly_stochastic(Sbfin)
   
  
@@ -64,12 +82,22 @@ spatial_constraints <- function(coords, nblocks=1,
     Swithin <- Wg %*% Swithin %*% Wg
   }
   
+  if (verbose) {
+    message("spatial_contraints: weighting by sfac")
+  }
   ## compute ratio of within to between weights
   rat <- sum(Swithin)/sum(Sbfin)
   sfac <- 1/shrinkage_factor * rat
   
+  if (verbose) {
+    message("spatial_contraints: balancing within and between by shrinkage_factor")
+  }
   ## balance within and between weights
   Stot <- (1-shrinkage_factor)*(1/rat)*Swithin + shrinkage_factor*Sbfin
+  
+  if (verbose) {
+    message("spatial_contraints: normalizing by first eigenvalue")
+  }
   S <- Stot/(RSpectra::eigs_sym(Stot, k=1, which="LA")$values[1])
   S
  
