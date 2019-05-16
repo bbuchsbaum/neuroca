@@ -200,6 +200,7 @@ standardize <- function(preproc=prepper()) {
   
   forward <- function(X) {
     sds <- matrixStats::colSds(X)
+    sds[sds == 0] <- median(sds)
     cmeans <- colMeans(X)
     env[["sds"]] <- sds
     env[["cmeans"]] <- cmeans
