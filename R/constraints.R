@@ -133,12 +133,13 @@ feature_weighted_spatial_constraints <- function(coords,
                                                  maxk_between=nnk_between,
                                                  weight_mode_within="heat",
                                                  weight_mode_between="binary",
-                                                 variable_weights=rep(1, ncol(coords)*nblocks), verbose=FALSE) {
+                                                 variable_weights=rep(1, ncol(coords)*length(feature_mats)), verbose=FALSE) {
   
   assert_that(shrinkage_factor > 0 & shrinkage_factor <= 1)
 
   coords <- as.matrix(coords)
   nvox <- nrow(coords)
+  nblocks <- length(feature_mats)
 
   Swl <- lapply(seq_along(feature_mats), function(i) {
     sw <- neighborweights::weighted_spatial_adjacency(coords, t(feature_mats[[i]]), 
