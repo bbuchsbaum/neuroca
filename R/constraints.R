@@ -168,7 +168,7 @@ feature_weighted_spatial_constraints <- function(coords,
       alpha=alpha_between,
       nnk=nnk_between, maxk=maxk_between,
       sigma=sigma_between, normalized=FALSE)
-    sm <- make_doubly_stochastic(sm)
+    sm <- neighborweights::make_doubly_stochastic(sm)
     
     sm_nc <- as (sm, "dgTMatrix")
     r1 <- cbind (i = sm_nc@i + 1 + offsets[a], j = sm_nc@j + 1 + offsets[b], x = sm_nc@x)
