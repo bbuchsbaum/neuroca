@@ -129,6 +129,8 @@ feature_weighted_spatial_constraints <- function(coords,
                                                  shrinkage_factor=.1, 
                                                  nnk_within=27,
                                                  nnk_between=27,
+                                                 maxk_within=nnk_within,
+                                                 maxk_between=nnk_between,
                                                  weight_mode_within="heat",
                                                  weight_mode_between="binary",
                                                  variable_weights=rep(1, ncol(coords)*nblocks), verbose=FALSE) {
@@ -163,7 +165,8 @@ feature_weighted_spatial_constraints <- function(coords,
       coords, coords, t(feature_mats[[a]]), t(feature_mats[[b]]),
       wsigma=wsigma_between, weight_mode=weight_mode_between,
       alpha=alpha_between,
-      nnk=nnk_between, sigma=sigma_between, normalized=FALSE)
+      nnk=nnk_between, maxk=maxk_between,
+      sigma=sigma_between, normalized=FALSE)
     sm <- make_doubly_stochastic(sm)
     
     sm_nc <- as (sm, "dgTMatrix")
