@@ -165,7 +165,8 @@ feature_weighted_spatial_constraints <- function(coords,
   nvox <- nrow(coords)
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
   
-  out <- unlist(lapply(1:nblocks, function(i) {
+  
+  out <- unlist(furrr::future_map(1:nblocks, function(i) {
     print(i)
     lapply(1:nblocks, function(j) {
       if (i == j) {
