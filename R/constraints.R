@@ -124,6 +124,8 @@ spatial_constraints <- function(coords, nblocks=1,
 #' fmats <- replicate(20, matrix(rnorm(100*10), 10, 100), simplify=FALSE)
 #' conmat <- feature_weighted_spatial_constraints(coords, fmats)
 #' 
+#' conmat <- feature_weighted_spatial_constraints(coords, fmats, maxk_between=4, maxk_within=2,sigma_between=5, nnk_between=60)
+#' 
 #' #future::plan("multiprocess")
 #' #conmat <- feature_weighted_spatial_constraints(coords, fmats)
 #' @importFrom furrr future_map

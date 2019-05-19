@@ -105,6 +105,7 @@ block_index_list.multiblock <- function(x) x$block_indices
 #' @export
 partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
   bind <- block_index_list(x)
+  
   res <- lapply(block_index, function(i) {
     x$ntables * project(x$fit, get_block(Xr, i), colind=bind[[i]])
   })
