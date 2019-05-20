@@ -1,19 +1,26 @@
 
 #' @importFrom multiway sca
 #' @export
-sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
+#' @examples 
+#' 
+#' X <- block_matrix(replicate(10, { matrix(rnorm(10*10), 10, 10) }, simplify=FALSE))
+#' res <- sca(X, ncomp=5, type="sca-pf2")
+#' lds <- loadings(res)
+#' bind <- block_index_list(res)
+#' blds <- lapply(seq_along(bind), function(i) lds[bind[[i]],])
+#' stopifnot(ncol(scores(res)) == 3)
+sca <- function(X, ncomp=2, preproc=center(),
                 type=c("sca-p","sca-pf2","sca-ind","sca-ecp"), ...) {
   
   assertthat::assert_that(inherits(X, "block_matrix"))
   type <- match.arg(type)
   
-  preproc <- pre_processor(X, 
-                     center=center, 
-                     scale=scale)
   
-  Xr <- pre_process(preproc, X)
-  
-  Xl <- lapply(as.list(Xr), t)
+  ## pre-process the variables.
+  procres <- prep(preproc, X)
+  Xp <- procres$Xp
+
+  Xl <- lapply(as.list(Xp), t)
   
   bind <- block_index_list(X)
   
@@ -29,20 +36,19 @@ sca <- function(X, ncomp=2, center=TRUE, scale=FALSE,
   
   fit <- pseudo_svd(u, v, d, rnames=row.names(X))
   
+  
   ret <- list(
-    X=X,
-    Xr=Xr,
+    X=Xp,
+    preproc=procres,
     sca_fit=sca_fit,
-    preproc=preproc,
     fit=fit,
-    center=center,
-    scale=scale,
-    ncomp=length(d),
+    ncomp=fit$ncomp,
     block_indices=bind,
     nvars=ncol(X),
     ntables=length(block_lengths(X)))
   
-  class(ret) <- c("sca", "multiblock", "list")
+  class(ret) <- c("sca", "multiblock", "bi-projector", "list")
+ 
   ret  
 }
 

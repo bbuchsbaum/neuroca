@@ -30,7 +30,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' 
 #' mfa
 #' 
-#' @param X a \code{block_matrix} or a \code{block_projection_matrix} object
+#' @param X a \code{block_matrix} object
 #' @param ncomp the number of components to estimate
 #' @param preproc a preprocessing pipeline, default is `center()`
 #' @param normalization the normalization method: MFA, RV, RV-MFA, or None (see details).
@@ -88,6 +88,8 @@ mfa <- function(X, ncomp=2, preproc=center(),
     alpha=alpha,
     normalization=normalization,
     table_names=names(X),
+    nvars=ncol(X),
+    ntables=length(block_lengths(X)),
     A=A,
     M=M
   )
