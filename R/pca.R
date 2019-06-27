@@ -125,7 +125,7 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
 #' @examples 
 #' 
 #' X <- matrix(rnorm(10*20), 10, 20)
-#' res <- pca(X, ncomp=3, preproc=standardize())
+#' res <- pca(X, ncomp=10, preproc=standardize())
 pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
@@ -159,7 +159,7 @@ refit.pca <- function(x, X) {
 
 #' @export
 permutation.pca <- function(x, X, nperm=100) {
-  
+  Q <- length(x$d)
   evals <- x$d^2
   Fa <- sapply(1:length(evals), function(i) evals[i]/sum(evals[i:length(evals)]))
   
@@ -171,14 +171,34 @@ permutation.pca <- function(x, X, nperm=100) {
   })
   
   if (x$ncomp > 1) {
-    for (i in 2:x$ncomp) {
-      Ea <- residuals(x, X, i)
-      Ea_perm <- apply(Ea, 2, function(x) sample(x))
-      fit <- refit(x, Ea_perm)
-      evals <- fit$d^2
-      Fq_perm <- evals[i]/sum(evals[i:length(evals)])
-    }
+    Fq <- parallel::mclapply(2:x$ncomp, function(a) {
+      sapply(1:nperm, function(j) {
+        Ea <- residuals(x, X, a)
+        Ea_perm <- apply(Ea, 2, function(x) sample(x))
+      
+        I <- diag(nrow(X))
+      
+        uu <- Reduce("+", lapply(1:(a-1), function(i) {
+          x$u[,i,drop=FALSE] %*% t(x$u[,i,drop=FALSE]) 
+        }))
+      
+        Ea_perm_proj <- (I - uu) %*% Ea_perm
+  
+        fit <- refit(x, Ea_perm_proj)
+        evals <- fit$d^2
+        Fq_perm <- evals[1]/sum(evals)
+      })
+    })
+      
+    Fq <- do.call(cbind, Fq)
+    Fq <- cbind(F1_perm, Fq)
+  } else {
+    Fq <- as.matrix(F1_perm)
   }
+  
+  nperm=500
+  
+    
 }
  
 #' @export   
