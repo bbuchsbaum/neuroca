@@ -1,7 +1,7 @@
 
 
 
-normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None")) {
+normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None", "Frob")) {
   type <- match.arg(type)
   assert_that(inherits(block_mat, "block_matrix"))
   message("normalization type:", type)
@@ -19,6 +19,8 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
     alpha2 <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
     alpha1*alpha2
     
+  } else if (type == "Frob") {
+    unlist(lapply(as.list(block_mat), function(X) sum(X^2)))
   } else {
     rep(1, nblocks(block_mat))
   }
@@ -44,7 +46,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' p <- partial_scores(res, 1)
 #' stopifnot(ncol(scores(res)) == 3)
 mfa <- function(X, ncomp=2, preproc=center(), 
-                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), M=NULL, A=NULL, ...) {
+                normalization=c("MFA", "RV", "None", "RV-MFA", "Frob", "custom"), M=NULL, A=NULL, ...) {
 
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
