@@ -117,7 +117,18 @@ spatial_constraints <- function(coords, nblocks=1,
 }
 
 
-
+#' @export
+#' @examples 
+#' 
+#' coords <- as.matrix(expand.grid(1:10, 1:10))
+#' fmats <- replicate(20, matrix(rnorm(100*10), 10, 100), simplify=FALSE)
+#' conmat <- feature_weighted_spatial_constraints(coords, fmats)
+#' 
+#' conmat <- feature_weighted_spatial_constraints(coords, fmats, maxk_between=4, maxk_within=2,sigma_between=5, nnk_between=60)
+#' 
+#' #future::plan("multiprocess")
+#' #conmat <- feature_weighted_spatial_constraints(coords, fmats)
+#' @importFrom furrr future_map
 feature_weighted_spatial_constraints <- function(coords, 
                                                  feature_mats,
                                                  sigma_within=5, 
@@ -141,7 +152,7 @@ feature_weighted_spatial_constraints <- function(coords,
   nvox <- nrow(coords)
   nblocks <- length(feature_mats)
 
-  Swl <- lapply(seq_along(feature_mats), function(i) {
+  Swl <- furrr::future_map(seq_along(feature_mats), function(i) {
     sw <- neighborweights::weighted_spatial_adjacency(coords, t(feature_mats[[i]]), 
                                            alpha=alpha_within,
                                            wsigma=wsigma_within,
@@ -159,7 +170,7 @@ feature_weighted_spatial_constraints <- function(coords,
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
   
   
-  bet <- do.call(rbind, lapply(1:nrow(cmb), function(i) {
+  bet <- do.call(rbind, furrr::future_map(1:nrow(cmb), function(i) {
     a <- cmb[i,1]
     b <- cmb[i,2]
     sm <- neighborweights::cross_weighted_spatial_adjacency(
