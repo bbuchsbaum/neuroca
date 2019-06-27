@@ -173,14 +173,17 @@ permutation.pca <- function(x, X, nperm=100) {
   if (x$ncomp > 1) {
     for (i in 2:x$ncomp) {
       Ea <- residuals(x, X, i)
-      
+      Ea_perm <- apply(Ea, 2, function(x) sample(x))
+      fit <- refit(x, Ea_perm)
+      evals <- fit$d^2
+      Fq_perm <- evals[i]/sum(evals[i:length(evals)])
     }
   }
 }
  
 #' @export   
 residuals.pca <- function(x, X, ncomp) {
-  recon <- reconstruct(x,ncomp)
+  recon <- reconstruct(x, comp=1:ncomp)
   X - recon
 }
 
