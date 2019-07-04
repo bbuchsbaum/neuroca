@@ -125,7 +125,7 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
 #' @examples 
 #' 
 #' X <- matrix(rnorm(10*20), 10, 20)
-#' res <- pca(X, ncomp=10, preproc=standardize())
+#' res <- pca(X, ncomp=10, preproc=center())
 pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
@@ -159,9 +159,9 @@ refit.pca <- function(x, X) {
 
 #' @export
 permutation.pca <- function(x, X, nperm=100) {
-  Q <- length(x$d)
+  Q <- min(dim(X)) - 1
   evals <- x$d^2
-  Fa <- sapply(1:length(evals), function(i) evals[i]/sum(evals[i:length(evals)]))
+  Fa <- sapply(1:length(evals), function(i) evals[i]/sum(evals[i:Q]))
   
   F1_perm <- sapply(1:nperm, function(i) {
     Xperm <- apply(X, 2, function(x) sample(x))
@@ -173,7 +173,7 @@ permutation.pca <- function(x, X, nperm=100) {
   if (x$ncomp > 1) {
     Fq <- parallel::mclapply(2:x$ncomp, function(a) {
       sapply(1:nperm, function(j) {
-        Ea <- residuals(x, X, a)
+        Ea <- residuals(x, a-1, X)
         Ea_perm <- apply(Ea, 2, function(x) sample(x))
       
         I <- diag(nrow(X))
@@ -202,9 +202,9 @@ permutation.pca <- function(x, X, nperm=100) {
 }
  
 #' @export   
-residuals.pca <- function(x, X, ncomp) {
+residuals.pca <- function(x, ncomp, xorig) {
   recon <- reconstruct(x, comp=1:ncomp)
-  X - recon
+  xorig - recon
 }
 
 
