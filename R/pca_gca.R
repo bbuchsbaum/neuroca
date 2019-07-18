@@ -1,54 +1,18 @@
-pca_gca <- function(X, ncomp=rep(2, length(X)), preproc=center(), 
-                normalization=c("MFA", "RV", "None", "RV-MFA", "custom"), M=NULL, A=NULL, ...) {
+#' @importFrom RGCCA rgcca
+pca_gca <- function(X, ncomp=rep(2, length(X)), preproc=center(), cor_min=.7) {
   
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
+  assert_that(all(ncomp > 1), "all entries in `ncomp`` must be greater than 1")
   
-  normalization <- match.arg(normalization)
+  svdlist <- lapply(1:nblocks(X), function(i) {
+    Xi <- get_block(X,i)
+    svd_i <- svd_wrapper(Xi, ncomp=ncomp[i], method="fast")
+  })
   
-  if (normalization == "custom") {
-    assert_that(!is.null(A))
-  }
+  sclist <- lapply(svdlist, "[[", "u")
+  ccorres <- RGCCA::rgcca(sclist, C=1-diag(length(svdlist)), tau = rep(0, length(svdlist)),
+                                ncomp = rep(min(ncomp), length(svdlist)), verbose = FALSE)
+  com_comp <- sum(sqrt(ccorres$AVE$AVE_inner) >= cor_min)
   
-  ## pre-process the variables.
-  procres <- prep(preproc, X)
-  Xp <- procres$Xp
-  
-  ## normalize the matrices 
-  
-  if (normalization != "custom") {
-    alpha <- normalization_factors(Xp, type=normalization)
-    A <- rep(alpha, block_lengths(X))
-  } else {
-    alpha <- rep(1, nblocks(X))
-  }
-  
-  bind <- block_index_list(X)
-  
-  fit <- genpca(unclass(Xp), 
-                preproc=pass(),
-                A=A, 
-                M=M,
-                ncomp=ncomp,
-                ...)
-  
-  
-  result <- list(
-    X=Xp,
-    preproc=procres,
-    ntables=nblocks(X),
-    fit=fit,
-    ncomp=fit$ncomp,
-    block_indices=bind,
-    alpha=alpha,
-    normalization=normalization,
-    table_names=names(X),
-    nvars=ncol(X),
-    ntables=length(block_lengths(X)),
-    A=A,
-    M=M
-  )
-  
-  class(result) <- c("mfa", "multiblock", "bi_projector", "list")
-  result
 }

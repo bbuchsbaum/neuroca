@@ -12,7 +12,7 @@ get_perm <- function(G, strata) {
 
 
 
-permutation_ <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL, deflate=FALSE) {
+do_permutation <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL, deflate=FALSE) {
   if (!is.null(seed)) set.seed(seed)
   
   d <- singular_values(x)[1:ncomp]^2

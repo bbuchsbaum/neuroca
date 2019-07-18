@@ -38,7 +38,7 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, scale=FALSE,...) {
+bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, preproc=center(),...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
@@ -47,7 +47,7 @@ bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, sca
   ncomp <- min(ncomp, length(levels(Y)))
   
   Xr <- group_means(Y, X)
-  fit <- pca(Xr, ncomp=ncomp, center=center, scale=scale, method="fast")
+  fit <- pca(Xr, ncomp=ncomp, preproc=preproc, method="fast")
   ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
   class(ret) <- c("bada", "bi_projector", "projector")
   ret
@@ -124,6 +124,11 @@ ncol.bada <- function(x) {
 #' @export
 nrow.bada <- function(x) {
   nrow(x$fit$u)
+}
+
+#' @export
+refit.bada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
+  bada(Y, Xlist, ncomp=ncomp, x$preproc, normalization=x$normalization, A=x$fit$A, M=x$fit$M) 
 }
 
 
