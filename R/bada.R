@@ -23,6 +23,12 @@
 #' 
 #' bres <- bada(Y, X, S, ncomp=3)
 #' 
+#' project(bres, X[S==1,])
+#' 
+#' ## no strata
+#' bres <- bada(Y, X, ncomp=3)
+#' 
+#' 
 #' 
 #' xbar <- matrix(rnorm(4*1000), 4, 1000)
 #' Y <- factor(rep(letters[1:4], length.out=100))
@@ -38,36 +44,62 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, center=TRUE, scale=FALSE,...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=center(), ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
   S <- factor(S)
   
+  procres <- if (length(levels(S)) > 1) {
+    procres <- lapply(levels(S), function(lev) {
+      Xs <- X[S == lev,,drop=FALSE]
+      prep(preproc, Xs)
+    })
+    names(procres) <- levels(S)
+    procres
+  } else {
+    prep(preproc, X)
+  }
+  
   ncomp <- min(ncomp, length(levels(Y)))
   
   Xr <- group_means(Y, X)
-  fit <- pca(Xr, ncomp=ncomp, center=center, scale=scale, method="fast")
-  ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
-  class(ret) <- c("bada", "bi_projector", "projector")
+  fit <- pca(Xr, ncomp=ncomp, preproc=pass(), method="fast")
+  
+  ret <- list(
+    preproc=procres,
+    ncomp=fit$ncomp,
+    fit=fit,
+    Y=Y,
+    X=X,
+    Xr=Xr,
+    S=S)
+  
+  class(ret) <- c("bada")
   ret
 }
 
 #' @export
 rotate.bada <- function(x, rot) {
   rfit <- rotate(x$fit, rot)
-  ret <- list(X=x$X, Y=x$Y,S=x$S, Xr=x$Xr, fit=rfit, ncomp=x$fit$ncomp, center=x$center, scale=x$scale)
-  class(ret) <- c("bada", "projector")
+  ret <- list(
+    preproc=x$procres,
+    fit=rfit,
+    Y=x$Y,
+    X=x$X,
+    Xr=x$Xr,
+    S=x$S)
+  class(ret) <- c("bada")
   ret
 }
 
 #' @export
-project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
+project.bada <- function(x, newdata=NULL, comp=1:x$fit$ncomp, colind=NULL, stratum=NULL) {
   if (is.null(newdata)) {
-    project(x$fit, newdata=x$X, comp=comp, colind=colind)
+    project(x$fit, newdata=x$Xr, comp=comp, colind=colind)
   } else {
-    assert_that(ncol(newdata) == ncol(x$X))
-    project(x$fit, newdata, comp=comp, colind=colind)
+    Xp <- reprocess(x, newdata, colind=colind, stratum=stratum)
+    project(x$fit, Xp, comp=comp, colind=colind)
   }
 }
 
@@ -85,10 +117,41 @@ loadings.bada <- function(x) loadings(x$fit)
 #' @export
 scores.bada <- function(x) scores(x$fit)
 
+
 #' @export
-reprocess.bada <- function(x, newdata, colind=NULL) {
-  reprocess(x$fit,newdata,colind)
+reprocess.bada <- function(x,
+                           newdata,
+                           colind = NULL,
+                           stratum = NULL) {
+  
+  browser()
+  
+  avg_preproc <- function(newdata, colind = NULL) {
+    Reduce("+", lapply(1:length(levels(x$S)), function(i) {
+      p <- x$preproc[[i]]
+      p$transform(newdata, colind)
+    })) / length(levels(x$S))
+  }
+  
+  stratum_preproc <- function(newdata, stratum, colind = NULL) {
+    assert_that(stratum %in% levels(x$S))
+    p <- x$preproc[[stratum]]
+    p$transform(newdata, colind)
+  }
+  
+  assert_that(ncol(newdata) == nrow(loadings(x)))
+  Xp <- if (length(x$preproc) > 1 && is.null(stratum)) {
+    ## we have multiple strata
+    avg_preproc(newdata, colind)
+  } else if (length(x$preproc) > 1 && !is.null(stratum)) {
+    assert_that(stratum %in% levels(x$S))
+    stratum_preproc(newdata, stratum, colind)
+  } else {
+    ## no strata
+    x$preproc$transform(newdata, colind)
+  }
 }
+
 
 #' @export
 permute.bada <- function(x) {

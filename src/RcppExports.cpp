@@ -21,6 +21,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sgmd_deflation_cpp
+List sgmd_deflation_cpp(const arma::sp_mat& X, arma::sp_mat Q, arma::sp_mat R, int k, double thr);
+RcppExport SEXP _neuroca_sgmd_deflation_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP, SEXP thrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type R(RSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    Rcpp::traits::input_parameter< double >::type thr(thrSEXP);
+    rcpp_result_gen = Rcpp::wrap(sgmd_deflation_cpp(X, Q, R, k, thr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gmdLA_cpp
 List gmdLA_cpp(const arma::mat& X, arma::sp_mat Q, arma::mat R, int k);
 RcppExport SEXP _neuroca_gmdLA_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP) {
@@ -38,6 +53,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_neuroca_gmd_deflation_cpp", (DL_FUNC) &_neuroca_gmd_deflation_cpp, 5},
+    {"_neuroca_sgmd_deflation_cpp", (DL_FUNC) &_neuroca_sgmd_deflation_cpp, 5},
     {"_neuroca_gmdLA_cpp", (DL_FUNC) &_neuroca_gmdLA_cpp, 4},
     {NULL, NULL, 0}
 };

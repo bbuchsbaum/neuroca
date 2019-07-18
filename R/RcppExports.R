@@ -5,6 +5,10 @@ gmd_deflation_cpp <- function(X, Q, R, k, thr = 1e-5) {
     .Call('_neuroca_gmd_deflation_cpp', PACKAGE = 'neuroca', X, Q, R, k, thr)
 }
 
+sgmd_deflation_cpp <- function(X, Q, R, k, thr = 1e-5) {
+    .Call('_neuroca_sgmd_deflation_cpp', PACKAGE = 'neuroca', X, Q, R, k, thr)
+}
+
 gmdLA_cpp <- function(X, Q, R, k) {
     .Call('_neuroca_gmdLA_cpp', PACKAGE = 'neuroca', X, Q, R, k)
 }

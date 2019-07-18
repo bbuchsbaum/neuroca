@@ -110,8 +110,6 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
               d=d, 
               scores=scores,
               classes="pseudo_svd")
-  
-
   ret
 }
 
@@ -282,6 +280,7 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
+    ## TODO deal with colind
     return(scores(x)[,comp, drop=FALSE])
   }
   
@@ -290,10 +289,12 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
   }
   
   if (is.null(colind)) {
+    ## pre_process new data and project
     reprocess(x, newdata) %*% loadings(x)[,comp, drop=FALSE]
   } else {
-    ## colind must be in the input space
-    assertthat::assert_that(max(colind) <= ncol(newdata))
+    ## colind must equal number of columns of newdata
+    ## colind cannot have more columns that original dataset
+    assertthat::assert_that(length(colind) == ncol(newdata))
     reprocess(x, newdata, colind=colind) %*% (loadings(x)[colind, comp, drop=FALSE])
   }
 }
