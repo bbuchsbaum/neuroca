@@ -40,12 +40,14 @@ ncomp <- function(x) UseMethod("ncomp")
 #' @export
 correlations <- function(x,...) UseMethod("correlations")
 
+
 #' cross_validate a model
 #' 
 #' @param the model fit
 #' @param ... extra args
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")
+
 
 #' @export
 nested_cv <- function(x, ...) UseMethod("nested_cv")

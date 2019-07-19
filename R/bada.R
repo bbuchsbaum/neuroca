@@ -229,6 +229,8 @@ refit.bada <- function(x, Y, Xlist, S = x$S, ncomp=x$ncomp,...) {
 }
 
 
+
+
 #' @export
 print.bada <- function(object) {
   showk <- 1:min(object$ncomp, 5)
