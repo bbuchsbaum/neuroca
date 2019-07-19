@@ -60,14 +60,19 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
       prep(preproc(), Xs)
     })
     names(procres) <- levels(S)
+    Xp <- do.call(rbind, lapply(procres, "[[", "Xp"))
     procres
   } else {
-    prep(preproc(), X)
+    p <- prep(preproc(), X)
+    Xp <- p$Xp
+    p
   }
+  
+  
   
   ncomp <- min(ncomp, length(levels(Y)))
   
-  Xr <- group_means(Y, X)
+  Xr <- group_means(Y, Xp)
   fit <- pca(Xr, ncomp=ncomp, preproc=pass(), method="fast")
   
   ret <- list(
