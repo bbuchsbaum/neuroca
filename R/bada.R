@@ -56,11 +56,11 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   assert_that(length(S) == nrow(X))
   
   if (!is.null(A)) {
-    assert_that(ncol(A) == nrow(A) == ncol(X))
+    assert_that( (ncol(A) == nrow(A)) && (ncol(A) == ncol(X)))
   }
   
   if (!is.null(M)) {
-    assert_that(ncol(M) == nrow(M) == nrow(X))
+    assert_that( (ncol(M) == nrow(M)) && (nrow(M) == nrow(X)))
   }
   
   S <- factor(S)
