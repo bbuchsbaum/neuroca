@@ -1,16 +1,20 @@
 #' Barycentric Discriminant Analysis
 #' 
-#' A technique whose goal is to assign observations to some predetermined categories a  linear combination of the
-#' variables of a data matrix
+#' A component technique that maximizes the between group variance over a set of variables. 
 #' 
 #' @importFrom assertthat assert_that 
 #' @param Y dependent \code{factor} variable. The categories of the observations.
 #' @param X the data matrix with \code{nrow} equal to \code{length} of \code{Y}
 #' @param S an integer \code{vector} or \code{factor} of subject ids which is the same length as \code{Y}.
-#' @param ncomp number of common components to estimate
-#' @param center whether to center the variables
-#' @param scale whether to divide the variables by the standard deviation.
+#' @param ncomp number of components to estimate
+#' @param preproc pre-processing function, defaults to \code{center}
 #' @param ... arguments to pass through
+#' 
+#' @details 
+#' 
+#' The \code{S} argument can be used to model multi-level structure. If \code{S} is included, then pre-processing is applied 
+#' separately to each unique value of S. This has the effect, for example when preproc = \code{center} of removing subject-specific 
+#' means before computing the barycetners.
 #' 
 #' @references
 #' Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
@@ -22,6 +26,12 @@
 #' S <- factor(rep(1:10, each=10))
 #' 
 #' bres <- bada(Y, X, S, ncomp=3)
+#' 
+#' project(bres, X[S==1,])
+#' 
+#' ## no strata
+#' bres <- bada(Y, X, ncomp=3)
+#' 
 #' 
 #' 
 #' xbar <- matrix(rnorm(4*1000), 4, 1000)
@@ -38,38 +48,83 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S, ncomp=length(levels(as.factor(Y)))-1, preproc=center(),...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=center, ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
   S <- factor(S)
   
+  procres <- if (length(levels(S)) > 1) {
+    procres <- lapply(levels(S), function(lev) {
+      Xs <- X[S == lev,,drop=FALSE]
+      prep(preproc(), Xs)
+    })
+    names(procres) <- levels(S)
+    procres
+  } else {
+    prep(preproc(), X)
+  }
+  
   ncomp <- min(ncomp, length(levels(Y)))
   
   Xr <- group_means(Y, X)
-  fit <- pca(Xr, ncomp=ncomp, preproc=preproc, method="fast")
-  ret <- list(X=X, Y=Y,S=S, Xr=Xr, fit=fit, ncomp=fit$ncomp, center=center, scale=scale)
-  class(ret) <- c("bada", "bi_projector", "projector")
+  fit <- pca(Xr, ncomp=ncomp, preproc=pass(), method="fast")
+  
+  ret <- list(
+    preproc=procres,
+    ncomp=fit$ncomp,
+    fit=fit,
+    Y=Y,
+    X=X,
+    Xr=Xr,
+    S=S)
+  
+  class(ret) <- c("bada")
   ret
 }
 
 #' @export
 rotate.bada <- function(x, rot) {
   rfit <- rotate(x$fit, rot)
-  ret <- list(X=x$X, Y=x$Y,S=x$S, Xr=x$Xr, fit=rfit, ncomp=x$fit$ncomp, center=x$center, scale=x$scale)
-  class(ret) <- c("bada", "projector")
+  ret <- list(
+    preproc=x$procres,
+    fit=rfit,
+    Y=x$Y,
+    X=x$X,
+    Xr=x$Xr,
+    S=x$S)
+  class(ret) <- c("bada")
   ret
 }
 
 #' @export
-project.bada <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL) {
+project.bada <- function(x, newdata=NULL, comp=1:x$fit$ncomp, colind=NULL, stratum=NULL) {
   if (is.null(newdata)) {
-    project(x$fit, newdata=x$X, comp=comp, colind=colind)
+    project(x$fit, newdata=x$Xr, comp=comp, colind=colind)
   } else {
-    assert_that(ncol(newdata) == ncol(x$X))
-    project(x$fit, newdata, comp=comp, colind=colind)
+    Xp <- reprocess(x, newdata, colind=colind, stratum=stratum)
+    project(x$fit, Xp, comp=comp, colind=colind)
   }
 }
+
+## project from existing table
+#' @export
+predict.bada <- function(x, newdata, ncomp=x$ncomp, colind=NULL, stratum=NULL, type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
+  
+  
+  type <- match.arg(type)
+  Xp <- reprocess(x, newdata, stratum=stratum)
+  
+  fscores <- project(x$fit, Xp, comp=1:ncomp, colind=colind)
+  
+  if (type == "scores") {
+    fscores
+  } else {
+    scorepred(as.matrix(fscores), scores(x), type=type, ncomp=ncomp)
+  }
+  
+}
+
 
 #' @export
 project_cols.bada <- function(x, newdata=NULL, comp=1:x$ncomp) {
@@ -83,12 +138,48 @@ singular_values.bada <- function(x) x$fit$d
 loadings.bada <- function(x) loadings(x$fit)
 
 #' @export
-scores.bada <- function(x) scores(x$fit)
+scores.bada <- function(x) {
+  sc <- scores(x$fit)
+  row.names(sc) <- levels(x$Y)
+  sc
+}
+
 
 #' @export
-reprocess.bada <- function(x, newdata, colind=NULL) {
-  reprocess(x$fit,newdata,colind)
+reprocess.bada <- function(x,
+                           newdata,
+                           colind = NULL,
+                           stratum = NULL) {
+  
+
+  avg_preproc <- function(newdata, colind = NULL) {
+    Reduce("+", lapply(1:length(levels(x$S)), function(i) {
+      p <- x$preproc[[i]]
+      p$transform(newdata, colind)
+    })) / length(levels(x$S))
+  }
+  
+  stratum_preproc <- function(newdata, stratum, colind = NULL) {
+    assert_that(stratum %in% levels(x$S))
+    p <- x$preproc[[stratum]]
+    p$transform(newdata, colind)
+  }
+  
+  
+  ns <- length(unique(x$S))
+  assert_that(ncol(newdata) == nrow(loadings(x)))
+  Xp <- if (ns > 1 && is.null(stratum)) {
+    ## we have multiple strata
+    avg_preproc(newdata, colind)
+  } else if (ns > 1 && !is.null(stratum)) {
+    assert_that(stratum %in% levels(x$S))
+    stratum_preproc(newdata, stratum, colind)
+  } else {
+    ## no strata
+    x$preproc$transform(newdata, colind)
+  }
 }
+
 
 #' @export
 permute.bada <- function(x) {
@@ -117,14 +208,6 @@ residuals.bada <- function(x, ncomp=x$ncomp) {
   xresid
 }
 
-ncol.bada <- function(x) {
-  nrow(x$fit$v)
-}
-
-#' @export
-nrow.bada <- function(x) {
-  nrow(x$fit$u)
-}
 
 #' @export
 refit.bada <- function(x, Y, Xlist, ncomp=x$ncomp) { 

@@ -4,8 +4,8 @@
 \alias{bada}
 \title{Barycentric Discriminant Analysis}
 \usage{
-bada(Y, X, S, ncomp = length(levels(as.factor(Y))) - 1, center = TRUE,
-  scale = FALSE, ...)
+bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) -
+  1, preproc = center, ...)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. The categories of the observations.}
@@ -14,17 +14,20 @@ bada(Y, X, S, ncomp = length(levels(as.factor(Y))) - 1, center = TRUE,
 
 \item{S}{an integer \code{vector} or \code{factor} of subject ids which is the same length as \code{Y}.}
 
-\item{ncomp}{number of common components to estimate}
-
-\item{center}{whether to center the variables}
-
-\item{scale}{whether to divide the variables by the standard deviation.}
+\item{ncomp}{number of components to estimate}
 
 \item{...}{arguments to pass through}
+
+\item{the}{pre-processing function, defaults to \code{center}}
 }
 \description{
 A technique whose goal is to assign observations to some predetermined categories a  linear combination of the
 variables of a data matrix
+}
+\details{
+The \code{S} argument can be used to model multi-level structure. If \code{S} is included, then pre-processing is applied 
+separately to each unique value of S. This has the effect, for example when preproc = \code{center} of removing subject-specific 
+means before computing the barycetners.
 }
 \examples{
 
@@ -33,6 +36,12 @@ Y <- factor(rep(letters[1:4], length.out=100))
 S <- factor(rep(1:10, each=10))
 
 bres <- bada(Y, X, S, ncomp=3)
+
+project(bres, X[S==1,])
+
+## no strata
+bres <- bada(Y, X, ncomp=3)
+
 
 
 xbar <- matrix(rnorm(4*1000), 4, 1000)

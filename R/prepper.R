@@ -220,10 +220,12 @@ standardize <- function(preproc=prepper()) {
   
   reverse=function(X, colind=NULL) {
     if (is.null(colind)) {
-      sweep(X, 2, env[["sds"]], "*")
+      x0 <- sweep(X, 2, env[["sds"]], "*")
+      sweep(x0, 2, env[["cmeans"]], "+")
     } else {
       assert_that(ncol(X) == length(colind))
-      sweep(X, 2, env[["sds"]][colind], "*")
+      x0 <- sweep(X, 2, env[["sds"]][colind], "*")
+      sweep(x0, 2, env[["cmeans"]][colind], "+")
     }
   }
   
@@ -231,7 +233,7 @@ standardize <- function(preproc=prepper()) {
               reverse=reverse,
               apply=apply)
   
-  class(ret) <- c("colscale", "pre_processor")
+  class(ret) <- c("standardize", "pre_processor")
   add_node(preproc, ret)
 }
 

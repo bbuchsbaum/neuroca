@@ -109,6 +109,63 @@ List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k
 }
 
 //[[Rcpp::export]]
+List sgmd_deflation_cpp(const arma::sp_mat &X, arma::sp_mat Q, arma::sp_mat R, int k, double thr=1e-5) {
+  Rcout << "begin " << std::endl;
+  int n = X.n_rows;
+  int p = X.n_cols;
+  arma::mat ugmd(n, k, fill::zeros);
+  arma::mat vgmd(p, k, fill::zeros);
+  arma::vec dgmd(k, fill::zeros);
+  arma::vec propv(k, fill::zeros);
+  arma::vec cumv(k, fill::zeros);
+  Rcout << "assign Xhat " << std::endl;
+  arma::sp_mat Xhat = X;
+  
+  arma::vec u = randn(n);
+  arma::vec v = randn(p);
+  
+  Rcout << "qrnorm " << std::endl;
+  
+  double qrnorm = 1;
+  
+  if (p > n) {
+    qrnorm = trace(X * R * X.t() * Q);
+  } else {
+    qrnorm = trace(X.t() * Q * X * R);
+  }
+  
+  Rcout << "begin loop " << std::endl;
+  for (int i=0; i<k; i++) {
+    double err=1;
+    while (err > thr) {
+      arma::vec oldu = vec(u);
+      arma::vec oldv = vec(v);
+      
+      arma::vec uhat = Xhat * R * v;
+      u = uhat/sqrt(uhat.t() * Q * uhat).at(0,0);
+      arma::vec vhat = Xhat.t() * Q * u;
+      v = vhat/sqrt(vhat.t() * R * vhat).at(0,0);
+      
+      err = sum(((oldu - u).t() * (oldu - u)) + ((oldv -v ).t() * (oldv - v)));
+      //Rcout << "error: " << err << std::endl;
+      
+    }
+    
+    dgmd(i) = (u.t() * Q * X * R * v).eval().at(0,0);
+    ugmd.col(i) = u;
+    vgmd.col(i) = v;
+    Xhat = Xhat - dgmd(i) *  u * v.t();
+    propv(i) = pow(dgmd(i),2)/qrnorm;
+    cumv(i) = sum(propv);
+    //dgmd(i) = tmp(0,0);
+    //dgmd(i) = (u.t() * Q * X * R * v)
+  }
+  
+  return List::create(Named("d")=dgmd, Named("v")=vgmd, Named("u")=ugmd, Named("cumv")=cumv, Named("propv")=propv);
+  
+}
+
+//[[Rcpp::export]]
 List gmdLA_cpp(const arma::mat &X, arma::sp_mat Q, arma::mat R, int k) {
   int n = X.n_rows;
   //int p = X.n_cols;
@@ -160,6 +217,7 @@ List gmdLA_cpp(const arma::mat &X, arma::sp_mat Q, arma::mat R, int k) {
   // 
   return List::create(Named("d")=dgmd, Named("u")=ugmd, Named("v")=vgmd);
 }
+
 
 // You can include R code blocks in C++ files processed with sourceCpp
 // (useful for testing and development). The R code will be automatically 

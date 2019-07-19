@@ -2,7 +2,7 @@
 % Please edit documentation in R/constraints.R
 \name{spatial_constraints}
 \alias{spatial_constraints}
-\title{construct a sparse matrix of spatial constraints for a set of blocks}
+\title{spatial constraints}
 \usage{
 spatial_constraints(coords, nblocks = 1, sigma_within = 5,
   sigma_between = 1, shrinkage_factor = 0.1, nnk_within = 27,

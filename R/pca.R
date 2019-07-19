@@ -110,8 +110,6 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
               d=d, 
               scores=scores,
               classes="pseudo_svd")
-  
-
   ret
 }
 
@@ -121,6 +119,11 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
 #' @param ncomp
 #' @param preproc
 #' @export
+#' 
+#' @examples 
+#' 
+#' X <- matrix(rnorm(10*20), 10, 20)
+#' res <- pca(X, ncomp=10, preproc=center())
 pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
@@ -145,6 +148,61 @@ pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
               scores=scores,
               classes=c("pca"))
   ret
+}
+
+#' @export
+refit.pca <- function(x, X) {
+  pca(X, ncomp=x$ncomp, preproc=x$preproc$preproc)
+}
+
+#' @export
+permutation.pca <- function(x, X, nperm=100) {
+  Q <- min(dim(X)) - 1
+  evals <- x$d^2
+  Fa <- sapply(1:length(evals), function(i) evals[i]/sum(evals[i:Q]))
+  
+  F1_perm <- sapply(1:nperm, function(i) {
+    Xperm <- apply(X, 2, function(x) sample(x))
+    fit <- refit(x, Xperm)
+    evals <- fit$d^2
+    F1_perm <- evals[1]/sum(evals[1:length(evals)])
+  })
+  
+  if (x$ncomp > 1) {
+    Fq <- parallel::mclapply(2:x$ncomp, function(a) {
+      sapply(1:nperm, function(j) {
+        Ea <- residuals(x, a-1, X)
+        Ea_perm <- apply(Ea, 2, function(x) sample(x))
+      
+        I <- diag(nrow(X))
+      
+        uu <- Reduce("+", lapply(1:(a-1), function(i) {
+          x$u[,i,drop=FALSE] %*% t(x$u[,i,drop=FALSE]) 
+        }))
+      
+        Ea_perm_proj <- (I - uu) %*% Ea_perm
+  
+        fit <- refit(x, Ea_perm_proj)
+        evals <- fit$d^2
+        Fq_perm <- evals[1]/sum(evals)
+      })
+    })
+      
+    Fq <- do.call(cbind, Fq)
+    Fq <- cbind(F1_perm, Fq)
+  } else {
+    Fq <- as.matrix(F1_perm)
+  }
+  
+  nperm=500
+  
+    
+}
+ 
+#' @export   
+residuals.pca <- function(x, ncomp, xorig) {
+  recon <- reconstruct(x, comp=1:ncomp)
+  xorig - recon
 }
 
 
@@ -222,6 +280,7 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
+    ## TODO deal with colind
     return(scores(x)[,comp, drop=FALSE])
   }
   
@@ -230,10 +289,12 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
   }
   
   if (is.null(colind)) {
+    ## pre_process new data and project
     reprocess(x, newdata) %*% loadings(x)[,comp, drop=FALSE]
   } else {
-    ## colind must be in the input space
-    assertthat::assert_that(max(colind) <= ncol(newdata))
+    ## colind must equal number of columns of newdata
+    ## colind cannot have more columns that original dataset
+    assertthat::assert_that(length(colind) == ncol(newdata))
     reprocess(x, newdata, colind=colind) %*% (loadings(x)[colind, comp, drop=FALSE])
   }
 }
@@ -241,13 +302,12 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
 #' @export
 residuals.bi_projector <- function(x, ncomp=1, xorig) {
   recon <- reconstruct(x,comp=1:ncomp)
-  orig <- x$preproc$transform(xorig)
-  orig - recon
+  xorig - recon
 }
 
 
 #' @export
-reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL) {
+reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
@@ -261,10 +321,18 @@ reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NUL
   }
   
   if (is.null(colind)) {
-    x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+    if (reverse_pre_process) {
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE]))
+    } else {
+      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])
+    }
   } else {
-    x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
+    if (reverse_pre_process) {
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
                         colind=colind)
+    } else {
+      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind]
+    }
   }
 }
 

@@ -9,3 +9,8 @@ pca(X, ncomp = min(dim(X)), preproc = center(), ...)
 \description{
 principal components analysis
 }
+\examples{
+
+X <- matrix(rnorm(10*20), 10, 20)
+res <- pca(X, ncomp=10, preproc=center())
+}
