@@ -48,7 +48,7 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=center, ...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center, ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
@@ -104,6 +104,7 @@ project.bada <- function(x, newdata=NULL, comp=1:x$fit$ncomp, colind=NULL, strat
   if (is.null(newdata)) {
     project(x$fit, newdata=x$Xr, comp=comp, colind=colind)
   } else {
+    ## stratum-specific pre-processing
     Xp <- reprocess(x, newdata, colind=colind, stratum=stratum)
     project(x$fit, Xp, comp=comp, colind=colind)
   }
