@@ -8,6 +8,8 @@
 #' @param S an integer \code{vector} or \code{factor} of subject ids which is the same length as \code{Y}.
 #' @param ncomp number of components to estimate
 #' @param preproc pre-processing function, defaults to \code{center}
+#' @param A the column constraints
+#' @param M the row constraints
 #' @param ... arguments to pass through
 #' 
 #' @details 
@@ -48,7 +50,7 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center, ...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center, A=NULL, M=NULL, ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
@@ -73,7 +75,7 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   ncomp <- min(ncomp, length(levels(Y)))
   
   Xr <- group_means(Y, Xp)
-  fit <- pca(Xr, ncomp=ncomp, preproc=pass(), method="fast")
+  fit <- genpca(Xr, ncomp=ncomp, preproc=pass(), A=A, M=M)
   
   ret <- list(
     preproc=preproc,
