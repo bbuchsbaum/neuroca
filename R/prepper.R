@@ -210,7 +210,7 @@ standardize <- function(preproc=prepper()) {
   
   apply <- function(X, colind=NULL) {
     if (is.null(colind)) {
-      sweep(X, 2, env[["sids"]], "/")
+      sweep(X, 2, env[["sds"]], "/")
     } else {
       assert_that(ncol(X) == length(colind))
       x1 <- sweep(X, 2, cmeans[colind], "-")
