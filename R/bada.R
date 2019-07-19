@@ -71,7 +71,8 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   fit <- pca(Xr, ncomp=ncomp, preproc=pass(), method="fast")
   
   ret <- list(
-    preproc=procres,
+    preproc=preproc,
+    procres=procres,
     ncomp=fit$ncomp,
     fit=fit,
     Y=Y,
@@ -87,7 +88,8 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
 rotate.bada <- function(x, rot) {
   rfit <- rotate(x$fit, rot)
   ret <- list(
-    preproc=x$procres,
+    preproc=x$preproc,
+    procres=x$procres,
     fit=rfit,
     Y=x$Y,
     X=x$X,
@@ -109,7 +111,8 @@ project.bada <- function(x, newdata=NULL, comp=1:x$fit$ncomp, colind=NULL, strat
 
 ## project from existing table
 #' @export
-predict.bada <- function(x, newdata, ncomp=x$ncomp, colind=NULL, stratum=NULL, type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
+predict.bada <- function(x, newdata, ncomp=x$ncomp, colind=NULL, stratum=NULL, 
+                         type=c("class", "prob", "scores", "crossprod", "distance", "cosine")) {
   
   
   type <- match.arg(type)
@@ -154,14 +157,14 @@ reprocess.bada <- function(x,
 
   avg_preproc <- function(newdata, colind = NULL) {
     Reduce("+", lapply(1:length(levels(x$S)), function(i) {
-      p <- x$preproc[[i]]
+      p <- x$procres[[i]]
       p$transform(newdata, colind)
     })) / length(levels(x$S))
   }
   
   stratum_preproc <- function(newdata, stratum, colind = NULL) {
     assert_that(stratum %in% levels(x$S))
-    p <- x$preproc[[stratum]]
+    p <- x$procres[[stratum]]
     p$transform(newdata, colind)
   }
   
@@ -176,7 +179,7 @@ reprocess.bada <- function(x,
     stratum_preproc(newdata, stratum, colind)
   } else {
     ## no strata
-    x$preproc$transform(newdata, colind)
+    x$procres$transform(newdata, colind)
   }
 }
 
@@ -195,23 +198,28 @@ permute.bada <- function(x) {
 reconstruct.bada <- function(x, ncomp=x$ncomp) {
   recon <- reconstruct(x$fit,comp=1:ncomp)
   row.names(recon) <- levels(x$Y)
-  recon
+  do.call(rbind, lapply(levels(x$S), function(s) {
+    p <- x$procres[[s]]
+    out <- p$reverse_transform(recon)
+    y <- x$Y[x$S == s]
+    out <- recon[match(y, row.names(recon)),]
+    row.names(out) <- paste0("S_", s, "_", y)
+    out
+  }))
+  
 }
 
 #' @export
 residuals.bada <- function(x, ncomp=x$ncomp) {
   recon <- reconstruct(x,ncomp)
- 
-  mm <- as.matrix(model.matrix(~ x$Y -1))
-  recon_x <- mm %*% recon
-  xresid <- x$X - recon_x
-  xresid
+  recon - x$X
 }
 
 
 #' @export
-refit.bada <- function(x, Y, Xlist, ncomp=x$ncomp) { 
-  bada(Y, Xlist, ncomp=ncomp, x$preproc, normalization=x$normalization, A=x$fit$A, M=x$fit$M) 
+refit.bada <- function(x, Y, Xlist, S = x$S, ncomp=x$ncomp,...) { 
+  ##bada(Y, Xlist, ncomp=ncomp, x$preproc, normalization=x$normalization, A=x$fit$A, M=x$fit$M) 
+  bada(Y, Xlist, ncomp=ncomp, x$preproc, ...) 
 }
 
 

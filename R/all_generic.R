@@ -95,7 +95,7 @@ permute <- function(x, ...) UseMethod("permute")
 refit <- function(x, ...) UseMethod("refit")
 
 #' @export
-reprocess <- bres <- bada(Y, X, ncomp=3)function(x, ...) UseMethod("reprocess")
+reprocess <- function(x, ...) UseMethod("reprocess")
 
 
 #' @export
