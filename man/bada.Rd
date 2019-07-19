@@ -4,8 +4,8 @@
 \alias{bada}
 \title{Barycentric Discriminant Analysis}
 \usage{
-bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) -
-  1, preproc = center, ...)
+bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) - 1,
+  preproc = center, ...)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. The categories of the observations.}
@@ -16,13 +16,12 @@ bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) -
 
 \item{ncomp}{number of components to estimate}
 
-\item{...}{arguments to pass through}
+\item{preproc}{pre-processing function, defaults to \code{center}}
 
-\item{the}{pre-processing function, defaults to \code{center}}
+\item{...}{arguments to pass through}
 }
 \description{
-A technique whose goal is to assign observations to some predetermined categories a  linear combination of the
-variables of a data matrix
+A component technique that maximizes the between group variance over a set of variables.
 }
 \details{
 The \code{S} argument can be used to model multi-level structure. If \code{S} is included, then pre-processing is applied 

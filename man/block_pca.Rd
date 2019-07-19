@@ -4,8 +4,8 @@
 \alias{block_pca}
 \title{block_pca}
 \usage{
-block_pca(X, est_method = c("gcv", "shrink", "fixed", "nneg"),
-  ncomp = 2, min_k = 1, max_k = 3, center = TRUE, scale = FALSE,
+block_pca(X, est_method = c("gcv", "shrink", "fixed", "nneg"), ncomp = 2,
+  min_k = 1, max_k = 3, center = TRUE, scale = FALSE,
   shrink_method = "GSURE", ...)
 }
 \arguments{

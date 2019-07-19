@@ -4,8 +4,8 @@
 \alias{genpca}
 \title{Generalized Principal Components Analysis}
 \usage{
-genpca(X, A = NULL, M = NULL, ncomp = min(dim(X)),
-  preproc = center(), deflation = FALSE)
+genpca(X, A = NULL, M = NULL, ncomp = min(dim(X)), preproc = center(),
+  deflation = FALSE)
 }
 \arguments{
 \item{A}{the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.}
