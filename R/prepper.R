@@ -47,6 +47,10 @@ prep.prepper <- function(x, X) {
   
 }
 
+fresh.pre_processor <- function(x, preproc=prepper()) {
+  eval(call(class(x)[1]), preproc)
+}
+
 #' @export
 pass <- function(preproc=prepper()) {
   forward <- function(X, colind) {
@@ -61,7 +65,7 @@ pass <- function(preproc=prepper()) {
     X
   }
   
-  ret <- list(name="center",
+  ret <- list(name="pass",
               forward=forward,
               reverse=identity,
               apply=apply)
@@ -107,38 +111,47 @@ center <- function(preproc=prepper()) {
 }
 
 #' @export
-colscale <- function(preproc=prepper(), type=c("unit", "z")) {
+colscale <- function(preproc=prepper(), type=c("unit", "z", "weights"), weights=NULL) {
   type <- match.arg(type)
+  if (type == "weights") {
+    assert_that(!is.null(weights))
+  }
+  
   env=new.env()
   
   forward <- function(X) {
-    sds <- matrixStats::colSds(X)
+    wts <- if (type == "weights") {
+      assert_that(length(weights) == ncol(X))
+    } else {
+      sds <- matrixStats::colSds(X)
     
-    if (type == "unit") {
-      sds <- sds * sqrt(nrow(X)-1)
+      if (type == "unit") {
+        sds <- sds * sqrt(nrow(X)-1)
+      }
+      
+      sds[sds == 0] <- median(sds)
+      1/sds
     }
+    env[["weights"]] <- wts
+    sweep(X, 2, wts, "*")
     
-    sds[sds == 0] <- median(sds)
-    
-    env[["sds"]] <- sds
-    sweep(X, 2, sds, "/")
   }
   
   apply <- function(X, colind=NULL) {
     if (is.null(colind)) {
-      sweep(X, 2, env[["sds"]], "/")
+      sweep(X, 2, env[["weights"]], "*")
     } else {
       assert_that(ncol(X) == length(colind))
-      sweep(X, 2, env[["sds"]][colind], "/")
+      sweep(X, 2, env[["weights"]][colind], "*")
     }
   }
   
   reverse=function(X, colind=NULL) {
     if (is.null(colind)) {
-      sweep(X, 2, env[["sds"]], "*")
+      sweep(X, 2, env[["weights"]], "/")
     } else {
       assert_that(ncol(X) == length(colind))
-      sweep(X, 2, env[["sds"]][colind], "*")
+      sweep(X, 2, env[["weights"]][colind], "/")
     }
   }
   

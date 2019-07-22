@@ -29,7 +29,7 @@ reconstruct.kmeans_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind
 #' @inheritParams pca
 #' @importFrom nsprcomp nsprcomp
 #' @export
-nneg_pca <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,  ...) {
+nneg_pca <- function(X, ncomp=min(dim(X)), preproc=center(),  ...) {
   preproc <- pre_processor(X, center, scale)
   Xp <- pre_process(preproc, X)
   

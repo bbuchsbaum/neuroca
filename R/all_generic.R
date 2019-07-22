@@ -82,45 +82,65 @@ nblocks <- function(x) UseMethod("nblocks")
 
 
 #' @export
+#' @param x the model fit object
+#' @param ... extra args
 permutation <- function(x, ...) UseMethod("permutation")
 
+#' @export
+#' @param x the model fit object
+#' @param type the tpye of variance to account for.
+#' @param ncomp the number of components to include.
+vaf <- function(x, type, ncomp) UseMethod("vaf")
+
+
+#' @param x the model fit object
 #' @export 
 performance <- function(x, yobs, ncomp, folds, metric, ...) UseMethod("performance")
 
+#' @param x the model fit object
 #' @export
 permute_refit <- function(x, ...) UseMethod("permute_refit")
 
+#' @param x the model fit object
 #' @export 
 permute <- function(x, ...) UseMethod("permute")
 
+#' @param x the model fit object
 #' @export
 refit <- function(x, ...) UseMethod("refit")
 
+#' @param x the model fit object
 #' @export
 reprocess <- function(x, ...) UseMethod("reprocess")
 
-
+#' @param x the model fit object
 #' @export
 supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
 
+#' @param x the model fit object
 #' @export
 supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
+#' @param x the model fit object
 #' @export
 compose <- function(x,y) UseMethod("compose")
 
+#' @param x the model fit object
 #' @export
 concat <- function(x,...) UseMethod("concat")
 
+#' @param x the model fit object
 #' @export
 combine <- function(x,...) UseMethod("combine")
 
 #' @export
 singular_values <- function(x) UseMethod("singular_values")
 
+#' @param x the model fit object
 #' @export
 truncate <- function(x, ncomp) UseMethod("truncate")
 
+#' @param x the model fit object
 #' @export 
 subset_rows <- function(x, idx) UseMethod("subset_rows")
 

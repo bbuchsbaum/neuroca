@@ -153,19 +153,6 @@ predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   
 }
 
-reconstruct.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, subind=NULL) {
-  if (!is.null(newdata)) {
-    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
-  } else {
-    newdata <- scores(x)[,comp, drop=FALSE]
-  }
-  
-  if (is.null(subind)) {
-    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE]))
-  } else {
-    reverse_pre_process(x$preproc, newdata %*% t(loadings(x)[,comp,drop=FALSE])[,subind], subind=subind)
-  }
-}
 
 
 #' @export

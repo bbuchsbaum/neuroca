@@ -81,7 +81,7 @@ mfa <- function(X, ncomp=2, preproc=center(),
   
 
   result <- list(
-    X=Xp,
+    X=X,
     preproc=procres,
     ntables=nblocks(X),
     fit=fit,
@@ -118,6 +118,24 @@ scores.mfa <- function(x) {
 #' @export
 loadings.mfa <- function(x) {
   loadings(x$fit)
+}
+
+#' @export 
+vfa.mfa <- function(x, type = c("component", "block"), ncomp=x$ncomp) {
+  recon <- reconstruct(x, comp=1)
+  block_inds <- block_index_list(x$X)
+  
+  do.call(rbind, lapply(1:ncomp, function(i) {
+    bl <- to_block_matrix(recon, block_lengths(x$X))
+    do.call(rbind, lapply(1:length(block_inds), function(j) {
+      Xj <- get_block(x$X, j)
+      Rj <- get_block(recon, j)
+      sserr <- sum((Xj - Rj)^2)
+      v <- 1 - (sserr/(Xj^2))
+      data.frame(component=i, block=j, vaf=v)
+    }))
+  }))
+    
 }
 
 projection_fun.mfa <- function(x, colind=NULL, block=NULL) {
