@@ -133,7 +133,7 @@ predict.bada <- function(x, newdata, ncomp=x$ncomp, colind=NULL, stratum=NULL,
   
   
   type <- match.arg(type)
-  Xp <- reprocess(x, newdata, stratum=stratum)
+  Xp <- reprocess(x, newdata, colind=colind, stratum=stratum)
   
   fscores <- project(x$fit, Xp, comp=1:ncomp, colind=colind)
   
@@ -172,6 +172,10 @@ reprocess.bada <- function(x,
                            stratum = NULL) {
   
 
+  if (is.null(colind)) {
+    assert_that(ncol(newdata) == nrow(loadings(x)))
+  }
+  
   avg_preproc <- function(newdata, colind = NULL) {
     Reduce("+", lapply(1:length(levels(x$S)), function(i) {
       p <- x$procres[[i]]
@@ -187,7 +191,9 @@ reprocess.bada <- function(x,
   
   
   ns <- length(unique(x$S))
-  assert_that(ncol(newdata) == nrow(loadings(x)))
+  
+  
+  
   Xp <- if (ns > 1 && is.null(stratum)) {
     ## we have multiple strata
     avg_preproc(newdata, colind)

@@ -51,6 +51,16 @@ fresh.pre_processor <- function(x, preproc=prepper()) {
   eval(call(class(x)[1]), preproc)
 }
 
+prep_node <- function(pipeline, name, forward, reverse, apply, ...) {
+  ret <- list(name=name,
+              forward=forward,
+              reverse=identity,
+              apply=apply,
+              ...)
+  class(ret) <- c(name, "pre_processor")
+  add_node(pipeline, ret)
+}
+
 #' @export
 pass <- function(preproc=prepper()) {
   forward <- function(X, colind) {
@@ -65,12 +75,8 @@ pass <- function(preproc=prepper()) {
     X
   }
   
-  ret <- list(name="pass",
-              forward=forward,
-              reverse=identity,
-              apply=apply)
-  class(ret) <- c("pass", "pre_processor")
-  add_node(preproc, ret)
+  prep_node(preproc, "pass", forward, reverse, apply)
+  
 }
 
 #' @export
