@@ -232,7 +232,7 @@ standardize <- function(preproc=prepper()) {
       sweep(X, 2, env[["sds"]], "/")
     } else {
       assert_that(ncol(X) == length(colind))
-      x1 <- sweep(X, 2, cmeans[colind], "-")
+      x1 <- sweep(X, 2, env[["cmeans"]][colind], "-")
       sweep(x1, 2, env[["sds"]][colind], "/")
     }
   }
