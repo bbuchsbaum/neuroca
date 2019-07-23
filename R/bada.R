@@ -50,7 +50,7 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center, A=NULL, M=NULL, ...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center(), A=NULL, M=NULL, ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))

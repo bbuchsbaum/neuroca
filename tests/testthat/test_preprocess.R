@@ -26,6 +26,13 @@ test_that("can preprocess a matrix with column scaling", {
   expect_true(all(mat1 != x$Xp))
 })
 
+test_that("can reset a prepper with `fresh`", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pp <- center()
+  x <- prep(pp, mat1)
+  
+})
+
 
 
 test_that("can preprocess a matrix center and scale", {
