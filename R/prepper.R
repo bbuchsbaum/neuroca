@@ -42,12 +42,26 @@ prep.prepper <- function(x, X) {
   ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
   Xp <- ff(X)
   
+  tform <- function(X, colind) {
+    xin <- X
+    for (i in 1:length(x$steps)) {
+      xin <- x$steps[[i]](xin, colind)
+    }
+  }
   
+  rtform <- function(X, colind) {
+    xin <- X
+    for (i in length(x$steps):1) {
+      xin <- x$steps[[i]](xin, colind)
+    }
+  }
   ret <- list(
        preproc=x,
        Xp=Xp,
-       transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply"), .dir="forward"),
-       reverse_transform=do.call(purrr::compose, lapply(x$steps, "[[", "reverse"), .dir="backward"))
+       transform=tform,
+       rtransform=rtform)
+       #transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply"), .dir="forward"),
+       #reverse_transform=do.call(purrr::compose, lapply(x$steps, "[[", "reverse"), .dir="backward"))
   
   class(ret) <- "pre_processor"
   ret
