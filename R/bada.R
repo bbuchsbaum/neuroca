@@ -68,13 +68,14 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   procres <- if (length(levels(S)) > 1) {
     procres <- lapply(levels(S), function(lev) {
       Xs <- X[S == lev,,drop=FALSE]
-      prep(preproc(), Xs)
+      p <- fresh(preproc)
+      prep(p, Xs)
     })
     names(procres) <- levels(S)
     Xp <- do.call(rbind, lapply(procres, "[[", "Xp"))
     procres
   } else {
-    p <- prep(preproc(), X)
+    p <- prep(preproc, X)
     Xp <- p$Xp
     p
   }
@@ -84,7 +85,12 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   ncomp <- min(ncomp, length(levels(Y)))
   
   Xr <- group_means(Y, Xp)
-  fit <- genpca(Xr, ncomp=ncomp, preproc=pass(), A=A, M=M)
+  
+  fit <- if (!is.null(A) || !is.null(M) ) {
+    genpca(Xr, ncomp=ncomp, preproc=pass(), A=A, M=M)
+  } else {
+    pca(Xr, ncomp=ncomp, preproc=pass())
+  }
   
   ret <- list(
     preproc=preproc,
