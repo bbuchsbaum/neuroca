@@ -54,7 +54,7 @@ fresh.pre_processor <- function(x, preproc=prepper()) {
 prep_node <- function(pipeline, name, forward, reverse, apply, ...) {
   ret <- list(name=name,
               forward=forward,
-              reverse=identity,
+              reverse=reverse,
               apply=apply,
               ...)
   class(ret) <- c(name, "pre_processor")
@@ -108,17 +108,16 @@ center <- function(preproc=prepper()) {
     }
   }
   
-  ret <- list(name="center",
-              forward=forward,
-              reverse=reverse,
-              apply=apply)
-  class(ret) <- c("center", "pre_processor")
-  add_node(preproc, ret)
+  prep_node(preproc, "center", forward, reverse, apply)
 }
 
 #' @export
 colscale <- function(preproc=prepper(), type=c("unit", "z", "weights"), weights=NULL) {
   type <- match.arg(type)
+  
+  if (type != "weights") {
+    warning("colscale: weight ignored because type != 'weights'")
+  }
   if (type == "weights") {
     assert_that(!is.null(weights))
   }
@@ -128,6 +127,7 @@ colscale <- function(preproc=prepper(), type=c("unit", "z", "weights"), weights=
   forward <- function(X) {
     wts <- if (type == "weights") {
       assert_that(length(weights) == ncol(X))
+      weights
     } else {
       sds <- matrixStats::colSds(X)
     
@@ -161,12 +161,7 @@ colscale <- function(preproc=prepper(), type=c("unit", "z", "weights"), weights=
     }
   }
   
-  ret <- list(forward=forward,
-              reverse=reverse,
-              apply=apply)
-  
-  class(ret) <- c("colscale", "pre_processor")
-  add_node(preproc, ret)
+  prep_node(preproc, "colscale", forward, reverse, apply)
 }
 
 #' dimension reduction as a pre-processing stage
@@ -203,12 +198,7 @@ dim_reduce <- function(preproc=prepper(), method=pca, ...) {
     }
   }
   
-  ret <- list(name="dim_reduce",
-              forward=forward,
-              reverse=reverse,
-              apply=apply)
-  class(ret) <- c("dim_reduce", "pre_processor")
-  add_node(preproc, ret)
+  prep_node(preproc, "dim_reduce", forward, reverse, apply)
 }
 
 
@@ -247,12 +237,6 @@ standardize <- function(preproc=prepper()) {
       sweep(x0, 2, env[["cmeans"]][colind], "+")
     }
   }
-  
-  ret <- list(forward=forward,
-              reverse=reverse,
-              apply=apply)
-  
-  class(ret) <- c("standardize", "pre_processor")
-  add_node(preproc, ret)
+  prep_node(preproc, "standardize", forward, reverse, apply)
 }
 

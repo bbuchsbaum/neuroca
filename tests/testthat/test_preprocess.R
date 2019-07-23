@@ -16,6 +16,16 @@ test_that("can preprocess a matrix center only", {
   expect_true(all(mat1 != x$Xp))
 })
 
+test_that("can preprocess a matrix with column scaling", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  wts <- 2:16
+  pp <- colscale(type="weights", weights=wts)
+  x <- prep(pp, mat1)
+  x2 <- x$reverse_transform(x$Xp)
+  expect_equal(mat1,x2)
+  expect_true(all(mat1 != x$Xp))
+})
+
 
 
 test_that("can preprocess a matrix center and scale", {
