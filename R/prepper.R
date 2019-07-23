@@ -84,15 +84,15 @@ pass <- function(preproc=prepper()) {
   create <- function() {
     list(
       forward = function(X, colind=NULL) {
-        if (is.null(colind)) X else X[,colind,drop=FALSE]
+        X
       },
   
       reverse = function(X, colind=NULL) {
-        if (is.null(colind)) X else X[,colind,drop=FALSE]
+        X
       },
   
       apply = function(X, colind=NULL) {
-        if (is.null(colind)) X else X[,colind,drop=FALSE]
+        X
       }
     )
   }
