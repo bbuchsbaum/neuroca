@@ -46,8 +46,8 @@ prep.prepper <- function(x, X) {
   ret <- list(
        preproc=x,
        Xp=Xp,
-       transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply")),
-       reverse_transform=do.call(purrr::compose, rev(lapply(x$steps, "[[", "reverse"))))
+       transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply"), .dir="forward"),
+       reverse_transform=do.call(purrr::compose, lapply(x$steps, "[[", "reverse"), .dir="backward"))
   
   class(ret) <- "pre_processor"
   ret
@@ -260,7 +260,8 @@ standardize <- function(preproc = prepper()) {
       
       apply = function(X, colind = NULL) {
         if (is.null(colind)) {
-          sweep(X, 2, env[["sds"]], "/")
+          x1 <- sweep(X, 2, env[["cmeans"]], "-")
+          sweep(x1, 2, env[["sds"]], "/")
         } else {
           assert_that(ncol(X) == length(colind))
           x1 <- sweep(X, 2, env[["cmeans"]][colind], "-")
