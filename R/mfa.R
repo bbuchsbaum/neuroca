@@ -244,10 +244,13 @@ procrusteanize.mfa <- function(x, ncomp=2) {
 }
 
 
-
 ## project from existing table
+## not clear that we need this
 #' @export
 predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_process=TRUE) {
+  if (is.vector(newdata)) {
+    newdata <- matrix(newdata, ncol=length(newdata))
+  }
   assert_that(is.matrix(newdata))
   assert_that(length(block_index) == 1 || length(block_index) == x$ntables)
   
@@ -257,7 +260,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
       ind <- x$block_indices[[i]]
       
       Xp <- if (pre_process) {
-        reprocess(x, newdata[, ind,drop=FALSE], block_index=i)
+        reprocess(x, newdata[, ind,drop=FALSE], colind=ind)
       } else {
         newdata[, ind]
       }
@@ -268,7 +271,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
     ind <- x$block_indices[[block_index]]
     
     Xp <- if (pre_process) {
-      reprocess(x, newdata, block_index=block_index)
+      reprocess(x, newdata, colind=ind)
     } else {
       newdata
     }
