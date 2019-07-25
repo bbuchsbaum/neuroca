@@ -4,7 +4,7 @@ nblocks.multiblock <- function(x) length(block_index_list(x))
 
 
 #' @export
-project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, block_index=NULL) {
+project.multiblock <- function(x, newdata, comp=1:ncomp(x), block_index=NULL) {
   if (missing(newdata)) {
     if (is.null(block_index)) {
       return(scores(x)[,comp])
@@ -22,12 +22,12 @@ project.multiblock <- function(x, newdata, comp=1:ncomp(x), pre_process=TRUE, bl
   if (is.null(block_index)) {
     # new data must have same number of columns as original data
     assert_that(ncol(newdata) == x$nvars)
-    xnewdat <- if (pre_process) reprocess(x, newdata) else newdata
+    xnewdat <- reprocess(x, newdata)
     project(x$fit, xnewdat, comp=comp)
   } else if (length(block_index) == 1) {
     ind <- x$block_indices[[block_index]]
     assert_that(length(ind) == ncol(newdata))
-    xnewdat <- if (pre_process) reprocess(x, newdata, block_index) else newdata
+    xnewdat <- reprocess(x, newdata, block_index) 
     x$ntables * project(x$fit, xnewdat, comp=comp, colind=ind)
     
   } else {

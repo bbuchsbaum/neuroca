@@ -1,11 +1,12 @@
 
 #' @param x the model fit
 #' @param labels the training labels
-#' @param newdata an optional supplementary training set that is projeced in to the fitted space.
+#' @param newdata an optional supplementary training set that is projected in to the fitted space.
 #' @param ncomp the number of components to use.
+#' @param colind the column indices of the fitted model
 #' @param knn the number of nearest neighbors when classifiyng a new point. 
 #' @export
-classifier.bi_projector <- function(x, labels, newdata=NULL, ncomp=NULL, knn=1) {
+classifier.projector <- function(x, labels, newdata=NULL, ncomp=NULL, colind=NULL, knn=1) {
 
   if (is.null(ncomp)) {
     ncomp <- ncomp(x)
@@ -13,7 +14,7 @@ classifier.bi_projector <- function(x, labels, newdata=NULL, ncomp=NULL, knn=1) 
   if (is.null(newdata)) {
     newdata <- scores(x)
   } else {
-    newdata <- project(x, newdata, comp=1:ncomp)
+    newdata <- project(x, newdata, comp=1:ncomp, colind=colind, ...)
   }
   
   assert_that(length(labels) == nrow(newdata))
@@ -23,6 +24,7 @@ classifier.bi_projector <- function(x, labels, newdata=NULL, ncomp=NULL, knn=1) 
       fit=x,
       labels=labels,
       scores=newdata,
+      colind=colind,
       knn=knn,
       ncomp=ncomp),
     class="classifier"
@@ -62,7 +64,7 @@ nearest_class <- function(prob, labels,knn=1) {
 predict.classifier <- function(object, newdata, metric=c("cosine", "euclidean")) {
   metric <- match.arg(metric)
   
-  proj <- project(object$fit, newdata, comp=1:object$ncomp)
+  proj <- project(object$fit, newdata, comp=1:object$ncomp, colind=object$colind)
   
   doit <- function(p) {
     prob <- normalize_probs(p)
