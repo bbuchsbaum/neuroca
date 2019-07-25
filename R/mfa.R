@@ -202,6 +202,7 @@ project_cols.mfa <- function(x, newdata=NULL, comp=1:x$ncomp) {
 #' @export
 reconstruct.mfa <- function(x, newdata=NULL, comp=1:ncomp(x)) {
   recon <- reconstruct(x$fit, newdata, comp)
+  x$preproc$reverse_transform(recon)
 }
 
 
@@ -285,7 +286,7 @@ predict.mfa <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntables, pre_
 
 
 #' @export
-impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE, 
+impute_mfa <- function(X, ncomp=min(dim(X)), preproc=center(), 
                        normalization=c("MFA", "RV", "None"), 
                        iter_max=100, threshold = 1e-05, 
                        Xmiss_init=NULL) {
@@ -312,7 +313,7 @@ impute_mfa <- function(X, ncomp=min(dim(X)), center=TRUE, scale=FALSE,
   iter <- 1
   
   while(iter < iter_max && criterion > threshold) {
-    mres <- mfa(Ximp, ncomp=ncomp, center=center, scale=scale, normalization=normalization)
+    mres <- mfa(Ximp, ncomp=ncomp, preproc=preproc, normalization=normalization)
     recon <- reconstruct(mres)
     
     Xnew <- X
