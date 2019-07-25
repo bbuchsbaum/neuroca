@@ -5,7 +5,7 @@
 \title{Barycentric Discriminant Analysis}
 \usage{
 bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) - 1,
-  preproc = center, ...)
+  preproc = neuroca::center(), A = NULL, M = NULL, ...)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. The categories of the observations.}
@@ -17,6 +17,10 @@ bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) - 1,
 \item{ncomp}{number of components to estimate}
 
 \item{preproc}{pre-processing function, defaults to \code{center}}
+
+\item{A}{the column constraints}
+
+\item{M}{the row constraints}
 
 \item{...}{arguments to pass through}
 }

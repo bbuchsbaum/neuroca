@@ -29,4 +29,10 @@ X <- block_matrix(replicate(5, { matrix(rnorm(10*10), 10, 10) }, simplify=FALSE)
 res <- mfa(X, ncomp=3, normalization="MFA")
 p <- partial_scores(res, 1)
 stopifnot(ncol(scores(res)) == 3)
+
+labs <- letters[1:10]
+cfier <- classifier(res, labels=labs, ncomp=3)
+pred <- predict(cfier, X[1:2,])
+cfier2 <- classifier(res, labels=labs, ncomp=3, colind=res$block_indices[[2]])
+pred2 <- predict(cfier2, X[1:2,res$block_indices[[2]]])
 }
