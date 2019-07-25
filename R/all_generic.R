@@ -285,6 +285,8 @@ project_copy <- function(x, ...) UseMethod("project_copy")
 #' @export
 pre_processor <- function(x, center, scale) UseMethod("pre_processor")
 
+#' turn a model object into a classifier
+#' 
 #' @param x the fitted object
 #' @export
 classifier <- function(x, ...) UseMethod("classifier")
