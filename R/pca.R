@@ -415,6 +415,105 @@ print.bi_projector <- function(object) {
 }
 
 
+#' @importFrom explor explor
+explor.pca <- function(obj) {
+  if (!inherits(obj, "pca")) stop("obj must be of class pca")
+  
+  ## results preparation
+  res <- prepare_results(obj)
+  
+  ## Settings
+  settings <- list()
+  settings$var_columns <- c("Variable", "Coord")
+  settings$varsup_columns <- c("Variable", "Coord")
+  settings$ind_columns <- c("Name", "Coord")
+  settings$indsup_columns <- c("Name", "Coord")
+  settings$scale_unit <- FALSE
+  settings$obj_name <- deparse(substitute(obj))    
+  
+  settings$has_count <- FALSE
+  settings$has_contrib <- FALSE
+  settings$has_cos2 <- FALSE
+  settings$has_var_eta2 <- FALSE
+  settings$has_varsup_eta2 <- FALSE
+  
+  
+  ## Launch interface
+  explor:::explor_multi_pca(res, settings)
+  
+}
+  
+
+  
+#' @importFrom explor prepare_results
+prepare_results.pca <- function(obj) {
+    
+    if (!inherits(obj, "pca")) stop("obj must be of class pca")
+    
+    vars <- loadings(obj)
+    colnames(vars) <- paste0("PC", 1:length(obj$d))
+    vars <- data.frame(vars)
+    ## Axes names and inertia
+    axes <- seq_len(length(obj$d))
+    percent <- round(obj$d^2 / sum(obj$d^2) *100, 2)
+    names(axes) <- paste("Axis", axes, paste0("(", percent,"%)"))
+    ## Eigenvalues
+    eig <- data.frame(dim = 1:length(obj$d), percent = percent)
+    
+    ## Variables data coordinates
+    vars$varname <- rownames(vars)
+    vars$modname <- ""
+    vars$Type <- "Active"
+    vars$Class <- "Quantitative"
+    
+    vars <- vars %>% gather(Axis, Coord, starts_with("PC")) %>%
+      mutate(Axis = gsub("PC", "", Axis, fixed = TRUE),
+             Coord = round(Coord, 3))
+    
+    #vars <- vars %>% rename(Variable = varname, Level = modname)
+    
+    
+    tmp <- data.frame(t(cor( scores(obj),obj$preproc$Xp)))
+    colnames(tmp) <- paste0("PC", 1:ncol(tmp))
+    
+    tmp$varname <- rownames(tmp)
+    tmp$modname <- ""
+    tmp$Type <- "Active"
+    tmp$Class <- "Quantitative"  
+   
+    tmp <- tmp %>% gather(Axis, Cor, starts_with("PC")) %>%
+      mutate(Axis = gsub("PC", "", Axis, fixed = TRUE),
+             Cor = round(Cor, 3))
+    
+    vars <- vars %>% left_join(tmp, by = c("varname", "modname", "Type", "Class", "Axis"), na_matches = "na")
+    
+  
+    
+    vars$Contrib <- NA
+    vars$Cos2 <- NA
+    
+    vars <- vars %>% rename(Variable = varname, Level = modname)
+    
+    
+    ## Individuals coordinates
+    ind <- data.frame(scores(obj))
+    colnames(ind) <- paste0("PC", 1:ncol(ind))
+    ind$Name <- rownames(ind)
+    ind$Type <- "Active"
+    
+    ind <- ind %>% gather(Axis, Coord, starts_with("PC")) %>%
+      mutate(Axis = gsub("PC", "", Axis, fixed = TRUE),
+             Coord = round(Coord, 3))
+    ind$Contrib <- NA
+    ind$Cos2 <- NA
+    
+    ## cor var
+    ## cor(pres2$preproc$Xp, scores(pres2))
+    
+    return(list(vars = vars, ind = ind, eig = eig, axes = axes))
+    
+}
+
 
 
 

@@ -126,12 +126,7 @@ bootstrap.mubada <- function(x, niter, nboot=100, ncomp=x$ncomp,type=c("projecti
   class(ret) <- c("bootstrap_result", "list")
   ret
   
-  
-  
-  
 }
-
-
 
 
 #' @export
@@ -274,7 +269,6 @@ bootstrap.pca <- function(x, nboot=100, k=x$ncomp) {
   
   res <- boot_svd(nboot=nboot, k=k, loadings(x), gen)
 
- 
   zboot <- do.call(cbind, lapply(1:k, function(ki) {
     res$EVs[[ki]]/res$sdVs[[ki]]
   }))
