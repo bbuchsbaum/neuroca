@@ -4,6 +4,36 @@
   a.sqrt <- a.eig$vectors %*% diag(sqrt(a.eig$values)) %*% solve(a.eig$vectors)
 }
 
+
+prep_constraints <- function(X, A, M) {
+  if (is.null(A)) {
+    A <- sparseMatrix(i=1:ncol(X), j=1:ncol(X),x=rep(1, ncol(X)))
+  }
+  
+  if (is.null(M)) {
+    M <- sparseMatrix(i=1:nrow(X), j=1:nrow(X),x=rep(1,nrow(X)))
+  }
+  
+  if (is.vector(A)) {
+    assert_that(length(A) == ncol(X))
+    A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
+  } else {
+    assert_that(nrow(A) == ncol(X), msg=paste("nrow(A) != ncol(X) -- ", nrow(A), " != ", ncol(X)))
+    assert_that(ncol(A) == ncol(X), msg=paste("ncol(A) != ncol(X) -- ", ncol(A), " != ", ncol(X)))
+  }
+  
+  if (is.vector(M)) {
+    assert_that(length(M) == nrow(X))
+    M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
+  } else {
+    assert_that(nrow(M) == nrow(X))
+    assert_that(ncol(M) == nrow(X))
+  }
+  
+  list(A=A, M=M)
+  
+}
+
 #' Generalized Principal Components Analysis
 #' 
 #' Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
@@ -54,29 +84,9 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
                    preproc=center(), deflation=FALSE) {
   
  
-  if (is.null(A)) {
-    A <- sparseMatrix(i=1:ncol(X), j=1:ncol(X),x=rep(1, ncol(X)))
-  }
-  
-  if (is.null(M)) {
-    M <- sparseMatrix(i=1:nrow(X), j=1:nrow(X),x=rep(1,nrow(X)))
-  }
-  
-  if (is.vector(A)) {
-    assert_that(length(A) == ncol(X))
-    A <- sparseMatrix(i=1:length(A), j=1:length(A),x=A)
-  } else {
-    assert_that(nrow(A) == ncol(X), msg=paste("nrow(A) != ncol(X) -- ", nrow(A), " != ", ncol(X)))
-    assert_that(ncol(A) == ncol(X), msg=paste("ncol(A) != ncol(X) -- ", ncol(A), " != ", ncol(X)))
-  }
-  
-  if (is.vector(M)) {
-    assert_that(length(M) == nrow(X))
-    M <- sparseMatrix(i=1:length(M), j=1:length(M),x=M)
-  } else {
-    assert_that(nrow(M) == nrow(X))
-    assert_that(ncol(M) == nrow(X))
-  }
+  pcon <- prep_constraints(X, A, M)
+  A <- pcon$A
+  M <- pcon$M
   
   procres <- prep(preproc, X)
   Xp <- procres$Xp
