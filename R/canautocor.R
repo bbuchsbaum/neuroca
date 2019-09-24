@@ -1,6 +1,18 @@
 
 #' @importFrom RGCCA rgcca
-canautocor <- function(X, preproc=center(), ncomp=2, tau=c(.2,.2)) {
+canautocor <- function(X, preproc=center(), ncomp=2, tau=c(.2,.2), npcs=NULL) {
+  
+  Xorig <- X
+  
+  if (!is.null(npcs)) {
+    pcres <- pca(Xorig, ncomp=npcs, preproc=pass())
+    X <- scores(pcres)
+  } else {
+    pcres <- NULL
+    X <- Xorig
+  }
+  
+  
   X1 <- X[1:nrow(X)-1,]
   X2 <- X[2:nrow(X),]
   
@@ -9,7 +21,8 @@ canautocor <- function(X, preproc=center(), ncomp=2, tau=c(.2,.2)) {
         tau = tau)
   
   scores <- X %*% fit$a[[1]]
-  ret <- list(X=X, scores=scores, fit=fit, ncomp=ncomp, tau=tau)
+  
+  ret <- list(X=Xorig, scores=scores, fit=fit, ncomp=ncomp, tau=tau, pcres=pcres)
   class(ret) <- "canautocor"
   ret
 }
@@ -20,6 +33,10 @@ scores.canautocor <- function(x) {
 
 
 loadings.canautocor <- function(x) {
-  x$fit$a[[2]]
+  if (is.null(x$pcres)) {
+    x$fit$a[[2]]
+  } else {
+    loadings(x$pcres) %*% x$fit$a[[2]]
+  }
 }
   
