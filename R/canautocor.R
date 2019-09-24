@@ -8,7 +8,18 @@ canautocor <- function(X, preproc=center(), ncomp=2, tau=c(.2,.2)) {
         C = matrix(c(0, 1, 1, 0), 2, 2),
         tau = tau)
   
-  sc <- block_matrix(fit$Y)
-  fit
-  
+  scores <- X %*% fit$a[[1]]
+  ret <- list(X=X, scores=scores, fit=fit, ncomp=ncomp, tau=tau)
+  class(ret) <- "canautocor"
+  ret
 }
+
+scores.canautocor <- function(x) {
+  x$X %*% x$fit$a[[1]]
+}
+
+
+loadings.canautocor <- function(x) {
+  x$fit$a[[2]]
+}
+  
