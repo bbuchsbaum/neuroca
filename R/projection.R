@@ -1,9 +1,5 @@
 
 
-#' @export
-predict.projector <- function(x, newdata, ncomp=ncomp(x)) {
-  project(x, newdata, comp=1:ncomp)
-}
 
 #' @export
 scores.projector <- function(x) {
@@ -33,11 +29,13 @@ compose_all <- function(...) {
 
 #' @export 
 compose.projector <- function(x,y) {
-  assert_that(inherits(y, "projector"), msg=paste("y does not inherit from class 'projector': ", class(y)))
+  assert_that(inherits(y, "projector"), 
+              msg=paste("y does not inherit from class 'projector': ", class(y)))
   
   proj <- function(newdata) {
     project(y, project(x, newdata))
   }
+  
   recon <- function(newdata=NULL) {
     reconstruct(x, reconstruct(y, newdata))
   }
