@@ -9,6 +9,11 @@ canautocor <- function(X, preproc=center(), ncomp=2, tau=c(.2,.2)) {
         tau = tau)
   
   sc <- block_matrix(fit$Y)
-  fit
-  
+  ret <- list(
+    scores=sc,
+    loadings=block_matrix(fit$a),
+    ncomp=ncomp
+  )
+  class(ret) <- "canautocor"
+  ret
 }
