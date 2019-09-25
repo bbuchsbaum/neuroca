@@ -15,13 +15,19 @@ canautocor <- function(X, preproc=pass(), ncomp=2, tau=c(.2,.2), npcs=NULL) {
   X1 <- X[1:nrow(X)-1,]
   X2 <- X[2:nrow(X),]
   
-  fit <- rgcca(A= list(X1, X2), ncomp=rep(ncomp,2),
+  fit <- RGCCA::rgcca(A= list(X1, X2), ncomp=rep(ncomp,2),
         C = matrix(c(0, 1, 1, 0), 2, 2),
         tau = tau)
   
   scores <- X %*% fit$a[[1]]
   
-  ret <- list(X=Xorig, scores=scores, fit=fit, ncomp=ncomp, tau=tau, pcres=pcres)
+  lds <- if (!is.null(pcres)) {
+    loadings(pcres) %*% fit$a[[1]]
+  } else {
+    fit$a[[1]]
+  }
+  
+  ret <- list(X=Xorig, scores=scores, loadings=lds, fit=fit, ncomp=ncomp, tau=tau, pcres=pcres)
   class(ret) <- "canautocor"
   ret
 }
@@ -31,11 +37,6 @@ scores.canautocor <- function(x) {
 }
 
 loadings.canautocor <- function(x) {
-  if (is.null(x$pcres)) {
-    x$fit$a[[2]]
-  } else {
-    loadings(x$pcres) %*% x$fit$a[[2]]
-  }
+  x$loadings
 }
   
->>>>>>> 2e5c23497af3a863d569d9184aa7d9f41b7cf165
