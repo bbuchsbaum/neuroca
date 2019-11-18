@@ -19,6 +19,8 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
     alpha2 <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
     alpha1*alpha2
   } else if (type == "Dual-RV") {
+    bl <- block_lengths(block_mat)
+    assertthat::assert_that(all(bl[1] == b1), msg="Dual-RV requires that all blocks have same variables.")
     smat1 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
     smat2 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(t(x1),t(x2)))
     smat <- (smat1 + smat2)/2
