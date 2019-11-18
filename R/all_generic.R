@@ -121,6 +121,11 @@ supplementary_predictor <- function(x, ...) UseMethod("supplementary_predictor")
 #' @export
 supplementary_loadings <- function(x,...) UseMethod("supplementary_loadings")
 
+
+#' @param x the model fit object
+#' @export
+summarize_loadings <- function(x, stat, ncomp, ...) UseMethod("summarize_loadings")
+
 #' @param x the model fit object
 #' @export
 compose <- function(x,y) UseMethod("compose")

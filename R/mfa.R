@@ -20,7 +20,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
     alpha1*alpha2
   } else if (type == "Dual-RV") {
     bl <- block_lengths(block_mat)
-    assertthat::assert_that(all(bl[1] == b1), msg="Dual-RV requires that all blocks have same variables.")
+    assertthat::assert_that(all(bl[1] == bl), msg="Dual-RV requires that all blocks have same variables.")
     smat1 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
     smat2 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(t(x1),t(x2)))
     smat <- (smat1 + smat2)/2
@@ -128,6 +128,31 @@ ncomp.mfa <- function(x) ncomp(x$fit)
 scores.mfa <- function(x) {
   scores(x$fit)
 }
+
+#' @export
+summarize_loadings.mfa <- function(x, stat=c("mean", "tstat"), comp=1) {
+  assertthat::assert_that(all(comp >1) && all(comp < x$ncomp))
+  stat <- match.arg(stat)
+  bl <- sapply(x$block_indices, length)
+  assertthat::assert_that(all(b1 == bl[1]))
+  
+  bind <- x$block_indices 
+  lds <- loadings(x)
+  
+  ret <- lapply(comp, function(cnum) {
+    lmat <- do.call(rbind, lapply(bind, function(i) lds[i,cnum]))
+    if (stat == "mean") {
+      colMeans(lmat)
+    } else if (stat == "tstat") {
+      apply(lmat, 2, function(x) t.test(x)$statistic)
+    }
+  })
+  names(ret) <- paste0("comp", cnum)
+  
+  
+    
+}
+
 
 #' @export
 loadings.mfa <- function(x) {
