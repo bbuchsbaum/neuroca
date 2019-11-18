@@ -148,9 +148,8 @@ summarize_loadings.mfa <- function(x, stat=c("mean", "tstat"), comp=1) {
     }
   })
   names(ret) <- paste0("comp", comp)
-  
-  
-    
+  ret
+
 }
 
 
