@@ -1,7 +1,7 @@
 
 
 
-normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None", "Frob")) {
+normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None", "Frob", "Dual-RV")) {
   type <- match.arg(type)
   assert_that(inherits(block_mat, "block_matrix"))
   message("normalization type:", type)
@@ -10,7 +10,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
   } else if (type == "RV" && nblocks(block_mat) > 2) {
     smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
     diag(smat) <- 1
-    wts <- abs(svd_wrapper(smat, ncomp=1, method="svds")$u[,1])
+    abs(svd_wrapper(smat, ncomp=1, method="svds")$u[,1])
   } else if (type == "RV-MFA") {
     alpha1 <- unlist(lapply(as.list(block_mat), function(X) 1/(svd_wrapper(X, ncomp=1, method="svds")$d[1]^2)))
     smat <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
@@ -18,8 +18,14 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
     diag(smat) <- 1
     alpha2 <- abs(svd_wrapper(smat, ncomp=1, method="propack")$u[,1])
     alpha1*alpha2
-    
-  } else if (type == "Frob") {
+  } else if (type == "Dual-RV") {
+    smat1 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(x1,x2))
+    smat2 <- compute_sim_mat(block_mat, function(x1,x2) MatrixCorrelation::RV2(t(x1),t(x2)))
+    smat <- (smat1 + smat2)/2
+    diag(smat) <- 1
+    smat[which(smat < 0)] <- 0
+    abs(svd_wrapper(smat, ncomp=1, method="svds")$u[,1])
+  }else if (type == "Frob") {
     unlist(lapply(as.list(block_mat), function(X) sum(X^2)))
   } else {
     rep(1, nblocks(block_mat))
