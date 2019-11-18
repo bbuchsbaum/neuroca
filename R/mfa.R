@@ -129,28 +129,6 @@ scores.mfa <- function(x) {
   scores(x$fit)
 }
 
-#' @export
-summarize_loadings.mfa <- function(x, stat=c("mean", "tstat"), comp=1) {
-  assertthat::assert_that(all(comp >= 1) && all(comp <= x$ncomp))
-  stat <- match.arg(stat)
-  bl <- sapply(x$block_indices, length)
-  assertthat::assert_that(all(bl[1] == bl[1]))
-  
-  bind <- x$block_indices 
-  lds <- loadings(x)
-  
-  ret <- lapply(comp, function(cnum) {
-    lmat <- do.call(rbind, lapply(bind, function(i) lds[i,cnum]))
-    if (stat == "mean") {
-      colMeans(lmat)
-    } else if (stat == "tstat") {
-      apply(lmat, 2, function(x) t.test(x)$statistic)
-    }
-  })
-  names(ret) <- paste0("comp", comp)
-  ret
-
-}
 
 
 #' @export
