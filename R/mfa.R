@@ -60,7 +60,7 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' cfier2 <- classifier(res, labels=labs, ncomp=3, colind=res$block_indices[[2]])
 #' pred2 <- predict(cfier2, X[1:2,res$block_indices[[2]]])
 mfa <- function(X, ncomp=2, preproc=center(), 
-                normalization=c("MFA", "RV", "None", "RV-MFA", "Frob", "custom"), M=NULL, A=NULL, ...) {
+                normalization=c("MFA", "RV", "None", "RV-MFA", "Dual-RV", "Frob", "custom"), M=NULL, A=NULL, ...) {
 
   
   assertthat::assert_that(inherits(X, "block_matrix"), msg="X must be a 'block_matrix'")
