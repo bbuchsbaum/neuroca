@@ -1,4 +1,8 @@
 
+
+
+
+
 #' @param x the model fit
 #' @param labels the labels associated with the rows of the fitted or projected data (see newdata)
 #' @param newdata an optional supplementary training set that is projected in to the fitted space.
