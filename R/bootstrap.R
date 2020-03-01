@@ -181,7 +181,7 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
       }
       
       boot_scores <- project(xboot, Xjack_bc)
-      boot_loadings <- t(reprocess(xboot, Xjack_bc)) %*% (xboot$fit$u %*% diag(1/xboot$fit$d, nrow=ncomp, ncol=ncomp))
+      boot_loadings <- t(reprocess.bada(xboot, Xjack_bc)) %*% (xboot$fit$u %*% diag(1/xboot$fit$d, nrow=ncomp, ncol=ncomp))
       
       list(boot_scores=boot_scores, boot_loadings=boot_loadings)
     })
@@ -207,7 +207,7 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
     resam <- resample(x)
     
     ## calculate barycenters of pre-processed data
-    Xb <- group_means(resam$Y, reprocess(x, resam$X))
+    Xb <- group_means(resam$Y, reprocess.bada(x, resam$X))
     
     ## project rows and columns of barycenters
     bc <- project_cols(x, Xb)

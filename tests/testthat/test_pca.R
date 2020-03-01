@@ -51,8 +51,17 @@ test_that("can reconstruct a pca", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- pca(mat1, ncomp=15)
   recon <- reconstruct(pca1)
-  expect_equal(ip, mat1)
+  expect_equal(recon, mat1)
 })
+
+test_that("can reconstruct a pca on a correlation matrix", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  cmat <- cor(mat1)
+  pca1 <- pca(cmat, ncomp=15, preproc=pass())
+  recon <- reconstruct(pca1)
+  expect_equal(recon, cmat)
+})
+
 
 test_that("can reconstruct a pca and get original data", {
   mat1 <- matrix(rnorm(10*15), 10, 15)

@@ -4,8 +4,8 @@
 \alias{bada}
 \title{Barycentric Discriminant Analysis}
 \usage{
-bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) - 1,
-  preproc = neuroca::center(), A = NULL, M = NULL, ...)
+bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) -
+  1, preproc = neuroca::center(), A = NULL, M = NULL, ...)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. The categories of the observations.}
@@ -62,5 +62,5 @@ bres2 <- bada(Y, X, S, ncomp=3)
 
 }
 \references{
-Abdi, H., Williams, L. J., & Béra, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
+Abdi, H., Williams, L. J., & Bera, M. (2017). Barycentric discriminant analysis. \emph{Encyclopedia of Social Network Analysis and Mining}, 1-20.
 }

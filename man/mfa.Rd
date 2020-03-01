@@ -5,7 +5,8 @@
 \title{multiple factor analysis}
 \usage{
 mfa(X, ncomp = 2, preproc = center(), normalization = c("MFA", "RV",
-  "None", "RV-MFA", "Frob", "custom"), M = NULL, A = NULL, ...)
+  "None", "RV-MFA", "Dual-RV", "Frob", "custom"), M = NULL, A = NULL,
+  ...)
 }
 \arguments{
 \item{X}{a \code{block_matrix} object}

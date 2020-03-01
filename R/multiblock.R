@@ -102,6 +102,32 @@ block_indices <- function(x,i) {
 #' @export 
 block_index_list.multiblock <- function(x) x$block_indices
 
+
+#' @export
+summarize_loadings.multiblock <- function(x, stat=c("mean", "tstat"), comp=1) {
+  assertthat::assert_that(all(comp >= 1) && all(comp <= x$ncomp))
+  stat <- match.arg(stat)
+  
+  bind <- block_index_list(x)
+  bl <- sapply(bind, length)
+  assertthat::assert_that(all(bl[1] == bl[1]))
+  
+  lds <- loadings(x)
+  
+  ret <- lapply(comp, function(cnum) {
+    lmat <- do.call(rbind, lapply(bind, function(i) lds[i,cnum]))
+    if (stat == "mean") {
+      colMeans(lmat)
+    } else if (stat == "tstat") {
+      apply(lmat, 2, function(x) t.test(x)$statistic)
+    }
+  })
+  names(ret) <- paste0("comp", comp)
+  ret
+  
+}
+
+
 #' @export
 partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
   bind <- block_index_list(x)
