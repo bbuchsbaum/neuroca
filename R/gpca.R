@@ -2,7 +2,7 @@
 .msqrt <- function(a) {
   a.eig <- eigen(a)
   keep <- which(a.eig$values > 0)
-  a.sqrt <- a.eig$vectors[,keep] %*% diag(sqrt(a.eig$values[keep])) %*% solve(a.eig$vectors[keep,keep])
+  a.sqrt <- a.eig$vectors[,keep] %*% diag(1/sqrt(a.eig$values[keep])) %*% t(a.eig$vectors[,keep])
 }
 
 
