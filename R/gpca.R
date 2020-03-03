@@ -309,7 +309,40 @@ reconstruct.genpca <- function(x, newdata,
                                comp=1:x$ncomp, 
                                colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   
-  recon <- reconstruct.bi_projector(x)
+  ## X = FV
+  ## F = XAV
+  ## X = (AV')(F')
+  
+  if (!is.null(newdata)) {
+    assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
+  } else {
+    newdata <- scores(x)[,comp, drop=FALSE]
+  }
+  
+  if (is.null(rowind)) {
+    rowind <- 1:nrow(newdata)
+  } else {
+    assert_that(all(rowind > 0) && max(rowind) < nrow(newdata))
+  }
+  
+  if (is.null(colind)) {
+    if (reverse_pre_process) {
+      nd <- newdata[rowind,,drop=FALSE]
+      AVi <- corpcor::pseudoinverse(as.matrix(t(loadings(x)[,comp,drop=FALSE])))
+      Fi <- corpcor::pseudoinverse(nd)  
+        
+      x$preproc$reverse_transform(t(AVi %*% Fi))
+    } else {
+      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])
+    }
+  } else {
+    if (reverse_pre_process) {
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
+                                  colind=colind)
+    } else {
+      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind]
+    }
+  }
   
   
   
