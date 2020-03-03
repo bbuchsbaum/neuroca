@@ -1,7 +1,8 @@
 
 .msqrt <- function(a) {
   a.eig <- eigen(a)
-  a.sqrt <- a.eig$vectors %*% diag(sqrt(a.eig$values)) %*% solve(a.eig$vectors)
+  keep <- which(a.eig$values > 0)
+  a.sqrt <- a.eig$vectors[,keep] %*% diag(sqrt(a.eig$values[keep])) %*% solve(a.eig$vectors[keep,keep])
 }
 
 
@@ -62,13 +63,15 @@ prep_constraints <- function(X, A, M) {
 #' })
 #' 
 #' mat <- matrix(img, 100,100)
-#' mlist <- replicate(3, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
+#' mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
 #' X <- do.call(rbind, mlist)
 #' 
 #' ## spatial smoother
 #' S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=27)
-#' 
+#' T <- neighborweights:::spatial_smoother(as.matrix(1:10), sigma=3, nnk=3)
 #' gp1 <- genpca(X, A=S, ncomp=3)
+#' 
+#' gp1a <- genpca(X, A=S, M=T, ncomp=9)
 #' 
 #' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
 #' gp2 <- genpca(as.matrix(Xs), ncomp=2)
