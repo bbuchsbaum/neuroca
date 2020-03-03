@@ -54,24 +54,24 @@ prep_constraints <- function(X, A, M) {
 #' 
 #' @examples 
 #' 
-#' coords <- expand.grid(x=seq(1,100), y=seq(1,100))
+#' coords <- expand.grid(x=seq(1,3), y=seq(1,3))
 #' img <- apply(coords, 1, function(x) {
-#'   x1 <- 1 - pnorm(abs(x[1] - 50), sd=8)
-#'   x2 <- 1 - pnorm(abs(x[2] - 50), sd=8)
+#'   x1 <- 1 - pnorm(abs(x[1] - 3), sd=8)
+#'   x2 <- 1 - pnorm(abs(x[2] - 3), sd=8)
 #'   x1*x2
 #' })
 #' 
 #' mat <- matrix(img, 100,100)
-#' mlist <- replicate(50, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
+#' mlist <- replicate(3, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
 #' X <- do.call(rbind, mlist)
 #' 
 #' ## spatial smoother
-#' S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
+#' S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=27)
 #' 
-#' gp1 <- genpca(X, A=S, ncomp=2)
+#' gp1 <- genpca(X, A=S, ncomp=3)
 #' 
 #' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
-#' gp2 <- genpca(as.matrix(Xs), ncomp=2, center=FALSE)
+#' gp2 <- genpca(as.matrix(Xs), ncomp=2)
 #' 
 #' ## use an adjacency matrix to weight items sharing an index.
 #' 
@@ -328,23 +328,18 @@ reconstruct.genpca <- function(x, newdata,
   if (is.null(colind)) {
     if (reverse_pre_process) {
       nd <- newdata[rowind,,drop=FALSE]
-      AVi <- corpcor::pseudoinverse(as.matrix(t(loadings(x)[,comp,drop=FALSE])))
-      Fi <- corpcor::pseudoinverse(nd)  
-        
-      x$preproc$reverse_transform(t(AVi %*% Fi))
+      x$preproc$reverse_transform(nd %*% t(x$ov[,comp,drop=FALSE]))
     } else {
-      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])
+      newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])
     }
   } else {
     if (reverse_pre_process) {
-      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])[,colind], 
                                   colind=colind)
     } else {
-      newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind]
+      newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])[,colind]
     }
   }
-  
-  
   
 }
  #' @export
