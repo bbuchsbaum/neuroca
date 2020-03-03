@@ -26,6 +26,13 @@ weighted_group_means <- function(X, F) {
   ret
 }
 
+##A general soft label based Linear Discriminant Analysis for
+##semi-supervised dimensionality reduction
+## https://paperpile.com/app/p/03eb8cb3-2326-0cc5-a440-02c6aa543bf3 
+
+## see also, maybe similar:
+## A weighted linear discriminant analysis framework for multi-label
+## feature extraction
 
 soft_lda <- function(C, X, preproc=pass(), dp=min(dim(X)), di=dp, dl=ncol(C)-1) {
   assert_that(nrow(C) == nrow(X))

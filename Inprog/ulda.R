@@ -1,5 +1,28 @@
 
 
+trace_ratio <- function(A, B, ncomp) {
+  Y <- iris$Species
+  A <- between_class_scatter(X,Y, colMeans(X))
+  B <- within_class_scatter(X, Y)
+  
+  ncomp = 2
+  V <- matrix(rnorm(ncol(A)*ncomp), ncol(A), ncomp)
+  V.qr <- qr(V)
+  V <- qr.Q(V.qr)
+  num <- (t(V) %*% A %*% V)
+  denom <- (t(V) %*% B %*% V)
+  rho <- sum(diag(num))/sum(diag(denom))
+  print(rho)
+  for (i in 1:10) {
+    G <- A - rho*B
+    V <- eigen(G)$vectors[,1:ncomp]
+    num <- (t(V) %*% A %*% V)
+    denom <- (t(V) %*% B %*% V)
+    rho <- sum(diag(num))/sum(diag(denom))
+    print(rho)
+  }
+}
+
 ulda <- function(Y, X, preproc) {
   Y <- as.factor(Y)
   
@@ -41,7 +64,10 @@ lda_outer <- function (X) {
   return(output)
 }
 
-
+## A Multiple Maximum Scatter Difference
+## Discriminant Criterion for Facial Feature Extraction
+## Fengxi Song, David Zhang, Senior Member, IEEE, Dayong Mei, and Zhongwei Guo
+## https://paperpile.com/app/p/c1daa0f0-754f-08db-81e1-bd5484e4c675
 mmsd <- function(X, Y, ncomp=min(dim(X)), scale=FALSE, c=1) {
   Y <- as.factor(Y)
   preproc <- pre_processor(X, center=FALSE, scale)

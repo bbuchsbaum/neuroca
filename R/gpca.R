@@ -67,6 +67,7 @@ prep_constraints <- function(X, A, M) {
 #' 
 #' ## spatial smoother
 #' S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
+#' 
 #' gp1 <- genpca(X, A=S, ncomp=2)
 #' 
 #' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
@@ -304,7 +305,16 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
 }
 
 
-#' @export
+reconstruct.genpca <- function(x, newdata,
+                               comp=1:x$ncomp, 
+                               colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
+  
+  recon <- reconstruct.bi_projector(x)
+  
+  
+  
+}
+ #' @export
 truncate.genpca <- function(obj, ncomp) {
   if (ncomp >= obj$ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
