@@ -119,6 +119,11 @@ pass <- function(preproc=prepper()) {
   
 }
 
+## TODO for centering sparse matrices, see:
+## https://stackoverflow.com/questions/39284774/column-rescaling-for-a-very-large-sparse-matrix-in-r
+## 
+
+
 #' @export
 center <- function(preproc = prepper()) {
   create <- function() {
