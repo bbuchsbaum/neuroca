@@ -55,21 +55,26 @@ prep_constraints <- function(X, A, M) {
 #' 
 #' @examples 
 #' 
-#' coords <- expand.grid(x=seq(1,3), y=seq(1,3))
+#' N <- 10
+#' coords <- expand.grid(x=seq(1,N), y=seq(1,N))
 #' img <- apply(coords, 1, function(x) {
-#'   x1 <- 1 - pnorm(abs(x[1] - 3), sd=8)
-#'   x2 <- 1 - pnorm(abs(x[2] - 3), sd=8)
+#'   x1 <- 1 - pnorm(abs(x[1] - N/2), sd=8)
+#'   x2 <- 1 - pnorm(abs(x[2] - N/2), sd=8)
 #'   x1*x2
 #' })
 #' 
-#' mat <- matrix(img, 100,100)
-#' mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
+#' mat <- matrix(img, N,N)
+#' mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.02), simplify=FALSE)
 #' X <- do.call(rbind, mlist)
 #' 
 #' ## spatial smoother
-#' S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=27)
+#' S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=4)
+#' S <- cov(as.matrix(S))
+#' S <- S/eigen(S)$values[1]
 #' T <- neighborweights:::spatial_smoother(as.matrix(1:10), sigma=3, nnk=3)
-#' gp1 <- genpca(X, A=S, ncomp=3)
+#' T <- cov(as.matrix(T))
+#' T <- T/(eigen(T)$values[1])
+#' gp1 <- genpca(X, A=S, ncomp=9)
 #' 
 #' gp1a <- genpca(X, A=S, M=T, ncomp=9)
 #' 
@@ -129,9 +134,13 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   ret <- bi_projector(
               preproc=procres,
               ncomp=length(svdfit$d),
+              ## generalized singular vector v
               ov=svdfit$v, 
+              ## generalized singular vector u
               ou=svdfit$u, 
+              ## loadings
               v=A %*% svdfit$v,
+              ## normalized scores
               u=M %*% svdfit$u,
               d=svdfit$d, 
               scores=scores, 
@@ -146,10 +155,11 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
 
 #' @export
 loadings.genpca <- function(obj) {
-  obj$A %*% obj$v
+  obj$A %*% obj$ov
 }
 
 project_xav <- function(X, A, V) {
+  ## x$M %*% scale(X, center=TRUE, scale=FALSE) %*% x$A %*% x$ov
   if (is.vector(A)) {
     t(t(X) * A) %*% V
   } else {
@@ -253,19 +263,23 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     decomp$vectors <- decomp$vectors[, keep]
     decomp$values <- decomp$values[keep]
   
+    ## R^(1/2)
     Rtilde <- decomp$vectors %*% diag(sqrt(decomp$values)) %*% t(decomp$vectors)
   
     inv.values = 1 / sqrt(decomp$values)
+    ## R^(-1/2)
     Rtilde.inv = decomp$vectors %*% diag(inv.values) %*% t(decomp$vectors)
   }
   
-  
+  ## X' %*% Q %*% X
   inmat <- Matrix::crossprod(X, Q) %*% X
   
+  ## R^(1/2) %*% X' %*% Q %*% X %*% R^(1/2) 
   RtinRt <- Rtilde %*% inmat %*% Rtilde
   
   XR <- X %*% R
   ## nXn * n*n * pXp
+  ## R %*% X' %*% Q %*% X %*% R
   RnR <- R %*% inmat %*% R
   
   xtilde.decomp <- if (k == min(n,p)) {
@@ -283,6 +297,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   
   #Rtilde.inv %*% xtilde.decomp$vectors
   
+  ## R^(-1/2) %*% v
   vgmd <- Rtilde.inv %*% xtilde.decomp$vectors
   dgmd <- sqrt(xtilde.decomp$values[1:k])
   ugmd <- matrix(nrow = n, ncol = k)
@@ -290,11 +305,14 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   propv <- dgmd ^ 2 / sum(diag(as.matrix(inmat %*% R)))
   normalizing.number <- 1
   
+  
   for (i in 1:k) {
     normalizing.number = sqrt(vgmd[, i] %*% RnR %*% vgmd[, i])
     ugmd[, i] = as.matrix(XR %*% vgmd[, i]) / as.double(normalizing.number)
     cumv[i] = sum(propv[1:i])
   }
+  
+  
   
   list(
     u = ugmd[, 1:k, drop=FALSE],
@@ -308,18 +326,25 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
 }
 
 
-reconstruct.genpca <- function(x, newdata,
+reconstruct.genpca <- function(x, newdata=NULL,
                                comp=1:x$ncomp, 
                                colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   
   ## X = FV
-  ## F = XAV
-  ## X = (AV')(F')
+  ## F = M(XAV)
+  ## F = MUD
+  ## X = M(AV')(F')
+  
+  #Xr = x$M %*% (Fp %*% t(x$A %*% x$ov))
+  
+  ## Xr = x$ou %*% diag(x$d) %*% t(x$ov)
+  ## does not work when X is uncentered
   
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
-    newdata <- scores(x)[,comp, drop=FALSE]
+    newdata <- x$ou[,comp, drop=FALSE]
+    #newdata <- scores(x)[,comp, drop=FALSE]
   }
   
   if (is.null(rowind)) {
@@ -331,16 +356,16 @@ reconstruct.genpca <- function(x, newdata,
   if (is.null(colind)) {
     if (reverse_pre_process) {
       nd <- newdata[rowind,,drop=FALSE]
-      x$preproc$reverse_transform(nd %*% t(x$ov[,comp,drop=FALSE]))
+      x$preproc$reverse_transform(nd %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE]))
     } else {
-      newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])
+      newdata %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])
     }
   } else {
     if (reverse_pre_process) {
-      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])[,colind], 
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind], 
                                   colind=colind)
     } else {
-      newdata[rowind,,drop=FALSE] %*% t(x$ov[,comp,drop=FALSE])[,colind]
+      newdata[rowind,,drop=FALSE] %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind]
     }
   }
   
