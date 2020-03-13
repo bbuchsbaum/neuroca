@@ -1,5 +1,4 @@
 
-
 ## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
 
 #' construct a `projector` instance
@@ -103,7 +102,7 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
   
 
   ret <- bi_projector(
-              preproc=pre_processor(matrix(), center=FALSE, scale=FALSE),
+              preproc=pass(),
               ncomp=length(d),
               v=v, 
               u=u, 

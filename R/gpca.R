@@ -155,7 +155,7 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
 
 #' @export
 loadings.genpca <- function(obj) {
-  obj$A %*% obj$ov
+  obj$v
 }
 
 project_xav <- function(X, A, V) {
