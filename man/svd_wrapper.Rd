@@ -4,8 +4,13 @@
 \alias{svd_wrapper}
 \title{svd_wrapper}
 \usage{
-svd_wrapper(X, ncomp = min(dim(X)), method = c("base", "fast", "irlba",
-  "propack", "rsvd", "svds"), tol = .Machine$double.eps, ...)
+svd_wrapper(
+  X,
+  ncomp = min(dim(X)),
+  method = c("base", "fast", "irlba", "propack", "rsvd", "svds"),
+  tol = .Machine$double.eps,
+  ...
+)
 }
 \arguments{
 \item{X}{the \code{matrix}}

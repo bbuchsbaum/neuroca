@@ -4,8 +4,13 @@
 \alias{scorepred}
 \title{Given a set of projected scores and a set of reference scores, compute one of several performance metrics.}
 \usage{
-scorepred(fscores, scores, type = c("class", "prob", "scores", "cosine",
-  "distance", "r2"), ncomp = ncol(fscores), class_name = TRUE)
+scorepred(
+  fscores,
+  scores,
+  type = c("class", "prob", "scores", "cosine", "distance", "r2"),
+  ncomp = ncol(fscores),
+  class_name = TRUE
+)
 }
 \arguments{
 \item{fscores}{the projected scores to be compared to the reference scores}

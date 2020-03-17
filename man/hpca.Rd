@@ -4,9 +4,16 @@
 \alias{hpca}
 \title{hclust_pca}
 \usage{
-hpca(X, hclus, cuts, est_method = c("fixed", "gcv", "shrink"),
-  ncomp = rep(1, length(cuts) + 1), center = TRUE, scale = FALSE,
-  shrink_method = "GSURE")
+hpca(
+  X,
+  hclus,
+  cuts,
+  est_method = c("fixed", "gcv", "shrink"),
+  ncomp = rep(1, length(cuts) + 1),
+  center = TRUE,
+  scale = FALSE,
+  shrink_method = "GSURE"
+)
 }
 \arguments{
 \item{X}{the data matrix}

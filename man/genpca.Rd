@@ -4,8 +4,14 @@
 \alias{genpca}
 \title{Generalized Principal Components Analysis}
 \usage{
-genpca(X, A = NULL, M = NULL, ncomp = min(dim(X)),
-  preproc = center(), deflation = FALSE)
+genpca(
+  X,
+  A = NULL,
+  M = NULL,
+  ncomp = min(dim(X)),
+  preproc = center(),
+  deflation = FALSE
+)
 }
 \arguments{
 \item{A}{the column constraints. Can be a \code{vector}, symmetric \code{matrix}, or symmetric sparse matrix with \code{ncol(X)} rows and columns.}
@@ -17,23 +23,31 @@ Compute a PCA in a inner-product space defined by row and coulmn constraint matr
 }
 \examples{
 
-coords <- expand.grid(x=seq(1,100), y=seq(1,100))
+N <- 10
+coords <- expand.grid(x=seq(1,N), y=seq(1,N))
 img <- apply(coords, 1, function(x) {
-  x1 <- 1 - pnorm(abs(x[1] - 50), sd=8)
-  x2 <- 1 - pnorm(abs(x[2] - 50), sd=8)
+  x1 <- 1 - pnorm(abs(x[1] - N/2), sd=8)
+  x2 <- 1 - pnorm(abs(x[2] - N/2), sd=8)
   x1*x2
 })
 
-mat <- matrix(img, 100,100)
-mlist <- replicate(50, as.vector(mat + rnorm(length(mat))*.8), simplify=FALSE)
+mat <- matrix(img, N,N)
+mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.02), simplify=FALSE)
 X <- do.call(rbind, mlist)
 
 ## spatial smoother
-S <- neighborweights:::spatial_smoother(coords, sigma=8, nnk=27)
-gp1 <- genpca(X, A=S, ncomp=2)
+S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=4)
+S <- cov(as.matrix(S))
+S <- S/eigen(S)$values[1]
+T <- neighborweights:::spatial_smoother(as.matrix(1:10), sigma=3, nnk=3)
+T <- cov(as.matrix(T))
+T <- T/(eigen(T)$values[1])
+gp1 <- genpca(X, A=S, ncomp=9)
+
+gp1a <- genpca(X, A=S, M=T, ncomp=9)
 
 Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] \%*\% S))
-gp2 <- genpca(as.matrix(Xs), ncomp=2, center=FALSE)
+gp2 <- genpca(as.matrix(Xs), ncomp=2)
 
 ## use an adjacency matrix to weight items sharing an index.
 

@@ -18,7 +18,7 @@ sca <- function(X, ncomp=2, preproc=center(),
   
   ## pre-process the variables.
   procres <- prep(preproc, X)
-  Xp <- procres$Xp
+  Xp <- procres$init(X)
 
   Xl <- lapply(as.list(Xp), t)
   

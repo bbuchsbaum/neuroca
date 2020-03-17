@@ -3,11 +3,7 @@
 
 #' @export
 scores.projector <- function(x) {
-  if (is.null(x$scores)) {
-    project(x, x$procres$Xp)
-  } else {
-    x$scores
-  }
+  x$scores
 }
 
 compose_all <- function(...) {

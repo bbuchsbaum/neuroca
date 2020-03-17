@@ -5,8 +5,15 @@
 fresh <- function(x,...) UseMethod("fresh")
 
 
+print.prepper <- function(object) {
+  nn <- sapply(object$steps, function(x) x$name)
+  cat("preprocessor: ", paste(nn, collapse="->"))
+  
+}
+
 
 #' add a pre-processing stage
+#' 
 #' @param x the processing pipeline
 #' 
 #' @export
@@ -39,8 +46,17 @@ add_node.prepper <- function(preproc, step) {
 #' @importFrom purrr compose
 #' @export
 prep.prepper <- function(x, X) {
-  ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
-  Xp <- ff(X)
+  #ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
+  #Xp <- ff(X)
+  
+  tinit <- function(X) {
+    xin <- X
+    for (i in 1:length(x$steps)) {
+      xin <- x$steps[[i]]$forward(xin)
+    }
+    
+    xin
+  }
   
   tform <- function(X, colind=NULL) {
     xin <- X
@@ -59,9 +75,15 @@ prep.prepper <- function(x, X) {
     
     xin
   }
+  
+  Xp <- if (!missing(X)) {
+    tinit(X)
+  } 
+  
   ret <- list(
        preproc=x,
        Xp=Xp,
+       init=tinit,
        transform=tform,
        reverse_transform=rtform)
        #transform=do.call(purrr::compose, lapply(x$steps, "[[", "apply"), .dir="forward"),
@@ -125,19 +147,30 @@ pass <- function(preproc=prepper()) {
 
 
 #' @export
-center <- function(preproc = prepper()) {
+center <- function(preproc = prepper(), cmeans=NULL) {
   create <- function() {
     env = new.env()
+    env[["cmeans"]] <- cmeans
     
     list(
       forward = function(X) {
-        cmeans <- colMeans(X)
-        env[["cmeans"]] <- cmeans
+        if (is.null(env[["cmeans"]])) {
+          cmeans <- colMeans(X)
+          env[["cmeans"]] <- cmeans
+        } else {
+          cmeans <- env[["cmeans"]]
+          assert_that(ncol(X) == length(cmeans))
+        }
+        
+        
+        #print(cmeans)
+        #message("forward cmeans:", env[["cmeans"]])
         sweep(X, 2, cmeans, "-")
       },
       
       apply = function(X, colind = NULL) {
         cmeans <- env[["cmeans"]]
+        #message("apply cmeans:", cmeans)
         if (is.null(colind)) {
           sweep(X, 2, cmeans, "-")
         } else {
@@ -147,7 +180,9 @@ center <- function(preproc = prepper()) {
       },
       
       reverse = function(X, colind = NULL) {
+        assert_that(!is.null(env[["cmeans"]]))
         if (is.null(colind)) {
+          #message("reverse cmeans: ", env[["cmeans"]])
           sweep(X, 2, env[["cmeans"]], "+")
         } else {
           assert_that(ncol(X) == length(colind))
@@ -166,8 +201,10 @@ colscale <- function(preproc = prepper(),
            weights = NULL) {
     type <- match.arg(type)
     
+    print(preproc)
+    
     if (type != "weights" && !is.null(weights)) {
-      warning("colscale: weight ignored because type != 'weights'")
+      warning("colscale: weights ignored because type != 'weights'")
     }
     if (type == "weights") {
       assert_that(!is.null(weights))
@@ -266,17 +303,29 @@ dim_reduce <- function(preproc = prepper(),
 
 
 #' @export
-standardize <- function(preproc = prepper()) {
+standardize <- function(preproc = prepper(), cmeans=NULL, sds=NULL) {
   create <- function() {
     env = new.env()
     
     list(
       forward = function(X) {
-        sds <- matrixStats::colSds(X)
-        sds[sds == 0] <- median(sds)
-        cmeans <- colMeans(X)
+        if (is.null(sds)) {
+          sds <- matrixStats::colSds(X)
+        } else {
+          assert_that(length(sds) == ncol(X))
+        }
+        
+        if (is.null(cmeans)) {
+          cmeans <- colMeans(X)
+        } else {
+          assert_that(length(cmeans) == ncol(X))
+        }
+        
+        sds[sds == 0] <- mean(sds)
+        
         env[["sds"]] <- sds
         env[["cmeans"]] <- cmeans
+        
         x1 <- sweep(X, 2, cmeans, "-")
         sweep(x1, 2, sds, "/")
       },

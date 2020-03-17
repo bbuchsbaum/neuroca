@@ -3,7 +3,6 @@
 \docType{package}
 \name{neuroca}
 \alias{neuroca}
-\alias{neuroca-package}
 \title{neuroca - multivariate component analysis methods for neuroimaging data}
 \description{
 neuroca - multivariate component analysis methods for neuroimaging data

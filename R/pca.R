@@ -22,10 +22,12 @@ projector <- function(preproc, ncomp, v, classes, ...) {
 #' construct a `projector` instance
 #' @export
 #' @inheritParams projector
+#' @param preproc
+#' @param ncomp
 #' @param u
 #' @param d
 #' @param scores
-bi_projector <- function(preproc, ncomp, v, u, d, scores, classes, ...) {
+bi_projector <- function(preproc, ncomp, v, u, d, scores, classes=NULL, ...) {
   out <- list(
     preproc=preproc,
     ncomp=ncomp,
@@ -56,7 +58,7 @@ shrink_pca <- function(X, preproc=center(), method = c("GSURE", "QUT", "SURE"), 
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
   procres <- prep(preproc, X)
-  Xp <- procres$Xp
+  Xp <- procres$init(X)
   
   res <- denoiseR::adashrink(Xp, method=method, center=FALSE, ...)
   
@@ -126,9 +128,9 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
 pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
   
-  procres <- prep(preproc, X)
+  procres <- prep(preproc)
   
-  Xp <- procres$Xp
+  Xp <- procres$init(X)
   
   svdres <- svd_wrapper(Xp, ncomp, ...)
   
@@ -277,6 +279,7 @@ project_cols.bi_projector <- function(x, newdata, comp=1:ncomp(x)) {
 
 #' @export
 project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
+  assert_that(max(comp) <= ncomp(x))
   ## if no newdata, then simply return the factor scores
   if (missing(newdata)) {
     ## TODO deal with colind
@@ -472,7 +475,10 @@ prepare_results.pca <- function(obj) {
     #vars <- vars %>% rename(Variable = varname, Level = modname)
     
     
-    tmp <- data.frame(t(cor( scores(obj),obj$preproc$Xp)))
+    ## TODO have way of retrieivng original data?
+    recon <- reconstruct(obj)
+    #tmp <- data.frame(t(cor( scores(obj),obj$preproc$Xp)))
+    tmp <- data.frame(t(cor( scores(obj),recon)))
     colnames(tmp) <- paste0("PC", 1:ncol(tmp))
     
     tmp$varname <- rownames(tmp)

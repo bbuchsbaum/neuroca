@@ -1,18 +1,36 @@
 test_that("can preprocess a matrix no center, no scale", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
-  pp <- pass()
-  x <- prep(pp, mat1)
-  x2 <- x$reverse_transform(x$Xp)
+  pp <- pass() %>% prep()
+  X <- pp$init(mat1)
+  x2 <- pp$reverse_transform(X)
   expect_equal(mat1,x2)
-  expect_equal(x$Xp, mat1)
+  expect_equal(X, mat1)
 })
 
 test_that("can preprocess a matrix center only", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
+  pp <- center() %>% prep()
+  Xp <- pp$init(mat1)
+  x2 <- pp$reverse_transform(Xp)
+  expect_equal(mat1,x2)
+  expect_true(all(mat1 != Xp))
+})
+
+test_that("can apply a centering transform", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
   pp <- center()
   x <- prep(pp, mat1)
-  x2 <- x$reverse_transform(x$Xp)
-  expect_equal(mat1,x2)
+  x2 <- x$transform(mat1)
+  expect_equal(x$Xp,x2)
+  expect_true(all(mat1 != x$Xp))
+})
+
+test_that("can apply a scaling transform", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pp <- standardize()
+  x <- prep(pp, mat1)
+  x2 <- x$transform(mat1)
+  expect_equal(x$Xp,x2)
   expect_true(all(mat1 != x$Xp))
 })
 
@@ -26,12 +44,12 @@ test_that("can preprocess a matrix with column scaling", {
   expect_true(all(mat1 != x$Xp))
 })
 
-test_that("can reset a prepper with `fresh`", {
-  mat1 <- matrix(rnorm(10*15), 10, 15)
-  pp <- center()
-  x <- prep(pp, mat1)
-  
-})
+# test_that("can reset a prepper with `fresh`", {
+#   mat1 <- matrix(rnorm(10*15), 10, 15)
+#   pp <- center()
+#   x <- prep(pp, mat1)
+#   
+# })
 
 
 
@@ -41,18 +59,29 @@ test_that("can preprocess a matrix center and scale", {
   x <- prep(pp, mat1)
   x2 <- x$reverse_transform(x$Xp)
   expect_equal(mat1,x2)
+  expect_equal(x$Xp, x$transform(mat1))
+  expect_true(all(mat1 != x$Xp))
+})
+
+test_that("can preprocess a matrix with colscale", {
+  mat1 <- matrix(rnorm(10*15), 10, 15)
+  pp <- colscale(type="z")
+  x <- prep(pp, mat1)
+  x2 <- x$reverse_transform(x$Xp)
+  expect_equal(mat1,x2)
+  expect_equal(x$Xp, x$transform(mat1))
   expect_true(all(mat1 != x$Xp))
 })
 
 test_that("can compose two pre-processors", {
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pp <- center() %>% colscale(type="z")
-  pp2 <- standardize()
+  
   x <- prep(pp, mat1)
-  x0 <- prep(pp2, mat1)
+ 
   x2 <- x$reverse_transform(x$Xp)
   expect_equal(mat1,x2)
-  expect_equal(x$Xp,x0$Xp)
+ 
   expect_true(all(mat1 != x$Xp))
 })
 

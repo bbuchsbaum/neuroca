@@ -4,8 +4,16 @@
 \alias{bada}
 \title{Barycentric Discriminant Analysis}
 \usage{
-bada(Y, X, S = rep(1, nrow(X)), ncomp = length(levels(as.factor(Y))) -
-  1, preproc = neuroca::center(), A = NULL, M = NULL, ...)
+bada(
+  Y,
+  X,
+  S = rep(1, nrow(X)),
+  ncomp = length(levels(as.factor(Y))) - 1,
+  preproc = center(),
+  A = NULL,
+  M = NULL,
+  ...
+)
 }
 \arguments{
 \item{Y}{dependent \code{factor} variable. The categories of the observations.}

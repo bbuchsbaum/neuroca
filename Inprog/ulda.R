@@ -26,8 +26,8 @@ trace_ratio <- function(A, B, ncomp) {
 ulda <- function(Y, X, preproc) {
   Y <- as.factor(Y)
   
-  procres <- prep(preproc, X)
-  Xp <- procres$Xp
+  procres <- prep(preproc)
+  Xp <- procres$init(X)
   
   levs <- levels(Y)
   nc <- length(levs)
@@ -129,14 +129,14 @@ mmsd <- function(X, Y, ncomp=min(dim(X)), scale=FALSE, c=1) {
 #' @param knn the number of nearest neighbors used to form margin
 #' @export
 #' @inheritsParams pca
-mmpca <- function(X, Y, ncomp=min(dim(X)), center=TRUE, scale=FALSE, knn=1, sigma=.7) {
+mmpca <- function(X, Y, ncomp=min(dim(X)), preproc=standardize(), knn=1, sigma=.7) {
   assert_that(nrow(X) == length(Y))
   Y <- as.factor(Y)
   
-  preproc <- pre_processor(X, center, scale)
-  Xp <- pre_process(preproc, X)
+  preproc <- prep(preprox)
+  Xp <- preproc$init(X)
   
-  nabes <- neighborweights::edge_weights(Xp, "knearest_misses", k=knn, labels=Y, type="asym", sigma=sigma)
+  nabes <- neighborweights::graph_weights(Xp, "knearest_misses", k=knn, labels=Y, type="asym", sigma=sigma)
   nnbc <- apply(nabes, 1, function(x) which(x > 0))
   
   if (is.vector(nnbc)) {

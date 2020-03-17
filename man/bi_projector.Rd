@@ -4,7 +4,7 @@
 \alias{bi_projector}
 \title{construct a `projector` instance}
 \usage{
-bi_projector(preproc, ncomp, v, u, d, scores, classes, ...)
+bi_projector(preproc, ncomp, v, u, d, scores, classes = NULL, ...)
 }
 \description{
 construct a `projector` instance

@@ -189,6 +189,10 @@ names.block_matrix <- function(x) attr(x, "block_names")
 #' @export
 is.block_matrix <- function(x) { inherits(x, "block_matrix") }
 
+#t.block_matrix <- function(x) {
+#  browser()
+#}
+
 #' @export
 print.block_matrix <- function(object) {
   bind <- attr(object, "block_indices")

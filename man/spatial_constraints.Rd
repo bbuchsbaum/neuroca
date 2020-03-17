@@ -4,11 +4,19 @@
 \alias{spatial_constraints}
 \title{spatial constraints}
 \usage{
-spatial_constraints(coords, nblocks = 1, sigma_within = 5,
-  sigma_between = 1, shrinkage_factor = 0.1, nnk_within = 27,
-  nnk_between = 1, weight_mode_within = "heat",
-  weight_mode_between = "binary", variable_weights = rep(1,
-  ncol(coords) * nblocks), verbose = FALSE)
+spatial_constraints(
+  coords,
+  nblocks = 1,
+  sigma_within = 5,
+  sigma_between = 1,
+  shrinkage_factor = 0.1,
+  nnk_within = 27,
+  nnk_between = 1,
+  weight_mode_within = "heat",
+  weight_mode_between = "binary",
+  variable_weights = rep(1, ncol(coords) * nblocks),
+  verbose = FALSE
+)
 }
 \arguments{
 \item{coords}{the spatial coordinates as a matrix with rows as objects and columns as dimensions}

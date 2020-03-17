@@ -50,7 +50,7 @@
 #' 
 #' 
 #' @export
-bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=neuroca::center(), A=NULL, M=NULL, ...) {
+bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, preproc=center(), A=NULL, M=NULL, ...) {
   assert_that(is.factor(Y))
   assert_that(length(Y) == nrow(X)) 
   assert_that(length(S) == nrow(X))
@@ -66,17 +66,20 @@ bada <- function(Y, X, S=rep(1, nrow(X)), ncomp=length(levels(as.factor(Y)))-1, 
   S <- factor(S)
   
   procres <- if (length(levels(S)) > 1) {
-    procres <- lapply(levels(S), function(lev) {
+    Xs <- lapply(levels(S), function(lev) {
       Xs <- X[S == lev,,drop=FALSE]
+    })
+    
+    procres <- lapply(levels(S), function(lev) {
       p <- fresh(preproc)
-      prep(p, Xs)
+      prep(p)
     })
     names(procres) <- levels(S)
-    Xp <- do.call(rbind, lapply(procres, "[[", "Xp"))
+    Xp <- do.call(rbind, lapply(1:length(procres), function(i) procres[[i]]$init(Xs[[i]])))
     procres
   } else {
-    p <- prep(preproc, X)
-    Xp <- p$Xp
+    p <- prep(preproc)
+    Xp <- p$init(X)
     p
   }
   

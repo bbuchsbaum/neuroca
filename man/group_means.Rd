@@ -12,10 +12,6 @@ group_means(Y, X)
 \item{Y}{\code{factor} variable defining the groups}
 
 \item{X}{\code{matrix} defining the matrix data to be group-wise averaged}
-
-\item{Y}{\code{factor} variable defining the groups}
-
-\item{X}{\code{matrix} defining the matrix data to be group-wise averaged}
 }
 \description{
 group_means
