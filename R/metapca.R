@@ -29,9 +29,9 @@ metapca <- function(fits, ncomp=2, scale_inner=FALSE) {
   
   pres <- if (scale_inner) {
     wts <- (1/sqrt(matrixStats::colSds(X)))
-    genpca(unclass(X), A=wts, ncomp=ncomp, preproc=preproc)
+    genpca(unclass(X), A=wts, ncomp=ncomp, preproc=pass())
   } else {
-    pca(X, ncomp=ncomp, preproc=preproc)
+    pca(X, ncomp=ncomp, preproc=pass())
   }
   
   
