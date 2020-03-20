@@ -198,7 +198,7 @@ singular_values.genpca <- function(x) {
 }
 
 #' @export
-project.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE, colind=NULL) {
+project.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, pre_process=TRUE, colind=NULL) {
   if (is.null(newdata)) {
     return(scores(x)[,comp])
   }

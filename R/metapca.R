@@ -4,9 +4,10 @@ centering_matrix <- function(vals) {
   #rbind(p, c(rep(0, length(vals)),1))
 }
 
+#' metapca
 #' 
 #' 
-#' @example 
+#' @param scale_inner standardize first level components
 #' 
 #' X1 <- matrix(rnorm(20*10), 20, 10)
 #' X2 <- matrix(rnorm(20*20), 20, 20)
