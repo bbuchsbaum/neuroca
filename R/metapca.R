@@ -112,7 +112,8 @@ supplementary_loadings.metapca <- function(x, newdata, block_ind=1, ncomp=x$ncom
     newdata <- reprocess(x$fits[[block_ind]], newdata)
    
     Qsup <- t(newdata) %*% (x$u[,1:ncomp,drop=FALSE]) %*% diag(x=1/x$d[1:ncomp], 
-                                                              nrow=length(x$d), ncol=length(x$d))
+                                                               nrow=length(x$d), ncol=length(x$d))
+    
     t(Qsup)
   } else {
     assert_that(inherits(newdata, "block_matrix"))

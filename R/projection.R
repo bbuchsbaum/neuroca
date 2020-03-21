@@ -1,9 +1,34 @@
 
 
+## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
+
+#' construct a `projector` instance
+#' 
+#' @export
+#' @param preproc
+#' @param ncomp
+#' @param v
+#' @param classes
+projector <- function(preproc, ncomp, v, classes, ...) {
+  out <- list(
+    preproc=preproc,
+    ncomp=ncomp,
+    v=v,
+    ...)
+  
+  class(out) <- c(classes, "projector")
+  out
+}
+
+
+# @export
+#scores.projector <- function(x) {
+#  x$scores
+#}
 
 #' @export
-scores.projector <- function(x) {
-  x$scores
+loadings.projector <- function(x) {
+  x$v
 }
 
 compose_all <- function(...) {

@@ -2,10 +2,10 @@
 % Please edit documentation in R/pca.R
 \name{bi_projector}
 \alias{bi_projector}
-\title{construct a `projector` instance}
+\title{construct a `bi-projector` instance}
 \usage{
 bi_projector(preproc, ncomp, v, u, d, scores, classes = NULL, ...)
 }
 \description{
-construct a `projector` instance
+construct a `bi-projector` instance
 }

@@ -1,25 +1,8 @@
 
-## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
-
-#' construct a `projector` instance
-#' @export
-#' @param preproc
-#' @param ncomp
-#' @param v
-#' @param classes
-projector <- function(preproc, ncomp, v, classes, ...) {
-  out <- list(
-    preproc=preproc,
-    ncomp=ncomp,
-    v=v,
-    ...)
-  
-  class(out) <- c(classes, "projector")
-  out
-}
 
 
-#' construct a `projector` instance
+
+#' construct a `bi-projector` instance
 #' @export
 #' @inheritParams projector
 #' @param preproc
@@ -226,9 +209,7 @@ rotate.pca <- function(x, rot) {
   
 }
 
-
-#' @export
-reprocess.bi_projector <- function(x, newdata, colind=NULL) {
+genreprocess <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
     assert_that(ncol(newdata) == nrow(loadings(x)))
     x$preproc$transform(newdata)
@@ -237,7 +218,18 @@ reprocess.bi_projector <- function(x, newdata, colind=NULL) {
                 msg=paste("length of colind not equal to number of columns of newdata", length(colind), "!=", ncol(newdata)))
     x$preproc$transform(newdata, colind)
   }
+}
+
+#' @export
+reprocess.projector <- function(x, newdata, colind=NULL) {
+ genreprocess(x,newdata,colind)
   
+}
+
+#' TODO is this needed
+#' @export
+reprocess.bi_projector <- function(x, newdata, colind=NULL) {
+  genreprocess(x,newdata,colind)
 }
 
 #' @export
@@ -308,8 +300,8 @@ residuals.bi_projector <- function(x, ncomp=1, xorig) {
 }
 
 
-#' @export
-reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
+genreconstruct <- function(x, newdata, comp, colind=NULL, 
+                           rowind=NULL, reverse_pre_process=TRUE) {
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
@@ -331,11 +323,17 @@ reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NUL
   } else {
     if (reverse_pre_process) {
       x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind], 
-                        colind=colind)
+                                  colind=colind)
     } else {
       newdata[rowind,,drop=FALSE] %*% t(loadings(x)[,comp,drop=FALSE])[,colind]
     }
   }
+  
+}
+
+#' @export
+reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
+  genreconstruct(x,newdata,comp,colind,rowind,reverse_pre_process)
 }
 
 
