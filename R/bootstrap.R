@@ -267,7 +267,8 @@ bootstrap.pca <- function(x, nboot=100, k=x$ncomp) {
     list(DUt=DUt[,sidx,drop=FALSE], idx=sidx)
   }
   
-  res <- boot_svd(nboot=nboot, k=k, loadings(x), gen)
+  
+  res <- boot_svd(nboot=nboot, k=k, as.matrix(loadings(x)), gen)
 
   zboot <- do.call(cbind, lapply(1:k, function(ki) {
     res$EVs[[ki]]/res$sdVs[[ki]]
@@ -358,6 +359,7 @@ boot_svd <- function(nboot, k, v, gen_DUtP) {
     #DUtP <- if(x$center) t(scale(t(DUt[,sidx]),center=TRUE,scale=FALSE)) else DUt[,sidx]
     list(svdfit=svd_dutp(DUtP,k), idx=sam$idx)
   })
+  
   
   boot_sum(res,k, v)
   

@@ -185,9 +185,9 @@ predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
 contributions.genpca <- function(x, type=c("column", "row")) {
   type <- match.arg(type)
   if (type == "column") {
-    t(x$v^2) %*% x$A
+    t(x$ov^2) %*% x$A
   } else {
-    t(x$u^2) %*% x$M
+    t(x$ou^2) %*% x$M
     
   }
 }
