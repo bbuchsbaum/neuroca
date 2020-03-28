@@ -90,7 +90,7 @@ prep_constraints <- function(X, A, M) {
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
-                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-04) {
+                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-04, use_cpp=TRUE) {
   
  
   pcon <- prep_constraints(X, A, M)
@@ -111,13 +111,21 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   
   if (deflation) {
     if (n < p) {
-      #svdfit <- gmd_deflation_cpp(t(Xp), A, M, ncomp, threshold)
-      svdfit <- gmd_deflationR(t(Xp), A, M, ncomp, threshold,svd_init)
-      svdfit$d <- svdfit$d[,1]
+      
+      if (use_cpp) {
+        svdfit <- gmd_deflation_cpp(t(Xp), A, M, ncomp, threshold)
+        #svdfit <- gmd_deflationR(t(Xp), A, M, ncomp, threshold,svd_init)
+        svdfit$d <- svdfit$d[,1]
+      } else {
+        svdfit <- gmd_deflationR(t(Xp), A, M, ncomp, threshold,svd_init)
+      }
     } else {
-      #svdfit <- gmd_deflation_cpp(Xp, M, A, ncomp, threshold)
-      svdfit <- gmd_deflationR(Xp, M, A, ncomp, threshold, svd_init)
-      svdfit$d <- svdfit$d[,1]
+      if (use_cpp) {
+        svdfit <- gmd_deflation_cpp(Xp, M, A, ncomp, threshold)
+        svdfit$d <- svdfit$d[,1]
+      } else {
+        svdfit <- gmd_deflationR(Xp, M, A, ncomp, threshold, svd_init)
+      }
     }
   } else { 
     if(n < p){
@@ -437,14 +445,20 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
     u <- init$u[,1,drop=FALSE]
     v <- init$v[,1,drop=FALSE]
   } else {
-    u = cbind(rnorm(n))
-    v = cbind(rnorm(p))
+    #u = cbind(rnorm(n))
+    #v = cbind(rnorm(p))
   }
   
   #browser()
   print("qnorm")
   
-  #browser()
+  #if (p > n) {
+  #  qrnorm = trace(X * R * X.t() * Q);
+  #} else {
+  #  qrnorm = trace(X.t() * Q * X * R);
+  #}
+  
+  
   qrnorm = sum(Matrix::diag(Matrix::crossprod(X,Q) %*% X %*% R))
   cumv = rep(0,k)
  
@@ -485,7 +499,7 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
     cumv[i] = sum(propv[1:i])
   }
     
-  list(d=diag(dgmd), v=vgmd, u=ugmd, cumv=cumv, propv=propv)
+  list(d=as.vector(dgmd), v=vgmd, u=ugmd, cumv=cumv, propv=propv)
     
 }
 

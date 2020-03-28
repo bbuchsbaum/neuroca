@@ -77,15 +77,24 @@ test_that("can run genpca with sparse weighting matrix", {
   expect_true(!is.null(res1))
 })
 
-test_that("can run genpca on really big matrix", {
-  X <- matrix(rnorm(50000*2000),50000,2000)
-  A <- neighborweights::temporal_adjacency(1:2000)
- 
-  M <- neighborweights::temporal_adjacency(1:50000)
-  res1 <- system.time(genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
-                 M=M, preproc=center(), ncomp=5,deflation=TRUE, svd_init=TRUE, threshold=.0001))
-  res2 <- system.time(genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
-                 M=M, preproc=center(), ncomp=5,deflation=TRUE, svd_init=FALSE, threshold=.0001))
+test_that("can run genpca on a largeish matrix with deflation", {
+  nr <- 10000
+  nc <- 500
+  X <- matrix(rnorm(nr*nc),nr,nc)
+  A <- neighborweights::temporal_adjacency(1:nc)
+  A <- t(A) %*% A
+
+  M <- neighborweights::temporal_adjacency(1:nr)
+  M <- t(M) %*% M
+  
+  res1 <- genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
+                 M=M, preproc=center(), ncomp=20,deflation=TRUE, svd_init=FALSE, threshold=1e-6)
+  res2 <- genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
+                             M=M, preproc=center(), ncomp=20,deflation=TRUE, svd_init=FALSE, 
+                             threshold=1e-6, use_cpp=FALSE)
+  
+  res3 <- genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
+                 M=M, preproc=center(), ncomp=20,deflation=FALSE)
   
   expect_true(!is.null(res1))
 })

@@ -53,7 +53,7 @@ using namespace arma;
 // large dimension should be in ROWS (if columns is X, then pass (t(X), R,))
 
 //[[Rcpp::export]]
-List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k, double thr=1e-5) {
+List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k, double thr=1e-6) {
   Rcout << "begin " << std::endl;
   int n = X.n_rows;
   int p = X.n_cols;
@@ -80,10 +80,10 @@ List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k
   
   Rcout << "begin loop " << std::endl;
   for (int i=0; i<k; i++) {
-    Rcout << "i= " << i << std::endl;
+    Rcout << "k= " << i << std::endl;
     double err=1;
     while (err > thr) {
-      Rcout << "err= " << err << std::endl;
+      //Rcout << "err= " << err << std::endl;
       
       //mat u_init;
       //vec s_init;
@@ -95,13 +95,13 @@ List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k
       arma::vec oldu = vec(u);
       arma::vec oldv = vec(v);
       
-      arma::vec uhat = Xhat * R * v;
-      u = uhat/sqrt(uhat.t() * Q * uhat).at(0,0);
-      arma::vec vhat = Xhat.t() * Q * u;
-      v = vhat/sqrt(vhat.t() * R * vhat).at(0,0);
+      arma::vec uhat = Xhat * (R * v);
+      u = uhat/sqrt(uhat.t() * (Q * uhat)).at(0,0);
+      arma::vec vhat = Xhat.t() * (Q * u);
+      v = vhat/sqrt(vhat.t() * (R * vhat)).at(0,0);
       
       err = sum(((oldu - u).t() * (oldu - u)) + ((oldv -v ).t() * (oldv - v)));
-      //Rcout << "error: " << err << std::endl;
+      Rcout << "error: " << err << std::endl;
       
     }
     
