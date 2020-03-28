@@ -1,7 +1,8 @@
 #define ARMA_64BIT_WORD 1
+#include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(cpp11)]]
-#include <RcppArmadillo.h>
+
 using namespace Rcpp;
 using namespace arma;
 
@@ -79,8 +80,18 @@ List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k
   
   Rcout << "begin loop " << std::endl;
   for (int i=0; i<k; i++) {
+    Rcout << "i= " << i << std::endl;
     double err=1;
     while (err > thr) {
+      Rcout << "err= " << err << std::endl;
+      
+      //mat u_init;
+      //vec s_init;
+      //mat v_init;
+      
+      //arma::svd(u_init, s_init, v_init, Xhat, 1);
+      
+
       arma::vec oldu = vec(u);
       arma::vec oldv = vec(v);
       

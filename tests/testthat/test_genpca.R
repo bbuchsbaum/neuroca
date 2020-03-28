@@ -60,3 +60,34 @@ test_that("can extract residuals", {
   expect_equal(sum(res1$d[3:length(res1$d)] ^2), sum(resid^2))
 })
 
+test_that("can run genpca with deflation", {
+  X <- matrix(rnorm(100),10,10)
+  res1 <- genpca(X, preproc=center(), ncomp=5,deflation=TRUE)
+  res2 <- genpca(X, preproc=center(), ncomp=5)
+  expect_true(sum(abs(res1$u) - abs(res2$u)) < 1)
+})
+
+test_that("can run genpca with sparse weighting matrix", {
+  X <- matrix(rnorm(10000*20),10000,20)
+  A <- neighborweights::temporal_adjacency(1:20)
+  A <- cov(as.matrix(A))
+  M <- neighborweights::temporal_adjacency(1:10000)
+  res1 <- genpca(X, A=Matrix::Matrix(A, sparse=TRUE), M=M, preproc=center(), ncomp=5,deflation=TRUE)
+  res2 <- genpca(X, A=A, M=M, preproc=center(), ncomp=5)
+  expect_true(!is.null(res1))
+})
+
+test_that("can run genpca on really big matrix", {
+  X <- matrix(rnorm(50000*2000),50000,2000)
+  A <- neighborweights::temporal_adjacency(1:2000)
+ 
+  M <- neighborweights::temporal_adjacency(1:50000)
+  res1 <- system.time(genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
+                 M=M, preproc=center(), ncomp=5,deflation=TRUE, svd_init=TRUE, threshold=.0001))
+  res2 <- system.time(genpca(X, A=Matrix::Matrix(A, sparse=TRUE), 
+                 M=M, preproc=center(), ncomp=5,deflation=TRUE, svd_init=FALSE, threshold=.0001))
+  
+  expect_true(!is.null(res1))
+})
+
+

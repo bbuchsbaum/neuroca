@@ -90,15 +90,17 @@ prep_constraints <- function(X, A, M) {
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
-                   preproc=center(), deflation=FALSE) {
+                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-04) {
   
  
   pcon <- prep_constraints(X, A, M)
   A <- pcon$A
   M <- pcon$M
   
-  procres <- prep(preproc, X)
-  Xp <- procres$Xp
+  procres <- prep(preproc)
+  Xp <- procres$init(X)
+  
+
   
   assert_that(ncomp > 0)
   ncomp <- min(min(dim(Xp)), ncomp)
@@ -109,10 +111,12 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
   
   if (deflation) {
     if (n < p) {
-      svdfit <- gmd_deflation_cpp(t(X), A, M, ncomp)
+      #svdfit <- gmd_deflation_cpp(t(Xp), A, M, ncomp, threshold)
+      svdfit <- gmd_deflationR(t(Xp), A, M, ncomp, threshold,svd_init)
       svdfit$d <- svdfit$d[,1]
     } else {
-      svdfit <- gmd_deflation_cpp(X, M, A, ncomp)
+      #svdfit <- gmd_deflation_cpp(Xp, M, A, ncomp, threshold)
+      svdfit <- gmd_deflationR(Xp, M, A, ncomp, threshold, svd_init)
       svdfit$d <- svdfit$d[,1]
     }
   } else { 
@@ -413,3 +417,75 @@ truncate.genpca <- function(obj, ncomp) {
 #     Matrix::crossprod(X, q)
 #   }
 # }
+
+gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
+  
+  n = nrow(X)
+  p = ncol(X)
+  #arma::mat ugmd(n, k, fill::zeros);
+  #arma::mat vgmd(p, k, fill::zeros);
+
+  ugmd = matrix(nrow=n, ncol = k)
+  vgmd = matrix(nrow=p, ncol = k)
+  dgmd = rep(0,k)
+  propv = rep(0,k)
+  Xhat = X
+  
+  
+  if (svd_init) {
+    init <- rsvd::rsvd(Xhat,k=1)
+    u <- init$u[,1,drop=FALSE]
+    v <- init$v[,1,drop=FALSE]
+  } else {
+    u = cbind(rnorm(n))
+    v = cbind(rnorm(p))
+  }
+  
+  #browser()
+  print("qnorm")
+  
+  #browser()
+  qrnorm = sum(Matrix::diag(Matrix::crossprod(X,Q) %*% X %*% R))
+  cumv = rep(0,k)
+ 
+  print("begin loop")
+  for(i in 1:k){
+    print(i)
+    err <- 1
+    #browser()
+    if (svd_init && i > 1) {
+      init <- rsvd::rsvd(Xhat,k=1)
+      v <- init$v[,1,drop=FALSE]
+    } else {
+      v <- rnorm(length(v))
+    }
+    
+    while(err > thr){
+      print(err)
+      oldu = u
+      oldv = v
+      
+      uhat = Xhat %*% (R %*% v)
+      #u = uhat/as.double(sqrt(t(uhat)%*% Q %*% uhat))
+      u = uhat/as.double(sqrt(Matrix::crossprod(uhat, Q) %*% uhat))
+      #vhat = t(Xhat) %*% Q %*% u
+      #vhat2 <- t(Xhat) %*% (Q %*% u)
+      vhat <- Matrix::crossprod(Xhat, (Q %*% u)) 
+      #v = vhat/as.double(sqrt(t(vhat) %*% R %*% vhat))
+      v <- vhat / as.double(sqrt(Matrix::crossprod(vhat, R) %*% vhat))
+      err = as.numeric(t(oldu - u) %*% (oldu - u) + t(oldv -v ) %*% (oldv - v))
+    }
+    
+   
+    dgmd[i] = Matrix::crossprod(u, Q) %*% X %*% (R %*% v)
+    ugmd[,i] = u[,1]
+    vgmd[,i] = v[,1]
+    Xhat = Xhat - dgmd[i] *  u %*% t(v)
+    propv[i] = dgmd[i]^2/as.double(qrnorm)
+    cumv[i] = sum(propv[1:i])
+  }
+    
+  list(d=diag(dgmd), v=vgmd, u=ugmd, cumv=cumv, propv=propv)
+    
+}
+
