@@ -96,6 +96,7 @@ List gmd_deflation_cpp(const arma::mat &X, arma::sp_mat Q, arma::sp_mat R, int k
       arma::vec oldv = vec(v);
       
       arma::vec uhat = Xhat * (R * v);
+      //u = uhat/sqrt(uhat.t() * (Q * uhat)).at(0,0);
       u = uhat/sqrt(uhat.t() * (Q * uhat)).at(0,0);
       arma::vec vhat = Xhat.t() * (Q * u);
       v = vhat/sqrt(vhat.t() * (R * vhat)).at(0,0);

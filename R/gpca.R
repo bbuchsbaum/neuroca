@@ -90,7 +90,7 @@ prep_constraints <- function(X, A, M) {
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
-                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-04, use_cpp=TRUE) {
+                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-06, use_cpp=TRUE) {
   
  
   pcon <- prep_constraints(X, A, M)
@@ -445,8 +445,8 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
     u <- init$u[,1,drop=FALSE]
     v <- init$v[,1,drop=FALSE]
   } else {
-    #u = cbind(rnorm(n))
-    #v = cbind(rnorm(p))
+    u = cbind(rnorm(n))
+    v = cbind(rnorm(p))
   }
   
   #browser()
@@ -470,12 +470,9 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
     if (svd_init && i > 1) {
       init <- rsvd::rsvd(Xhat,k=1)
       v <- init$v[,1,drop=FALSE]
-    } else {
-      v <- rnorm(length(v))
-    }
+    } 
     
     while(err > thr){
-      print(err)
       oldu = u
       oldv = v
       
@@ -488,6 +485,12 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
       #v = vhat/as.double(sqrt(t(vhat) %*% R %*% vhat))
       v <- vhat / as.double(sqrt(Matrix::crossprod(vhat, R) %*% vhat))
       err = as.numeric(t(oldu - u) %*% (oldu - u) + t(oldv -v ) %*% (oldv - v))
+      
+      print(paste("err: ", err))
+      if (is.na(err)) {
+        print(paste("t(oldu - u) %*% (oldu - u)", t(oldu - u) %*% (oldu - u)))
+        print(paste("t(oldv -v ) %*% (oldv - v)", t(oldv -v ) %*% (oldv - v)))
+      }
     }
     
    
