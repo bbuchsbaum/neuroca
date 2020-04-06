@@ -177,6 +177,7 @@ projection_fun.mfa <- function(x, colind=NULL, block=NULL) {
 partial_scores.mfa <- function(x, block_index=x$ntables) {
  
   bind <- block_index_list(x)
+  
   res <- lapply(block_index, function(i) {
     ## FIXME
     x$ntables * project(x$fit, get_block(x$X, i), colind=bind[[i]], pre_process=FALSE)
