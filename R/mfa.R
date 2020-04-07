@@ -248,6 +248,8 @@ contributions.mfa <- function(x, type=c("column", "row", "table")) {
 procrusteanize.mfa <- function(x, ncomp=2) {
   F <- scores(x)[,1:ncomp]
   
+  ## TODO this currently rotates the scores. 
+  ## could simply rotate the original variables
   res <- lapply(1:length(x$Xlist), function(i) {
     xcur <- get_block(x$Xp[[i]])
     xp <- project(x, xcur, comp=1:ncomp, block_index=i)
