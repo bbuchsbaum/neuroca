@@ -1,4 +1,32 @@
 
+
+rfsa <- function(X, Y, maxiter=100, convergence=1e-6) {
+  D <- Matrix::Diagonal(ncol(X))
+  Ut <- matrix(0, nrow(X), ncol(Y))
+  conv <- 1
+  iter <- 1
+  
+  while (iter < maxiter && conv > convergence) {
+    Dtinv <- Matrix::Diagonal(x=1/Matrix::diag(D)) 
+    
+    fit <- lm.fit(as.matrix(X %*% Dtinv %*% t(X)), Y)
+    
+    Z <- coef(fit)
+    Utold <- Ut
+    Ut <- Dtinv %*% t(X) %*% Z
+    
+    D <- Matrix::Diagonal(x=apply(Ut, 1, function(x) 1/(2* sum(x^2))))
+    conv <- sum(abs(Ut - Utold))  
+    print(conv)
+    iter <- iter+1
+  
+  }
+
+  
+}
+
+
+
 #' @keywords internal
 unit_norm <- function(X) {
   Xs <- scale(X, center=TRUE, scale=TRUE)
