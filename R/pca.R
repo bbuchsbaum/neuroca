@@ -27,6 +27,10 @@ bi_projector <- function(preproc, ncomp, v, u, d, scores, classes=NULL, ...) {
 
 
 
+#shrink.pca <- function(x, method=c("GSURE", "QUT", "SURE"), sigma, lambda=NULL, gamma=NULL) {
+#  
+#}
+
 #' shrink_pca
 #' 
 #' adaptive shrinkage pca from the \code{denoiseR} package

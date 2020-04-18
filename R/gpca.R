@@ -337,7 +337,9 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
   
 }
 
-
+#' @examples 
+#' X <- matrix(rnorm(100*100), 100,100)
+#' res <- genpca(X)
 reconstruct.genpca <- function(x, newdata=NULL,
                                comp=1:x$ncomp, 
                                colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
@@ -351,6 +353,8 @@ reconstruct.genpca <- function(x, newdata=NULL,
   
   ## Xr = x$ou %*% diag(x$d) %*% t(x$ov)
   ## does not work when X is uncentered
+  
+  assert_that(max(comp) <= length(x$d))
   
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
