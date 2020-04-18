@@ -27,48 +27,7 @@ bi_projector <- function(preproc, ncomp, v, u, d, scores, classes=NULL, ...) {
 
 
 
-#shrink.pca <- function(x, method=c("GSURE", "QUT", "SURE"), sigma, lambda=NULL, gamma=NULL) {
-#  
-#}
 
-#' shrink_pca
-#' 
-#' adaptive shrinkage pca from the \code{denoiseR} package
-#' 
-#'   
-#' @param X
-#' @param center
-#' @param scale
-#' @importFrom denoiseR adashrink
-#' @export
-shrink_pca <- function(X, preproc=center(), method = c("GSURE", "QUT", "SURE"), ...) {
-  assert_that(is.matrix(X) || inherits(X, "Matrix"))
-  
-  procres <- prep(preproc, X)
-  Xp <- procres$init(X)
-  
-  res <- denoiseR::adashrink(Xp, method=method, center=FALSE, ...)
-  
-  keep <- res$singval > 1e-06
-  
-  if (sum(keep) == 0) {
-    keep <- 1
-  } 
-  
-  v=res$low.rank$v[,keep,drop=FALSE]
-  u=res$low.rank$u[,keep,drop=FALSE]
-  d=res$low.rank$d[keep]
-
-  ret <- bi_projector(
-              preproc=procres,
-              ncomp=length(d),
-              v=v, 
-              u=u,
-              d=d,
-              scores=t(t(as.matrix(u)) * d),
-              classes=c("shrink_pca", "pca"))
-
-}
                        
 
 #' pseudo_svd
