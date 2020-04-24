@@ -3,8 +3,8 @@ context("genpca")
 mat_10_10 <- matrix(rnorm(10*10), 10, 10)
 
 test_that("pca and genpca have same results with identity matrix for row and column constraints", {
-  res1 <- genpca(mat_10_10, center=TRUE)
-  res2 <- pca(mat_10_10, center=TRUE, ncomp=ncomp(res1))
+  res1 <- genpca(mat_10_10)
+  res2 <- pca(mat_10_10,ncomp=ncomp(res1))
   
   diffscores <- abs(scores(res1)) - abs(scores(res2))
   expect_true(sum(diffscores) < 1e-5)
@@ -15,8 +15,8 @@ test_that("pca and genpca have same results with identity matrix for row and col
 
 test_that("gen_pca with column variances is equivalent to a scaled pca", {
   wts <- 1/apply(mat_10_10, 2, var)
-  res1 <- genpca(mat_10_10, A=wts, center=TRUE)
-  res2 <- pca(mat_10_10, center=TRUE, scale=TRUE)
+  res1 <- genpca(mat_10_10, A=wts, preproc=center())
+  res2 <- pca(mat_10_10, preproc=standardize())
   
   diffscores <- abs(scores(res1)) - abs(scores(res2))
   expect_true(abs(sum(diffscores)) < 1e-5)
@@ -27,22 +27,45 @@ test_that("gen_pca with column variances is equivalent to a scaled pca", {
 test_that("gen_pca with dense column and row constraints works", {
   A <- cov(matrix(rnorm(10*10),10,10))
   M <- cov(matrix(rnorm(10*10),10,10))
-  res1 <- genpca(mat_10_10, A=A, M=M, center=TRUE)
+  res1 <- genpca(mat_10_10, A=A, M=M, preproc=center())
   expect_equal(ncomp(res1),length(res1$d))
 })
 
 test_that("gen_pca with sparse column and row constraints works", {
-  A <- neighborweights::similarity_matrix(mat_10_10, k=3)
+  A <- neighborweights::graph_weights(mat_10_10, k=3)
   diag(A) <- 1
-  M <- neighborweights::similarity_matrix(t(mat_10_10), k=3)
+  M <- neighborweights::graph_weights(t(mat_10_10), k=3)
   diag(M) <- 1
-  res1 <- genpca(mat_10_10, A=A, M=M, center=TRUE)
+  res1 <- genpca(mat_10_10, A=A, M=M, preproc=center())
 })
 
-test_that("can truncate a gen_pca model", {
-  res1 <- genpca(mat_10_10, center=TRUE)
+test_that("can truncate a genpca model", {
+  res1 <- genpca(mat_10_10, preproc=center())
   res2 <- truncate(res1,5)
   expect_equal(ncomp(res2), 5)
+})
+
+test_that("can reconstruct a genpca model with component selection", {
+  A <- cov(matrix(rnorm(20*10), 20,10))
+  M <- cov(matrix(rnorm(20*10), 20,10))
+  res1 <- genpca(mat_10_10, preproc=center())
+  recon1 <- reconstruct(res1)
+  expect_equal(as.matrix(recon1), mat_10_10, check.attributes=FALSE)
+  
+  res2 <- genpca(mat_10_10, A=A, M=M, ncomp=10, preproc=center())
+  res2 <- pca(mat_10_10,ncomp=10, preproc=center())
+  recon2 <- reconstruct(res2)
+  
+  for (i in 1:length(res2$d)) {
+    recon <- reconstruct(res2, comp=1:i)
+    print(sum((recon - mat_10_10)^2))
+  }
+  
+  recon1 <- reconstruct(res2, comp=1:5)
+  recon2 <- reconstruct(res2, comp=6:9)
+  
+  
+  
 })
 
 test_that("can project a row vector", {

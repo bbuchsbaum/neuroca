@@ -1,4 +1,8 @@
 
+
+diagonal <- function(x) {
+  diag(x, nrow=length(x), ncol=length(x))
+}
 .msqrt <- function(a) {
   a.eig <- eigen(a)
   keep <- which(a.eig$values > 0)
@@ -186,8 +190,8 @@ predict.genpca <- function(x, newdata, comp=1:x$ncomp, pre_process=TRUE) {
   } else {
     newdata
   }
-  
-  project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
+  Xsup %*% x$v[,comp, drop=FALSE]
+  #project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
   
 }
 
@@ -372,16 +376,16 @@ reconstruct.genpca <- function(x, newdata=NULL,
   if (is.null(colind)) {
     if (reverse_pre_process) {
       nd <- newdata[rowind,,drop=FALSE]
-      x$preproc$reverse_transform(nd %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE]))
+      x$preproc$reverse_transform(nd %*% diagonal(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE]))
     } else {
-      newdata %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])
+      newdata %*% diagonal(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])
     }
   } else {
     if (reverse_pre_process) {
-      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind], 
+      x$preproc$reverse_transform(newdata[rowind,,drop=FALSE] %*% diagonal(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind], 
                                   colind=colind)
     } else {
-      newdata[rowind,,drop=FALSE] %*% diag(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind]
+      newdata[rowind,,drop=FALSE] %*% diagonal(x$d[comp]) %*% t(x$ov[,comp,drop=FALSE])[,colind]
     }
   }
   

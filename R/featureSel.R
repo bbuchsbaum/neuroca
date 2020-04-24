@@ -1,5 +1,9 @@
 
 
+
+
+
+
 rfsa <- function(X, Y, maxiter=100, convergence=1e-6) {
   D <- Matrix::Diagonal(ncol(X))
   Ut <- matrix(0, nrow(X), ncol(Y))
