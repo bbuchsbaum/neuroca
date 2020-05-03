@@ -258,6 +258,10 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
 
 
 #' @export
+#' @examples 
+#' 
+#' X <- matrix(rnorm(10*100), 10, 100)
+#' x = pca(X, ncomp=9)
 bootstrap.pca <- function(x, nboot=100, k=x$ncomp) {
   DUt <- t(scores(x))
   n <- dim(DUt)[2]
@@ -311,7 +315,7 @@ svd_dutp <- function(DUtP,k) {
 #' @keywords internal
 boot_sum <- function(res,k, v) {
   
-  
+  ## each of k elements has nboot rows and n columns
   AsByK <- lapply(1:k, function(ki) {
     do.call(rbind, lapply(res, function(a) {
       a$svdfit$Ab[,ki]
@@ -327,19 +331,25 @@ boot_sum <- function(res,k, v) {
     }))
   })
   
+  ## mean scores
   EScores <- lapply(ScoresByK, function(s) {
     apply(s, 2, mean, na.rm=TRUE)
   })
   
+  ## sd of scores
   sdScores <- lapply(ScoresByK, function(s) {
     apply(s, 2, sd, na.rm=TRUE)
   })
   
   
+  ## produces 5 mean vectors, 1 per component
+  EAs <- lapply(AsByK, colMeans) 
   
-  EAs <- lapply(AsByK, colMeans) #EAs is indexed by k
+  ## 5 loadings components
   EVs <- lapply(EAs, function(EA) v %*% matrix(EA,ncol=1))
   
+  
+  ## k nXn covariance matrices
   varAs <- lapply(AsByK,var) #indexed by k
   
   varVs <- lapply(1:length(AsByK), function(ki) {
@@ -353,6 +363,8 @@ boot_sum <- function(res,k, v) {
 
 #' @keywords internal
 boot_svd <- function(nboot, k, v, gen_DUtP) {
+  
+  ## Generate nboot resamples of scores
   res <- lapply(1:nboot, function(i) {
     sam <- gen_DUtP()
     DUtP <- sam$DUt
