@@ -147,6 +147,7 @@ pass <- function(preproc=prepper()) {
 
 
 #' @export
+#' @importFrom Matrix colMeans
 center <- function(preproc = prepper(), cmeans=NULL) {
   create <- function() {
     env = new.env()
@@ -161,7 +162,6 @@ center <- function(preproc = prepper(), cmeans=NULL) {
           cmeans <- env[["cmeans"]]
           assert_that(ncol(X) == length(cmeans))
         }
-        
         
         #print(cmeans)
         #message("forward cmeans:", env[["cmeans"]])

@@ -47,7 +47,10 @@ within_class_scatter <- function(X, Y) {
 }
 
 
-
+## A Unified Framework for
+## Subspace Face Recognition
+## Xiaogang Wang, Student Member, IEEE, and
+## Xiaoou Tang, Senior Member, IEEE
 #' @keywords internal
 pca_lda <- function(Y, X, preproc=center(), dp=min(dim(X)), di, dl=dp-1) {
   Y <- as.factor(Y)

@@ -10,7 +10,10 @@ genpca(
   M = NULL,
   ncomp = min(dim(X)),
   preproc = center(),
-  deflation = FALSE
+  deflation = FALSE,
+  svd_init = TRUE,
+  threshold = 1e-06,
+  use_cpp = TRUE
 )
 }
 \arguments{
