@@ -238,7 +238,7 @@ project.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, pre_process=TRUE, co
     
     comp <- comp[which(comp <= x$ncomp)]
     ##project_xav(Xsup, x$A[colind,colind,drop=FALSE], x$v[colind,comp,drop=FALSE])
-    Xsup %*% x$v[,comp,drop=FALSE]
+    Xsup %*% x$v[colind,comp,drop=FALSE]
   }
 }
 
