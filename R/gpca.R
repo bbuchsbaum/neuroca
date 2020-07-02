@@ -215,9 +215,11 @@ singular_values.genpca <- function(x) {
 
 #' @export
 project.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, pre_process=TRUE, colind=NULL) {
-  if (is.null(newdata)) {
+  if (is.null(newdata) && is.null(colind)) {
     return(scores(x)[,comp])
-  }
+  } 
+  
+  ## what if colind != NULL and newdata == NULL
   
   if (is.vector(newdata)) {
     newdata <- matrix(newdata,nrow=1)
@@ -225,7 +227,7 @@ project.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, pre_process=TRUE, co
   
   if (is.null(colind)) {
     Xsup <- if (pre_process) reprocess(x, newdata) else newdata
-    project_xav(Xsup, x$A, x$v[,comp,drop=FALSE])
+    Xsup %*% x$v[,comp,drop=FALSE]
   } else {
     assertthat::assert_that(length(colind) == ncol(newdata))
     Xsup <- if (pre_process) {
@@ -235,7 +237,8 @@ project.genpca <- function(x, newdata=NULL, comp=1:x$ncomp, pre_process=TRUE, co
     }
     
     comp <- comp[which(comp <= x$ncomp)]
-    project_xav(Xsup, x$A[colind,colind,drop=FALSE], x$v[colind,comp,drop=FALSE])
+    ##project_xav(Xsup, x$A[colind,colind,drop=FALSE], x$v[colind,comp,drop=FALSE])
+    Xsup %*% x$v[,comp,drop=FALSE]
   }
 }
 
