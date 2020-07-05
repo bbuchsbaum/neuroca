@@ -6,8 +6,8 @@
 #' @param x the model fit
 #' @param labels the labels associated with the rows of the fitted or projected data (see newdata)
 #' @param newdata an optional supplementary training set that is projected in to the fitted space.
-#' @param colind the subset of column indices in the fitted mode lto use.
-#' @param knn the number of nearest neighbors when classifiyng a new point. 
+#' @param colind the subset of column indices in the fitted model to use.
+#' @param knn the number of nearest neighbors when classifying a new point. 
 #' @export
 classifier.projector <- function(x, labels, newdata=NULL, colind=NULL, knn=1) {
 
@@ -30,6 +30,20 @@ classifier.projector <- function(x, labels, newdata=NULL, colind=NULL, knn=1) {
     class="classifier"
   )
 
+}
+
+rank_score <- function(prob, observed) {
+  pnames <- colnames(prob)
+  assert_that(all(observed %in% pnames))
+  prank <- apply(prob, 1, function(p) {
+    rp <- rank(p, ties.method="random")
+    rp/length(rp)
+  })
+  
+  mids <- match(observed, pnames)
+  pp <- prank[cbind(mids, 1:length(observed))]
+  
+  data.frame(prank=pp, observed=observed)
 }
 
 
@@ -62,7 +76,8 @@ nearest_class <- function(prob, labels,knn=1) {
 
 
 #' @export
-predict.classifier <- function(object, newdata, ncomp=object$fit$ncomp, metric=c("cosine", "euclidean")) {
+predict.classifier <- function(object, newdata, ncomp=object$fit$ncomp, metric=c("cosine", "euclidean"),
+                               colind=NULL) {
   metric <- match.arg(metric)
   
   proj <- project(object$fit, newdata, comp=1:ncomp, colind=object$colind)
@@ -81,7 +96,7 @@ predict.classifier <- function(object, newdata, ncomp=object$fit$ncomp, metric=c
     doit(p)
 
   } else if (metric == "euclidean") {
-    D <- proxy::dist(as.matrix(object$scores)[,1:ncomp,drop=FALSE], as.matrix(proj), method="Euclidean")
+    D <- proxy::dist(as.matrix(object$scores)[,1:ncomp,drop=FALSE], as.matrix(proj), method="euclidean")
     doit(exp(-D))
   }
   

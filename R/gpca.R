@@ -267,7 +267,11 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     Rtilde <- Matrix::Diagonal(x=sqrt(Matrix::diag(R)))
     Rtilde.inv = Matrix::Diagonal(x=1/sqrt(Matrix::diag(R)))
   } else {
-    decomp <- eigen(R)
+    decomp <- if (!is.null(attr(R, "decomp"))) {
+      attr(R, "decomp")
+    } else {
+      eigen(R)
+    }
     
     if (length(decomp$values) > 1) {
       v <- decomp$values
