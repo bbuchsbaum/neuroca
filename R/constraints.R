@@ -35,11 +35,13 @@ spatial_constraints <- function(coords, nblocks=1,
   
   Sw <- neighborweights::spatial_adjacency(coords, sigma=sigma_within, 
                                            weight_mode=weight_mode_within,
-                                           nnk=nnk_within, stochastic = TRUE)
+                                           nnk=nnk_within,  normalized=FALSE,
+                                           stochastic = TRUE)
  
   if (verbose) {
     message("spatial_contraints: replicating within blocks")
   }
+  
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)
   
@@ -49,11 +51,13 @@ spatial_constraints <- function(coords, nblocks=1,
   
   Sb <- neighborweights::spatial_adjacency(coords,sigma=sigma_between,
                                                  weight_mode=weight_mode_between, 
+                                                 normalized=FALSE,
                                                  nnk=nnk_between, stochastic=TRUE)
   
  
   Sbt <- as(Sb, "dgTMatrix")
   nvox <- nrow(coords)
+  
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
   
   out <- unlist(lapply(1:nblocks, function(i) {
