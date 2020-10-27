@@ -94,7 +94,8 @@ prep_constraints <- function(X, A, M) {
 #' S <- S/RSpectra::svds(S,k=1)$d
 #' gp1 <- genpca(X, A=S, ncomp=2)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
-                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-06, use_cpp=TRUE) {
+                   preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-06, 
+                   use_cpp=TRUE, maxeig=800) {
   
  
   pcon <- prep_constraints(X, A, M)
@@ -133,10 +134,10 @@ genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)),
     }
   } else { 
     if(n < p){
-      ret = gmdLA(t(Xp), A,M, ncomp,p,n)
+      ret = gmdLA(t(Xp), A,M, ncomp,p,n, maxeig=maxeig)
       svdfit = list(u=ret$v, v=ret$u,d=ret$d, cumv=ret$cumv,propv=ret$propv)
     } else{
-      svdfit = gmdLA(Xp, M,A,ncomp,n,p)
+      svdfit = gmdLA(Xp, M,A,ncomp,n,p, maxeig=maxeig)
     }
   }
   
@@ -260,7 +261,7 @@ project_cols.genpca <- function(x, newdata, comp=1:ncomp(x)) {
 
 
 #' @keywords internal
-gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
+gmdLA <- function(X, Q, R, k=min(n,p), n, p, maxeig=800) {
   ##computation
 
   if (isDiagonal(R)) {
@@ -268,9 +269,15 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p) {
     Rtilde.inv = Matrix::Diagonal(x=1/sqrt(Matrix::diag(R)))
   } else {
     decomp <- if (!is.null(attr(R, "decomp"))) {
+      ## cached decomposition (should validate)
       attr(R, "decomp")
     } else {
-      eigen(R)
+      if (nrow(R) > maxeig) {
+        ## large matrix, truncate for speed
+        RSpectra::eigs_sym(R, k=maxeig)
+      } else {
+        eigen(R, symmetric=TRUE)
+      }
     }
     
     if (length(decomp$values) > 1) {
