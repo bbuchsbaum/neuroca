@@ -13,7 +13,9 @@ Imports:
     parallel,
     fields,
     sda,
-    denoiseR
+    denoiseR,
+    glmnet,
+    dclust
 License: GPL (>= 2)
 Maintainer: Bradley Buchsbaum <brad.buchsbaum@gmail.com>
 Title: neuroca: multiblock component analysis for neuroimaging data
