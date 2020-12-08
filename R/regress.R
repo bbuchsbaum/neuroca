@@ -4,7 +4,9 @@ gen_basis <- function(n,p) {
 }
 
 #' @export
-regress <- function(basis, X, preproc=pass(), method=c("linear", "ridge"), intercept=FALSE) {
+#' @importFrom glmnet glmnet
+regress <- function(basis, X, preproc=pass(), method=c("linear", "ridge"), 
+                    intercept=FALSE, lambda=.001) {
   method <- match.arg(method)
   
   procres <- prep(preproc, X)
@@ -26,13 +28,22 @@ regress <- function(basis, X, preproc=pass(), method=c("linear", "ridge"), inter
     loadings <- t(coef(lfit))
     
   } else {
-    stop("method 'ridge' not implemented yet.")
+    gfit <- glmnet(basis, X, alpha=0, family="mgaussian", lambda=lambda, intercept=intercept)
+    loadings <- t(do.call(cbind, coef(gfit)))
+    
+    if (intercept) {
+      scores <- cbind(rep(1, nrow(basis)), basis)
+    } else {
+      scores <- basis
+    }
+    
+    #stop("method 'ridge' not implemented yet.")
   }
   
-  projector(procres, ncomp=ncol(scores), 
-            basis=basis,
+  p <- projector(procres, ncomp=ncol(scores), 
+            basis=scores,
             v=loadings, 
-            projection=corpcor::pseudoinverse(loadings),
+            projection=corpcor::pseudoinverse(as.matrix(loadings)),
             classes="regress")
   
 }
@@ -73,7 +84,7 @@ reconstruct.regress <- function(x, newdata=NULL, colind=NULL,
   }
   
   rowind <- 1:nrow(newdata)
-  genreconstruct(x,newdata,comp=1:nrow(loadings(x)),colind,rowind,reverse_pre_process)
+  genreconstruct(x,newdata,comp=1:ncol(loadings(x)),colind,rowind,reverse_pre_process)
   
 }
 

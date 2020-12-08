@@ -162,88 +162,133 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
 #' @examples 
 #' 
 #' grid <- expand.grid(1:10, 1:10)
+#' 
+#' ## 100 images each with 50 features
 #' X <- matrix(rnorm(100*50), 100, 50)
 #' cuts <- c(4, 8, 16)
-#' hclus <- hclust(dist(grid))
+#' hclus <- dclust::dclust(grid, nstart=10)
 #' hres1 <- hpca(X, hclus, cuts, est_method="fixed", ncomp=c(4,1,1,1))
 #' ncomp(hres1) == (sum(cuts) +4)
 #' 
 #' hres2 <- hpca(X, hclus, cuts, est_method="shrink")
 #' hres3 <- hpca(X, hclus, cuts, est_method="gcv")
-#' 
-hpca <- function(X, hclus, cuts, est_method=c("fixed", "gcv", "shrink"), ncomp=rep(1, length(cuts)+1), 
-                 center=TRUE, scale=FALSE, shrink_method="GSURE") {
+#' ## start bottom up?
+#' @importFrom dendextend cutree
+#' @import dclust
+hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"), 
+                 comp_method=c("fixed", "unit", "log"),
+                 ncomp=rep(1, length(cuts)),
+                 spat_smooth=rep(0, length(cuts)+1),
+                 cds=NULL,
+                 preproc=center(), 
+                 shrink_method="GSURE") {
   
   est_method <- match.arg(est_method)
-  preproc <- pre_processor(X, center=center, scale=scale)
-  Xp <- pre_process(preproc, X)
+  comp_method <- match.arg(comp_method)
+  #preproc <- pre_processor(X, center=center, scale=scale)
+  #Xp <- pre_process(preproc, X)
   
-  do_pca <- function(x, level) {
+  if (comp_method == "fixed" && ncomp != length(cuts)) {
+    stop("`ncomp` must have same length as `cuts`")
+  }
+  
+  get_ncomp <- function(level, ind) {
+    if (comp_method == "log") {
+      max(1, ceiling(log(length(ind))))
+    } else if (comp_method == "unit") {
+      1
+    } else if (comp_method=="fixed") {
+      ncomp[level]
+    }
+  }
+  do_pca <- function(x, level, preproc, ind) {
     if (est_method == "fixed") {
-      pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
-    } else if (est_method == "gcv") {
-      est <- fast_estim_ncomp(x)
-      if (est$bestcomp == 0) {
-        ## 0 comps, return dummy pca
-        pseudo_svd(u=matrix(rep(0, nrow(x))), v=matrix(rep(0,ncol(x))), d=0)
-      } else {
-        pca(x, ncomp=nc, center=FALSE, scale=FALSE)
-      }
+      pca(x, ncomp=get_ncomp(level, ind), preproc=preproc)
+    } else if (est_method == "smooth") {
+      coord <- cds[ind,]
+      S <- spatial_constraints(cds[ind,], sigma_within=spat_smooth[level])
+      S <- neighborweights::make_doubly_stochastic(S)
+      genpca(x, M=S, ncomp=get_ncomp(level, ind), preproc=preproc)
     } else {
-      shrink_pca(x, center=FALSE, scale=FALSE, method=shrink_method)
+      shrink_pca(x, preproc=preproc, method=shrink_method)
     }
   }
   
-  fit0 <- do_pca(Xp, 1)
+  fit0 <- do_pca(X, 1, preproc, 1:nrow(X))
   
   if (fit0$d[1] == 0) {
     stop("hpca: degenerate solution, first singular value is zero. For fixed solutions, use  'est_method' = 'fixed'")
   }
   
   
-  Xresid <- residuals(fit0,xorig=Xp)
+  Xresid0 <- residuals(fit0, ncomp=fit0$ncomp, xorig=X)
+  Xresid <- Xresid0
   
-  fits <- list()
-  fits[[1]] <- fit0
+  fits <- vector(length(cuts), mode="list")
+  fits[[1]] <- fit0$u
   
   for (i in 1:length(cuts)) {
+    #print(i)
     print(sum(Xresid^2))
-    kind <- cutree(hclus, cuts[i])
+    kind <- dendextend::cutree(hclus, cuts[i])
     
     pres <- split(1:length(kind), kind) %>% furrr::future_map(function(ind) {
+      #print(ind)
       x <- Xresid[ind,]
     
-      fit <- do_pca(x, i+1)
+      fit <- do_pca(x, i+1, preproc=center(), ind)
       print(ncomp(fit))
-      u <- Matrix::sparseMatrix(i=rep(ind, ncol(fit$u)), 
-                                j=rep(1:ncol(fit$u), each=length(ind)), 
-                                x=as.vector(fit$u),
-                                dims=c(nrow(X), ncol(fit$u)))
-
-      pseudo_svd(u,fit$v,fit$d)
       
+      u <- cbind(rep(1, nrow(fit$u)), fit$u)
+      u <- Matrix::sparseMatrix(i=rep(ind, ncol(u)), 
+                                j=rep(1:ncol(u), each=length(ind)), 
+                                x=as.vector(u),
+                                dims=c(nrow(X), ncol(u)))
+      
+      
+      
+      #psvd <- pseudo_svd(fit$u,fit$v,fit$d, pre_processor=fit$preproc)
+      #residuals(psvd)
+      #print(paste("ncomp = ", fit$ncomp, " length(d) = ", length(fit$d)))
+      
+      list(psvd=fit, u=u, resid=residuals(fit, ncomp=length(fit$d), xorig=x), 
+           ind=ind, comp=length(fit$d))
     })
     
-    ds <- map_dbl(pres, ~ .$d[1])
+  
+    
+    ## fit u to Xresid -- take resid
+    ## regress(u, Xresid, intercept=FALSE)
+    ds <- map_dbl(pres, ~ .$psvd$d[1])
     
     if (all(ds == 0)) {
       break
     } else if (sum(ds) == 1) {
       ind <- which(ds == 1)
-      fits[[i+1]] <- pres[[ind]]
+      pfits <- lapply(pres, "[[", "psvd")
+      fits[[i+1]] <- pfits[[ind]]$u
     } else {
       pres <- pres[ds > 0]
-      fits[[i+1]] <- do.call(partial(combine, pres[[1]]), pres[2:length(pres)])
+      pfits <- lapply(pres, "[[", "psvd")
+      fits[[i+1]] <- do.call(cbind, lapply(pres, "[[", "u"))
     }
     
-    Xresid <- residuals(fits[[i+1]], ncomp=ncomp(fits[[i+1]]), xorig=Xresid)
+    Xout <- matrix(0, nrow(X), ncol(X))
+    
+    for (pfit in pres) {
+      Xout[pfit$ind,] <- as.matrix(pfit$resid)
+    }
+    Xresid <- Xout
+    
   }
   
-  final_fit <- if (length(fits) > 1) {
-    do.call(partial(combine, fits[[1]]), fits[2:length(fits)])
-  } else {
-    fits[[1]]
-  }
-  
+  u_final <- do.call(cbind, fits)
+  reg <- regress(u_final, X, method="ridge", intercept=TRUE)
+  class(reg) <- c("hpca", class(reg))
+  reg$levels <- length(cuts)
+  reg$hclus <- hclus
+  reg$cuts <- cuts
+  reg$spat_smooth <- spat_smooth
+  reg
 }
 

@@ -38,9 +38,14 @@ spatial_constraints <- function(coords, nblocks=1,
                                            nnk=nnk_within,  normalized=FALSE,
                                            stochastic = TRUE)
  
+  if (nblocks == 1) {
+    return(Sw)
+  }
+  
   if (verbose) {
     message("spatial_contraints: replicating within blocks")
   }
+  
   
   Swithin <- Matrix::bdiag(replicate(nblocks, Sw, simplify=FALSE))
   #indices <- rep(1:nrow(coords), nblocks)

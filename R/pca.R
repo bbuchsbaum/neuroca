@@ -36,8 +36,9 @@ bi_projector <- function(preproc, ncomp, v, u, d, scores, classes=NULL, ...) {
 #' @param v the column weights
 #' @param d the singular values
 #' @param rnames row names of observations
+#' @param pre_processor a "prepped" pre_processor object
 #' @export
-pseudo_svd <- function(u, v, d, rnames=NULL) {
+pseudo_svd <- function(u, v, d, rnames=NULL, pre_processor=NULL) {
   
   scores <- t(t(as.matrix(u)) * d)
   
@@ -45,12 +46,16 @@ pseudo_svd <- function(u, v, d, rnames=NULL) {
     row.names(scores) <- rnames
   }
   
+  if (is.null(preproc)) {
+    pre_processor <- prep(pass())
+  }
+  
   assert_that(length(d) == ncol(u))
   assert_that(ncol(v) == ncol(u))
   
 
   ret <- bi_projector(
-              preproc=pass(),
+              preproc=pre_processor,
               ncomp=length(d),
               v=v, 
               u=u, 
@@ -265,6 +270,8 @@ residuals.bi_projector <- function(x, ncomp=1, xorig) {
 
 genreconstruct <- function(x, newdata, comp, colind=NULL, 
                            rowind=NULL, reverse_pre_process=TRUE) {
+  
+  #browser()
   if (!is.null(newdata)) {
     assert_that(ncol(newdata) == length(comp) && nrow(newdata) == nrow(scores(x)))
   } else {
@@ -274,7 +281,7 @@ genreconstruct <- function(x, newdata, comp, colind=NULL,
   if (is.null(rowind)) {
     rowind <- 1:nrow(newdata)
   } else {
-    assert_that(all(rowind > 0) && max(rowind) < nrow(newdata))
+    assert_that(all(rowind > 0) && max(rowind) <= nrow(newdata))
   }
   
   if (is.null(colind)) {
