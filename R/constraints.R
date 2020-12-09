@@ -39,6 +39,10 @@ spatial_constraints <- function(coords, nblocks=1,
                                            stochastic = TRUE)
  
   if (nblocks == 1) {
+    if (any(variable_weights[1] != variable_weights)) {
+      Wg <- Diagonal(x=sqrt(variable_weights))
+      Sw <- Wg %*% Sw %*% Wg
+    }
     return(Sw)
   }
   

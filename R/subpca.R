@@ -175,6 +175,11 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
 #' ## start bottom up?
 #' @importFrom dendextend cutree
 #' @import dclust
+#' 
+#' 
+# res <- neuroca:::hpca(mat, hclus, cuts=c(2,4,8,16,32), est_method="smooth",
+#                comp_method="log",
+#                cds=cds, spat_smooth=c(16,8,4,2,2))
 hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"), 
                  comp_method=c("fixed", "unit", "log"),
                  ncomp=rep(1, length(cuts)),
@@ -192,6 +197,10 @@ hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"),
     stop("`ncomp` must have same length as `cuts`")
   }
   
+  if (est_method == "smooth") {
+    assert_that(!is.null(cds) && nrow(cds) == nrow(X))
+  }
+  
   get_ncomp <- function(level, ind) {
     if (comp_method == "log") {
       max(1, ceiling(log(length(ind))))
@@ -201,13 +210,16 @@ hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"),
       ncomp[level]
     }
   }
+  
   do_pca <- function(x, level, preproc, ind) {
     if (est_method == "fixed") {
       pca(x, ncomp=get_ncomp(level, ind), preproc=preproc)
     } else if (est_method == "smooth") {
+      message("smooth is", spat_smooth[level])
       coord <- cds[ind,]
-      S <- spatial_constraints(cds[ind,], sigma_within=spat_smooth[level])
-      S <- neighborweights::make_doubly_stochastic(S)
+      S <- spatial_constraints(cds[ind,], sigma_within=spat_smooth[level],
+                               nnk_within=spat_smooth[level] * 10)
+      #S <- neighborweights::make_doubly_stochastic(S)
       genpca(x, M=S, ncomp=get_ncomp(level, ind), preproc=preproc)
     } else {
       shrink_pca(x, preproc=preproc, method=shrink_method)
@@ -237,7 +249,7 @@ hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"),
       x <- Xresid[ind,]
     
       fit <- do_pca(x, i+1, preproc=center(), ind)
-      print(ncomp(fit))
+      #print(ncomp(fit))
       
       u <- cbind(rep(1, nrow(fit$u)), fit$u)
       u <- Matrix::sparseMatrix(i=rep(ind, ncol(u)), 
