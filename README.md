@@ -1,4 +1,11 @@
-neuropls
+neuroca
 ========
 
-neuropls is an implementation of partial least squares for neuroimaging data. 
+neuroca has some experimental code for various multivariate methods. 
+
+current work has moved to other repositories:
+
+https://github.com/bbuchsbaum/multivarious
+https://github.com/bbuchsbaum/musca
+https://github.com/bbuchsbaum/subpca
+https://github.com/bbuchsbaum/genpca
