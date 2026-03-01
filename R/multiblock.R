@@ -2,7 +2,7 @@
 #' @export
 nblocks.multiblock <- function(x) length(block_index_list(x))
 
-
+ 
 #' @export
 project.multiblock <- function(x, newdata, comp=1:ncomp(x), block_index=NULL) {
   if (missing(newdata)) {
@@ -49,13 +49,15 @@ predict.multiblock <- function(x, newdata, ncomp=x$ncomp, block_index=1:x$ntable
   fscores <- if (length(block_index) == x$ntables) {
     assert_that(ncol(newdata) == ncol(x$X))
     Reduce("+", lapply(block_index, function(i) {
-      project(x, newdata[,ind,drop=FALSE], comp=1:ncomp, pre_process=pre_process, block_index=i) 
+      ind <- x$block_indices[[i]]
+      project(x, newdata[,ind,drop=FALSE], comp=1:ncomp, block_index=i)
     }))
   } else if (length(block_index) == 1) {
     fscores <- project(x, newdata, comp=1:ncomp, block_index=block_index)
-    
+
   }
-  
+
+  fscores
 }
 
 
@@ -133,7 +135,7 @@ partial_scores.multiblock <- function(x, block_index=1:x$ntables) {
   bind <- block_index_list(x)
   
   res <- lapply(block_index, function(i) {
-    x$ntables * project(x$fit, get_block(Xr, i), colind=bind[[i]])
+    x$ntables * project(x$fit, get_block(x$X, i), colind=bind[[i]])
   })
   
   names(res) <- paste0("Block_", block_index)

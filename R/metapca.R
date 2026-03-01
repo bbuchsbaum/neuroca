@@ -13,6 +13,8 @@ centering_matrix <- function(vals) {
 #' X2 <- matrix(rnorm(20*20), 20, 20)
 #' X3 <- matrix(rnorm(20*30), 20, 30)
 #' 
+#' 10, 20, 20 --> 10, 10, 10
+#' 
 #' pc1 <- pca(X1, ncomp=10, preproc=center())
 #' pc2 <- pca(X2, ncomp=10, preproc=center())
 #' pc3 <- pca(X3, ncomp=10, preproc=center())
@@ -67,8 +69,8 @@ block_project.metapca <- function(x, newdata, block=1, comp=1:ncomp(x)) {
 
 #' @export
 loadings.metapca <- function(x) {
-  do.call(rbind, lapply(1:length(fits), function(i) {
-    v <- fits[[i]]$v %*% loadings(x$metafit)[x$inner_block_indices[[i]],]
+  do.call(rbind, lapply(1:length(x$fits), function(i) {
+    v <- x$fits[[i]]$v %*% loadings(x$metafit)[x$inner_block_indices[[i]],]
   }))
   
 }
@@ -134,8 +136,8 @@ supplementary_loadings.metapca <- function(x, newdata, block_ind=1, ncomp=x$ncom
 }
 
 #' @export
-reconstruct.metapca <- function(x, newdata=NULL, comp=1:length(x$d), 
-                                block_ind=seq(1,length(x$fits)), 
+reconstruct.metapca <- function(x, newdata=NULL, comp=1:length(x$d), ...,
+                                block_ind=seq(1,length(x$fits)),
                                 reverse_pre_process=TRUE) {
   
   recon <- reconstruct(x$metafit, comp=comp, reverse_pre_process=TRUE)

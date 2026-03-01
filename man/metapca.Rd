@@ -13,6 +13,8 @@ X1 <- matrix(rnorm(20*10), 20, 10)
 X2 <- matrix(rnorm(20*20), 20, 20)
 X3 <- matrix(rnorm(20*30), 20, 30)
 
+10, 20, 20 --> 10, 10, 10
+
 pc1 <- pca(X1, ncomp=10, preproc=center())
 pc2 <- pca(X2, ncomp=10, preproc=center())
 pc3 <- pca(X3, ncomp=10, preproc=center())

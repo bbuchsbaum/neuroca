@@ -38,7 +38,8 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 
 #' multiple factor analysis
 #' 
-#' mfa
+#' principal component analysis for multiple blocks of data collected over th same instances
+#' 
 #' 
 #' @param X a \code{block_matrix} object
 #' @param ncomp the number of components to estimate
@@ -47,6 +48,12 @@ normalization_factors <- function(block_mat, type=c("MFA", "RV", "RV-MFA", "None
 #' @param A custom weight matrix for the columns
 #' @param M custom weight matrix for the rows
 #' @export
+#' 
+#' @references
+#' Abdi, H., Williams, L. J., & Valentin, D. (2013). Multiple factor analysis: principal component analysis for multitable and multiblock data sets. 
+#' \emph{Wiley Interdisciplinary reviews: computational statistics}, 5(2), 149-179.
+#' @export
+#' 
 #' @examples 
 #' 
 #' X <- block_matrix(replicate(5, { matrix(rnorm(10*10), 10, 10) }, simplify=FALSE))
@@ -105,7 +112,6 @@ mfa <- function(X, ncomp=2, preproc=center(),
     normalization=normalization,
     table_names=names(X),
     nvars=ncol(X),
-    ntables=length(block_lengths(X)),
     A=A,
     M=M
   )
@@ -160,7 +166,7 @@ projection_fun.mfa <- function(x, colind=NULL, block=NULL) {
   }
   
   if (!is.null(block)) {
-    colind <- res$block_indices[[block]]
+    colind <- x$block_indices[[block]]
   }
 
   if (is.null(colind)) {
@@ -196,16 +202,20 @@ block_project.mfa <- function(x, newdata, block=1, comp=1:ncomp(x)) {
 }
 
 #' @export
-project.mfa <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
+project.mfa <- function(x, newdata, comp=1:ncomp(x), colind=NULL, block_index=NULL) {
   if (is.vector(newdata)) {
     newdata <- matrix(newdata, ncol=length(newdata))
   }
-  
+
+  if (!is.null(block_index)) {
+    colind <- x$block_indices[[block_index]]
+  }
+
   if (is.null(colind)) {
     assert_that(ncol(newdata) == ncol(x$X), msg=paste("ncol(newdata) =  ", ncol(newdata), " ncol(x$X) = ", ncol(x$X)))
     project(x$fit, unclass(reprocess(x, newdata)), comp=comp)
   } else {
-    project(x$fit, unclass(reprocess(x, newdata,colind=colind)), comp=comp, colind=colind)
+    project(x$fit, unclass(reprocess(x, newdata, colind=colind)), comp=comp, colind=colind)
   }
 } 
 
@@ -343,7 +353,6 @@ impute_mfa <- function(X, ncomp=min(dim(X)), preproc=center(),
     Ximp <- Xnew
     criterion <- abs(1 - obj/old)
     message("iter: ", obj)
-    print(criterion)
     old <- obj
     iter <- iter+1
   }

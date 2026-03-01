@@ -21,6 +21,32 @@ boot_ratio <- function(bootlist) {
   boot.mean/boot.sd	
 }
 
+bootci <- function(bootlist, ci=c(.025,.975)) {
+  #browser()
+  nboot <- length(bootlist)
+  nr <- nrow(bootlist[[1]])
+  ranks <- ci * nboot
+  ret <- lapply(1:nr, function(i) {
+    v <- sapply(bootlist, function(x) x[i,])
+    apply(v,1, function(vals) {
+      svals <- sort(vals)
+      c(svals[ranks[1]], svals[ranks[2]])
+    })
+  })
+  
+  nc <- ncol(bootlist[[1]])
+  
+  ret2 <- lapply(1:nc, function(i) {
+    m <- do.call(rbind, lapply(ret, function(z) z[,i]))
+    colnames(m) <- c("ci_min", "ci_max")
+    m
+  })
+  
+  names(ret2) <- paste0("Comp", 1:nc)
+  ret2
+  
+}
+
 # given a matrix and a vector, resample with replacement.
 resampleXY <- function(X, Y) {
   ysplit <- split(1:length(Y), Y)
@@ -65,7 +91,7 @@ resample.bada <- function(x) {
 #' 
 #' mb <- mubada(Yl, Xl)
 #' @export
-bootstrap.mubada <- function(x, niter, nboot=100, ncomp=x$ncomp,type=c("projection", "rotated", "unrotated")) {
+bootstrap.mubada <- function(x, nboot=100, ncomp=x$ncomp,type=c("projection", "rotated", "unrotated")) {
   type <- match.arg(type)
   if (ncomp > x$ncomp) {
     ncomp <- x$ncomp
@@ -130,62 +156,13 @@ bootstrap.mubada <- function(x, niter, nboot=100, ncomp=x$ncomp,type=c("projecti
 
 
 #' @export
-bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "rotated", "unrotated")) {
+bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, 
+                           type=c("projection", "permutation", "rotated", "unrotated"),
+                           ci=c(.025, .975)) {
   
   type <- match.arg(type)
   if (ncomp > x$ncomp) {
     ncomp <- x$ncomp
-  }
-  
-  do_split <- function() {
-      s1 <- sample(levels(x$S), length(levels(S))/2)
-      s2 <- levels(x$S)[! (levels(x$S) %in% s1)]
-      s1_idx <- which(x$S %in% s1)
-      s2_idx <- which(x$S %in% s2)
-      
-      X1 <- x$X[s1_idx,,drop=FALSE]
-      X2 <- x$X[s2_idx,,drop=FALSE]
-      Y1 <- x$Y[s1_idx]
-      Y2 <- x$Y[s2_idx]
-      
-      xboot <- bada(Y1, X1, S=x$S[s1_idx], center=x$center, scale=x$scale)
-      A <- proc_rot(scores(x), scores(xboot))
-      xboot <- rotate(xboot, A)
-      X2b <- group_means(Y2, X2)
-      boot_scores <- project(xboot, X2b)
-      boot_loadings <- project_cols(xboot, X2b)
-      
-      list(boot4R=boot_scores,
-           boot4C=boot_loadings)
-  }
-  
-
-  do_jack <- function() {
-    res <- lapply(levels(x$S), function(lev) {
-      print(lev)
-      jack_idx <- which(x$S == lev)
-      Xrest <- x$X[-jack_idx,]
-      Yrest <- x$Y[-jack_idx]
-      
-      Xjack <- x$X[jack_idx,]
-      Yjack <- x$Y[jack_idx]
-      
-      Xjack_bc <- group_means(Yjack, Xjack)
-      
-      xboot <- bada(Yrest, Xrest, S=x$S[-jack_idx], center=x$center, scale=x$scale)
-      sign_flip <- sign(diag(t(scores(x)) %*% scores(xboot)))
-      
-      if (any(sign_flip != 1)) {
-        print(sign_flip)
-        xboot <- rotate(xboot, diag(sign_flip))
-      }
-      
-      boot_scores <- project(xboot, Xjack_bc)
-      boot_loadings <- t(reprocess.bada(xboot, Xjack_bc)) %*% (xboot$fit$u %*% diag(1/xboot$fit$d, nrow=ncomp, ncol=ncomp))
-      
-      list(boot_scores=boot_scores, boot_loadings=boot_loadings)
-    })
-    
   }
   
   do_perm <- function() {
@@ -195,7 +172,7 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
     }))
 
    
-    bperm <- bada(Yperm, x$X, S=x$S, center=x$center, scale=x$scale)
+    bperm <- bada(Yperm, x$X, S=x$S, preproc=x$preproc)
     
     list(boot4R=scores(bperm)[,1:ncomp],
          boot4C=loadings(bperm)[,1:ncomp])
@@ -220,7 +197,7 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
   do_boot_svd <- function() {
     ## resample original data with replacement, generating a new dataset
     resam <- resample.bada(x)
-    xboot <- bada(resam$Y, resam$X, x$S, center=x$center, scale=x$scale)
+    xboot <- bada(resam$Y, resam$X, x$S, preproc=x$preproc)
     
     if (type == "rotated") {
       A <- proc_rot(scores(x), scores(xboot))
@@ -240,6 +217,14 @@ bootstrap.bada <- function(x, nboot=1000, ncomp=x$ncomp, type=c("projection", "r
     boots <- replicate(nboot, do_boot_projection(), simplify = FALSE)
     list(zboot_scores=boot_ratio(lapply(boots, "[[", 1)),
          zboot_loadings=boot_ratio(lapply(boots, "[[", 2)))
+         #bootci_loadings=bootci(lapply(boots, "[[", 2)),
+         #bootci_scores=bootci(lapply(boots, "[[", 1)))
+         
+    
+  } else if (type == "permutation") {
+    boots <- replicate(nboot, do_perm(), simplify = FALSE)
+    list(bootci_scores=bootci(lapply(boots, "[[", 1)),
+         bootci_loadings=bootci(lapply(boots, "[[", 2)))
     
   } else {
     boots <- replicate(nboot, do_boot_svd(), simplify=FALSE)

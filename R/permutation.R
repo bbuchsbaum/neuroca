@@ -1,16 +1,4 @@
 
-get_perm <- function(G, strata) {
-  if (!is.null(x$strata)) {
-    Gperm <- do.call(rbind, lapply(levels(x$strata), function(lev) {
-      Gs <- G[strata==lev,]
-      Gs <- Gs[sample(1:nrow(Gs)),]
-    }))
-  } else {
-    Gperm <- x$G[sample(1:nrow(x$G)),]
-  }
-}
-
-
 
 do_permutation <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL, deflate=FALSE) {
   if (!is.null(seed)) set.seed(seed)
@@ -24,9 +12,8 @@ do_permutation <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, 
   dstat0 <- matrix(0, nperms, ncomp)
   
   for (i in 1:nperms) {
-    print(i)
     message("permutation ", i)
-    fit <- x$permute_refit()
+    fit <- permute_refit(x, ncomp=ncomp)
     dp <- singular_values(fit)[1:ncomp]^2
     dstat0[i, ] <- dp
   }
@@ -61,19 +48,19 @@ permutation.musu_asca <- function(x, nperms=100, threshold=.05, ncomp=1, verbose
 
 
 permutation.sca <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
-  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+  do_permutation(x,nperms,threshold, ncomp, verbose, seed)
 }
 
 permutation.mfa <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
-  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+  do_permutation(x,nperms,threshold, ncomp, verbose, seed)
 }
 
 permutation.mubada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
-  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+  do_permutation(x,nperms,threshold, ncomp, verbose, seed)
 }
 
 permutation.bada <- function(x, nperms=100, threshold=.05, ncomp=1, verbose=TRUE, seed=NULL) {
-  permutation_(x,nperms,threshold, ncomp, verbose, seed)
+  do_permutation(x,nperms,threshold, ncomp, verbose, seed)
 }
 
 #' #' @export

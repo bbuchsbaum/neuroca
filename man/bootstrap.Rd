@@ -9,7 +9,6 @@ bootstrap(x, nboot, ...)
 
 \method{bootstrap}{mubada}(
   x,
-  niter,
   nboot = 100,
   ncomp = x$ncomp,
   type = c("projection", "rotated", "unrotated")

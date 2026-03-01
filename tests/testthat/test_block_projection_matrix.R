@@ -50,4 +50,5 @@ test_that("can project a newdata sub-block through a block_projector", {
 test_that("can perform a block_pca analysis", {
   bmat <- block_matrix(lapply(1:10, function(i) matrix(rnorm(10*10), 10, 10)))
   res <- block_pca(bmat)
-  
+  expect_true(!is.null(res))
+})

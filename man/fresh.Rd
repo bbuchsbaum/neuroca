@@ -8,6 +8,8 @@ fresh(x, ...)
 }
 \arguments{
 \item{x}{the processing pipeline}
+
+\item{...}{extra args}
 }
 \description{
 get a fresh pre-processing node cleared of any cached data

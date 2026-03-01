@@ -46,7 +46,7 @@ pseudo_svd <- function(u, v, d, rnames=NULL, pre_processor=NULL) {
     row.names(scores) <- rnames
   }
   
-  if (is.null(preproc)) {
+  if (is.null(pre_processor)) {
     pre_processor <- prep(pass())
   }
   
@@ -87,8 +87,8 @@ pca <- function(X, ncomp=min(dim(X)), preproc=center(), ...) {
   
   scores <- t(t(as.matrix(svdres$u)) * svdres$d)
   
-  if (!is.null(row.names(scores))) {
-    row.names(scores) <- row.names(Xp)[seq_along(svdres$d)]
+  if (!is.null(row.names(Xp))) {
+    row.names(scores) <- row.names(Xp)
   }
   
   ret <- bi_projector(
@@ -145,37 +145,35 @@ permutation.pca <- function(x, X, nperm=100) {
   } else {
     Fq <- as.matrix(F1_perm)
   }
-  
-  nperm=500
-  
-    
+
+  list(Fa=Fa, Fq_perm=Fq)
 }
  
-#' @export   
-residuals.pca <- function(x, ncomp, xorig) {
-  recon <- reconstruct(x, comp=1:ncomp)
+#' @export
+residuals.pca <- function(object, ncomp, xorig, ...) {
+  recon <- reconstruct(object, comp=1:ncomp)
   xorig - recon
 }
 
 
-#' @export
-rotate.pca <- function(x, rot) {
-  u_rot <- x$u %*% rot
-  v_rot <- x$v %*% rot
-  sc_rot <- scores(x) %*% rot
-  
-  ret <- bi_projector(
-    preproc=x$preproc,
-    ncomp=length(x$d),
-    v=v_rot, 
-    u=u_rot, 
-    d=apply(sc_rot, 2, function(x) sqrt(sum(x^2))),
-    scores=sc_rot, 
-    classes=c("rotated_pca", "pca"))
-  
-  ret
-  
-}
+
+# rotate.pca <- function(x, rot) {
+#   u_rot <- x$u %*% rot
+#   v_rot <- x$v %*% rot
+#   sc_rot <- scores(x) %*% rot
+#   
+#   ret <- bi_projector(
+#     preproc=x$preproc,
+#     ncomp=length(x$d),
+#     v=v_rot, 
+#     u=u_rot, 
+#     d=apply(sc_rot, 2, function(x) sqrt(sum(x^2))),
+#     scores=sc_rot, 
+#     classes=c("rotated_pca", "pca"))
+#   
+#   ret
+#   
+# }
 
 genreprocess <- function(x, newdata, colind=NULL) {
   if (is.null(colind)) {
@@ -262,8 +260,8 @@ project.projector <- function(x, newdata, comp=1:ncomp(x), colind=NULL) {
 }
 
 #' @export
-residuals.bi_projector <- function(x, ncomp=1, xorig) {
-  recon <- reconstruct(x,comp=1:ncomp)
+residuals.bi_projector <- function(object, ncomp=1, xorig, ...) {
+  recon <- reconstruct(object, comp=1:ncomp)
   xorig - recon
 }
 
@@ -302,7 +300,7 @@ genreconstruct <- function(x, newdata, comp, colind=NULL,
 }
 
 #' @export
-reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
+reconstruct.bi_projector <- function(x, newdata=NULL, comp=1:x$ncomp, ..., colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   genreconstruct(x,newdata,comp,colind,rowind,reverse_pre_process)
 }
 
@@ -341,14 +339,14 @@ truncate.bi_projector <- function(obj, ncomp) {
     warning("number of components to keep is greater than or equal to rank of pca fit, returning original model")
     ret <- obj
   } else {
-    ret <- list(v=obj$v[,1:ncomp,drop=FALSE], 
-                u=obj$u[,1:ncomp,drop=FALSE], 
-                d=obj$d[1:ncomp], 
-                scores=obj$scores[,1:ncomp,drop=FALSE], 
-                ncomp=ncomp, 
+    ret <- list(v=obj$v[,1:ncomp,drop=FALSE],
+                u=obj$u[,1:ncomp,drop=FALSE],
+                d=obj$d[1:ncomp],
+                scores=obj$scores[,1:ncomp,drop=FALSE],
+                ncomp=ncomp,
                 preproc=obj$preproc)
-    
-    class(ret) <- c("bi_projector", "list")
+
+    class(ret) <- c("bi_projector", "projector", "list")
   }
   
   ret
@@ -375,7 +373,8 @@ contributions.bi_projector <- function(x, type=c("column", "row")) {
 
 
 #' @export
-print.bi_projector <- function(object) {
+print.bi_projector <- function(x, ...) {
+  object <- x
   showk <- 1:min(object$ncomp, 5)
   cat(class(object)[1], "\n")
   cat("  number of components: ", object$ncomp, "\n")
@@ -385,10 +384,12 @@ print.bi_projector <- function(object) {
 }
 
 
-#' @importFrom explor explor
 explor.pca <- function(obj) {
+  if (!requireNamespace("explor", quietly = TRUE)) {
+    stop("Package 'explor' is required for this function. Install it with install.packages('explor').")
+  }
   if (!inherits(obj, "pca")) stop("obj must be of class pca")
-  
+
   ## results preparation
   res <- prepare_results(obj)
   
@@ -409,13 +410,12 @@ explor.pca <- function(obj) {
   
   
   ## Launch interface
-  explor:::explor_multi_pca(res, settings)
+  explor::explor_multi_pca(res, settings)
   
 }
   
 
   
-#' @importFrom explor prepare_results
 prepare_results.pca <- function(obj) {
     
     if (!inherits(obj, "pca")) stop("obj must be of class pca")

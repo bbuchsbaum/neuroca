@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // gmd_deflation_cpp
 List gmd_deflation_cpp(const arma::mat& X, arma::sp_mat Q, arma::sp_mat R, int k, double thr);
 RcppExport SEXP _neuroca_gmd_deflation_cpp(SEXP XSEXP, SEXP QSEXP, SEXP RSEXP, SEXP kSEXP, SEXP thrSEXP) {

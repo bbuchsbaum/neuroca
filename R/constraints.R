@@ -70,7 +70,6 @@ spatial_constraints <- function(coords, nblocks=1,
   offsets <- cumsum(c(0, rep(nvox, nblocks-1)))
   
   out <- unlist(lapply(1:nblocks, function(i) {
-    print(i)
     lapply(1:nblocks, function(j) {
       if (i == j) {
         NULL

@@ -4,7 +4,7 @@
 \alias{pseudo_svd}
 \title{pseudo_svd}
 \usage{
-pseudo_svd(u, v, d, rnames = NULL)
+pseudo_svd(u, v, d, rnames = NULL, pre_processor = NULL)
 }
 \arguments{
 \item{u}{the row weights}
@@ -14,6 +14,8 @@ pseudo_svd(u, v, d, rnames = NULL)
 \item{d}{the singular values}
 
 \item{rnames}{row names of observations}
+
+\item{pre_processor}{a "prepped" pre_processor object}
 }
 \description{
 pseudo_svd

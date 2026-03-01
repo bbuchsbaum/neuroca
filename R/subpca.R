@@ -10,17 +10,17 @@
 #' @param center whether to center columns
 #' @param scale whether to scale columns
 #' @importFrom furrr future_map
-block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"), 
-                   ncomp=2, min_k=1, max_k=3, 
-                   center=TRUE, scale=FALSE, shrink_method="GSURE", ...) {
-  
-  
+block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
+                   ncomp=2, min_k=1, max_k=3,
+                   preproc=center(), shrink_method="GSURE", ...) {
+
+
   assert_that(inherits(X, "block_matrix"))
-  
+
   est_method <- match.arg(est_method)
-  
+
   ngroups <- nblocks(X)
-  
+
   if (length(ncomp) == 1) {
     ncomp <- rep(ncomp, ngroups)
   } else {
@@ -28,25 +28,23 @@ block_pca <- function(X, est_method=c("gcv", "shrink", "fixed", "nneg"),
   }
 
   fits <- if (est_method == "gcv") {
-
-    fits <- furrr::future_map(seq(1,nblocks(X)), function(i) {
-      xb <- get_block(X, i)
-      est <- fast_estim_ncomp(xb, ncp.min=min_k, ncp.max=max_k)
-      pca(xb, ncomp=max(min_k, est$bestcomp), center=center, scale=scale)
-    })
-  } else if (est_method == "fixed") {
-    ## method is fixed
     furrr::future_map(seq(1, nblocks(X)), function(i) {
       xb <- get_block(X, i)
-      pca(xb, ncomp=ncomp[i], center=center, scale=scale)
+      est <- fast_estim_ncomp(xb, ncp.min=min_k, ncp.max=max_k)
+      pca(xb, ncomp=max(min_k, est$bestcomp), preproc=fresh(preproc))
+    })
+  } else if (est_method == "fixed") {
+    furrr::future_map(seq(1, nblocks(X)), function(i) {
+      xb <- get_block(X, i)
+      pca(xb, ncomp=ncomp[i], preproc=fresh(preproc))
     })
   } else {
     furrr::future_map(1:nblocks(X), function(i) {
       xb <- get_block(X, i)
-      shrink_pca(xb, center=center, scale=scale, ...)
+      shrink_pca(xb, preproc=fresh(preproc), ...)
     })
   }
-  
+
   bm <- block_projector(fits)
 
 }
@@ -71,13 +69,10 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
     x <- sweep(x, 2, sqrt(lens), "*")
   
     fit <- if (est_method == "fixed") {
-      print(ncomp[level])
       pca(x, ncomp=ncomp[level], center=FALSE, scale=FALSE)
     } else if (est_method == "gcv") {
-      #est <- fast_estim_ncomp(x)
       est <- FactoMineR::estim_ncp(x)
       bestcomp <- est$ncp
-      print(paste("best", bestcomp))
       if (bestcomp == 0) {
         ## 0 comps, return dummy pca
         pseudo_svd(u=matrix(rep(0, nrow(x))), v=matrix(rep(0,ncol(x))), d=0)
@@ -124,7 +119,6 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
   Xresid <- t(Xp)
   
   for (i in 1:ncol(cutmat)) {
-    print(i)
     cind <- cutmat[,i]
     Xbar <- t(group_means(cind, Xresid))
     #offset <- rowMeans(Xbar) 
@@ -135,12 +129,6 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
     supp_lds <- project_cols(fits[[i]], t(Xresid))
     recon <- scores(fits[[i]]) %*% t(supp_lds)
     Xresid <- Xresid - t(recon)
-    #Xresid <- t(do.call(rbind, lapply(1:nrow(Xbar), function(j) {
-    #  xb <- Xbar[j,]
-    #  Xresid[,j] - xb[cind]
-    #})))
-    
-    print(sqrt(sum(Xresid^2)))
    
   }
     
@@ -159,22 +147,21 @@ multiscale_pca <- function(X, cutmat, est_method=c("fixed", "gcv", "shrink"), nc
 #' @param center
 #' @param scale
 #' @param shrink_method
-#' @examples 
-#' 
+#' @examples
+#' \dontrun{
 #' grid <- expand.grid(1:10, 1:10)
-#' 
+#'
 #' ## 100 images each with 50 features
 #' X <- matrix(rnorm(100*50), 100, 50)
 #' cuts <- c(4, 8, 16)
 #' hclus <- dclust::dclust(grid, nstart=10)
 #' hres1 <- hpca(X, hclus, cuts, est_method="fixed", ncomp=c(4,1,1,1))
 #' ncomp(hres1) == (sum(cuts) +4)
-#' 
+#'
 #' hres2 <- hpca(X, hclus, cuts, est_method="shrink")
 #' hres3 <- hpca(X, hclus, cuts, est_method="gcv")
-#' ## start bottom up?
+#' }
 #' @importFrom dendextend cutree
-#' @import dclust
 #' 
 #' 
 # res <- neuroca:::hpca(mat, hclus, cuts=c(2,4,8,16,32), est_method="smooth",
@@ -240,8 +227,6 @@ hpca <- function(X, hclus, cuts, est_method=c("fixed","shrink", "smooth"),
   fits[[1]] <- fit0$u
   
   for (i in 1:length(cuts)) {
-    #print(i)
-    print(sum(Xresid^2))
     kind <- dendextend::cutree(hclus, cuts[i])
     
     pres <- split(1:length(kind), kind) %>% furrr::future_map(function(ind) {

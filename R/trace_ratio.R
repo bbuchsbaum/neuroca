@@ -16,6 +16,7 @@ trace_ratio <- function(A, B, ncomp, eps=1e-6, maxiter=100) {
   ## prepare the initializer
   Vold = qr.Q(qr(matrix(rnorm(n*p),ncol=p)))
   rhoold = 0
+  
   for (i in 1:maxiter){
     Vnew   = RSpectra::eigs(A-rhoold*B,p,which="LR")$vectors
     rhonew = sum(diag(t(Vnew)%*%A%*%Vnew))/sum(diag(t(Vnew)%*%B%*%Vnew))
@@ -32,7 +33,7 @@ trace_ratio <- function(A, B, ncomp, eps=1e-6, maxiter=100) {
   V <- Vold
   
   values <- sapply(1:ncomp, function(i) {
-    (V[,i] %*% A %*% V[,i])/ (V[,i] %*% A %*% V[,i])
+    (V[,i] %*% A %*% V[,i])/ (V[,i] %*% B %*% V[,i])
   })
   
   #values = diag(t(V)%*%A%*%V)/diag(t(V)%*%B%*%V)

@@ -32,11 +32,10 @@ test_that("gen_pca with dense column and row constraints works", {
 })
 
 test_that("gen_pca with sparse column and row constraints works", {
-  A <- neighborweights::graph_weights(mat_10_10, k=3)
-  diag(A) <- 1
-  M <- neighborweights::graph_weights(t(mat_10_10), k=3)
-  diag(M) <- 1
+  A <- Matrix::Diagonal(10) + Matrix::sparseMatrix(i=c(1,2,3), j=c(2,3,4), x=0.1, dims=c(10,10), symmetric=TRUE)
+  M <- Matrix::Diagonal(10) + Matrix::sparseMatrix(i=c(1,2,3), j=c(2,3,4), x=0.1, dims=c(10,10), symmetric=TRUE)
   res1 <- genpca(mat_10_10, A=A, M=M, preproc=center())
+  expect_equal(ncomp(res1), length(res1$d))
 })
 
 test_that("can truncate a genpca model", {
@@ -72,13 +71,13 @@ test_that("can project a row vector", {
   A <- cov(matrix(rnorm(10*10),10,10))
   M <- cov(matrix(rnorm(10*10),10,10))
   
-  res1 <- genpca(mat_10_10, A=A, M=M, center=TRUE)
+  res1 <- genpca(mat_10_10, A=A, M=M, preproc=center())
   p <- project(res1, mat_10_10[1,])
   expect_equal(dim(p), c(1,ncomp(res1)))
 })
 
 test_that("can extract residuals", {
-  res1 <- genpca(mat_10_10, center=TRUE)
+  res1 <- genpca(mat_10_10, preproc=center())
   resid <- residuals(res1, ncomp=2, mat_10_10)
   expect_equal(sum(res1$d[3:length(res1$d)] ^2), sum(resid^2))
 })

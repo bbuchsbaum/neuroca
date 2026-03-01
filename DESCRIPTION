@@ -1,21 +1,29 @@
 Package: neuroca
 Imports:
-    graphics,
-    grid,
     stats,
     assertthat,
     vegan,
     RSpectra,
     irlba,
     corpcor,
-    plyr,
-    FactoMineR,
     parallel,
-    fields,
-    sda,
-    denoiseR,
     glmnet,
-    dclust
+    Matrix,
+    matrixStats,
+    rsvd,
+    proxy,
+    Metrics,
+    MatrixCorrelation,
+    multiway,
+    neighborweights,
+    furrr,
+    purrr,
+    dendextend,
+    abind,
+    svd,
+    Rcpp,
+    fields
+Encoding: UTF-8
 License: GPL (>= 2)
 Maintainer: Bradley Buchsbaum <brad.buchsbaum@gmail.com>
 Title: neuroca: multiblock component analysis for neuroimaging data
@@ -28,6 +36,14 @@ Date: 2017-09-29
 Depends:
     R (>= 3.3.0),
     methods
-RoxygenNote: 7.1.0
-Suggests: testthat
+RoxygenNote: 7.3.3
+Suggests:
+    testthat,
+    explor,
+    denoiseR,
+    RGCCA,
+    tidyr,
+    dplyr,
+    magrittr,
+    kernlab
 LinkingTo: Rcpp, RcppArmadillo

@@ -47,7 +47,7 @@ sca <- function(X, ncomp=2, preproc=center(),
     nvars=ncol(X),
     ntables=length(block_lengths(X)))
   
-  class(ret) <- c("sca", "multiblock", "bi-projector", "list")
+  class(ret) <- c("sca", "multiblock", "bi_projector", "list")
  
   ret  
 }
@@ -73,7 +73,7 @@ ncol.sca <- function(x) ncol(x$fit)
 nrow.sca <- function(x) nrow(x$fit)
 
 #' @export
-reconstruct.sca <- function(x, ncomp=x$ncomp) {
+reconstruct.sca <- function(x, newdata=NULL, comp=1:x$ncomp, ...) {
   ret <- block_matrix(lapply(x$D, function(d) {
     t(tcrossprod(d, x$B))
   }))

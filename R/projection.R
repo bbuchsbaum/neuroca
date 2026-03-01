@@ -1,6 +1,7 @@
 
 
-## TODO projector needs to be better defined. May need a class called "dimred": "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
+## TODO projector needs to be better defined. May need a class called "dimred": 
+## "projector" (X -> D), "dimred" (orthogonal or non-orthogonal), "pca" (orthogonal)
 
 #' construct a `projector` instance
 #' 
@@ -29,6 +30,12 @@ projector <- function(preproc, ncomp, v, classes, ...) {
 #' @export
 loadings.projector <- function(x) {
   x$v
+}
+
+print.projector <- function(x) {
+  cat("projector: ", paste0(class(x)), "\n")
+  cat("input dim: ", nrow(x$v), "\n")
+  cat("output dim: ", ncol(x$v), "\n")
 }
 
 compose_all <- function(...) {
@@ -85,7 +92,7 @@ loadings.composed_projector <- function(x) {
 scores.composed_projector <- function(x) { x$scores }
 
 #' @export
-dim.composed_projector <- function(x) c(nrow(x), ncol(x))
+dim.composed_projector <- function(x) x$xdim
 
 #' @export
 ncol.composed_projector <- function(x) x$xdim[2]
@@ -95,6 +102,7 @@ nrow.composed_projector <- function(x) x$xdim[1]
 
 #' @export
 ncomp.composed_projector <- function(x) ncol(scores(x))
+
 
 #' @export
 project.composed_projector <- function(x, newdata=NULL) {
@@ -106,7 +114,7 @@ project.composed_projector <- function(x, newdata=NULL) {
 }
 
 #' @export
-reconstruct.composed_projector <- function(x, newdata=NULL) {
+reconstruct.composed_projector <- function(x, newdata=NULL, comp=NULL, ...) {
   x$recon(newdata)
 }
 

@@ -11,7 +11,7 @@ partial_project(x, newdata, colind)
 
 \item{newdata}{a matrix or vector of new obervations(s)}
 
-\item{the}{column indices to select in the projection matrix}
+\item{colind}{the column indices to select in the projection matrix}
 }
 \description{
 project a selected subset of indices onto the subspace

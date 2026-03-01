@@ -28,7 +28,7 @@ mfa(
 \item{A}{custom weight matrix for the columns}
 }
 \description{
-mfa
+principal component analysis for multiple blocks of data collected over th same instances
 }
 \examples{
 
@@ -42,4 +42,8 @@ cfier <- classifier(res, labels=labs, ncomp=3)
 pred <- predict(cfier, X[1:2,])
 cfier2 <- classifier(res, labels=labs, ncomp=3, colind=res$block_indices[[2]])
 pred2 <- predict(cfier2, X[1:2,res$block_indices[[2]]])
+}
+\references{
+Abdi, H., Williams, L. J., & Valentin, D. (2013). Multiple factor analysis: principal component analysis for multitable and multiblock data sets. 
+\emph{Wiley Interdisciplinary reviews: computational statistics}, 5(2), 149-179.
 }

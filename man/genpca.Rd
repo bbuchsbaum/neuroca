@@ -13,7 +13,8 @@ genpca(
   deflation = FALSE,
   svd_init = TRUE,
   threshold = 1e-06,
-  use_cpp = TRUE
+  use_cpp = TRUE,
+  maxeig = 800
 )
 }
 \arguments{
@@ -25,41 +26,9 @@ genpca(
 Compute a PCA in a inner-product space defined by row and coulmn constraint matrices.
 }
 \examples{
-
-N <- 10
-coords <- expand.grid(x=seq(1,N), y=seq(1,N))
-img <- apply(coords, 1, function(x) {
-  x1 <- 1 - pnorm(abs(x[1] - N/2), sd=8)
-  x2 <- 1 - pnorm(abs(x[2] - N/2), sd=8)
-  x1*x2
-})
-
-mat <- matrix(img, N,N)
-mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.02), simplify=FALSE)
-X <- do.call(rbind, mlist)
-
-## spatial smoother
-S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=4)
-S <- cov(as.matrix(S))
-S <- S/eigen(S)$values[1]
-T <- neighborweights:::spatial_smoother(as.matrix(1:10), sigma=3, nnk=3)
-T <- cov(as.matrix(T))
-T <- T/(eigen(T)$values[1])
-gp1 <- genpca(X, A=S, ncomp=9)
-
-gp1a <- genpca(X, A=S, M=T, ncomp=9)
-
-Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] \%*\% S))
-gp2 <- genpca(as.matrix(Xs), ncomp=2)
-
-## use an adjacency matrix to weight items sharing an index.
-
-X <- matrix(rnorm(50*100), 50, 100)
-colind <- rep(1:10, 10)
-S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=4, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="heat")
-diag(S) <- 1
-S <- S/RSpectra::svds(S,k=1)$d
-gp1 <- genpca(X, A=S, ncomp=2)
+X <- matrix(rnorm(20*10), 20, 10)
+res <- genpca(X, ncomp=5, preproc=center())
+scores(res)
 }
 \references{
 Abdi, H. (2007). Singular value decomposition (SVD) and generalized singular value decomposition. \emph{Encyclopedia of measurement and statistics}, 907-912.

@@ -4,8 +4,8 @@ block_mat <- block_matrix(lapply(1:3, function(i) matrix(rnorm(10*10), 10, 10)))
 
 
 test_that("mfa with no scaling is identical to pca", {
-  res1 <- mfa(block_mat, center=TRUE, normalization="None")
-  res2 <- pca(as.matrix(block_mat), center=TRUE, ncomp=ncomp(res1))
+  res1 <- mfa(block_mat, normalization="None")
+  res2 <- pca(as.matrix(block_mat), ncomp=ncomp(res1))
   
   diffscores <- abs(scores(res1)) - abs(scores(res2))
   expect_true(sum(diffscores) < 1e-5)
@@ -16,7 +16,7 @@ test_that("mfa with no scaling is identical to pca", {
 })
 
 test_that("can project a row vector", {
-  res1 <- mfa(block_mat, center=TRUE, ncomp=5, normalization="None")
+  res1 <- mfa(block_mat, ncomp=5, normalization="None")
   x <- rnorm(ncol(block_mat))
   proj <- project(res1, x, comp=1:3)
   expect_equal(ncol(proj), 3)
@@ -24,7 +24,7 @@ test_that("can project a row vector", {
 })
 
 test_that("can project a matrix for a single table", {
-  res1 <- mfa(block_mat, center=TRUE, ncomp=5, normalization="None")
+  res1 <- mfa(block_mat, ncomp=5, normalization="None")
   x <- matrix(rnorm(10*10), 10, 10)
   proj <- project(res1, x, comp=1:3, block_index=1)
   expect_equal(ncol(proj), 3)
@@ -33,34 +33,34 @@ test_that("can project a matrix for a single table", {
 
 test_that("can run mfa on pca scores", {
   bm <- block_projector(lapply(1:5, function(i) pca(matrix(rnorm(10*10), 10, 10), ncomp=4)))
-  
-  res1 <- mfa(project(bm), center=TRUE, ncomp=5, normalization="None")
-  
-  x <- matrix(rnorm(10*10), 10, 4)
+
+  res1 <- mfa(project(bm), ncomp=5, normalization="None")
+
+  x <- matrix(rnorm(10*4), 10, 4)
   proj <- project(res1, x, comp=1:5, block_index=1)
-  
+
   x2 <- matrix(rnorm(10*20), 10, 20)
   proj_all  <- project(res1, x2)
-  
+
   expect_equal(ncol(proj), 5)
   expect_equal(nrow(proj), nrow(x))
-  
+
   expect_equal(ncol(proj_all), 5)
 })
 
 test_that("can run mfa on pca scores and compose with block_projector", {
   bm <- block_projector(lapply(1:5, function(i) pca(matrix(rnorm(10*10), 10, 10), ncomp=4)))
-  
-  res1 <- mfa(project(bm), center=TRUE, ncomp=5, normalization="None")
-  
-  x <- matrix(rnorm(10*10), 10, 4)
+
+  res1 <- mfa(project(bm), ncomp=5, normalization="None")
+
+  x <- matrix(rnorm(10*4), 10, 4)
   proj <- project(res1, x, comp=1:5, block_index=1)
-  
+
 })
 
 test_that("can run mfa with a block_projection_matrix with matrices with different number of columns", {
   bm <- block_projector(lapply(8:12, function(i) pca(matrix(rnorm(10*i), 10, i), ncomp=4)))
-  res1 <- mfa(bm, center=TRUE, ncomp=5, normalization="None")
+  res1 <- mfa(project(bm), ncomp=5, normalization="None")
   cp <- compose(bm, res1)
 })
 

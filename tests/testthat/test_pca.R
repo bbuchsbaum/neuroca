@@ -84,7 +84,7 @@ test_that("can reconstruct a nested pca and recover original data", {
 
 test_that("can project a single variable onto pca space", {
   mat1 <- matrix(rnorm(10*20), 10, 20)
-  pca1 <- pca(mat1, ncomp=10, center=TRUE)
+  pca1 <- pca(mat1, ncomp=10, preproc=center())
   v1 <- mat1[,1]
   proj <- project_cols(pca1,newdata=v1)
   expect_equal(as.vector(proj), as.vector(pca1$v[1,]))
@@ -93,14 +93,15 @@ test_that("can project a single variable onto pca space", {
 test_that("can project a set of variables onto pca space", {
   mat1 <- matrix(rnorm(10*20), 10, 20)
   mat2 <- matrix(rnorm(10*100), 10, 100)
-  pca1 <- pca(mat1, ncomp=10, center=TRUE)
-  
+  pca1 <- pca(mat1, ncomp=10, preproc=center())
+
   proj <- project_cols(pca1,newdata=mat2)
   expect_equal(dim(proj), c(100, pca1$ncomp))
 })
 
 
 test_that("can run a shrink_pca", {
+  skip_if_not_installed("denoiseR")
   mat1 <- matrix(rnorm(10*15), 10, 15)
   pca1 <- shrink_pca(mat1)
   

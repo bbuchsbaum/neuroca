@@ -77,17 +77,15 @@ project.regress <- function(x, newdata, colind=NULL) {
 ### TODO create 'genreconstruct' function
 
 #' @export
-reconstruct.regress <- function(x, newdata=NULL, colind=NULL, 
-                                rowind=NULL, reverse_pre_process=TRUE) {
+reconstruct.regress <- function(x, newdata=NULL, comp=1:ncol(loadings(x)), ...,
+                                colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   if (is.null(newdata)) {
     newdata <- x$basis
   }
   
   rowind <- 1:nrow(newdata)
-  genreconstruct(x,newdata,comp=1:ncol(loadings(x)),colind,rowind,reverse_pre_process)
+  genreconstruct(x,newdata,comp=comp,colind,rowind,reverse_pre_process)
   
 }
 
-residuals.regress <- function(x, ncomp) {
-  Xr <- reconstruct(x)
-}
+

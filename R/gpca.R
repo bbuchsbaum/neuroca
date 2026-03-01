@@ -3,6 +3,8 @@
 diagonal <- function(x) {
   diag(x, nrow=length(x), ncol=length(x))
 }
+
+
 .msqrt <- function(a) {
   a.eig <- eigen(a)
   keep <- which(a.eig$values > 0)
@@ -57,42 +59,10 @@ prep_constraints <- function(X, A, M) {
 #' Allen, G. I., Grosenick, L., & Taylor, J. (2014). A generalized least-square matrix decomposition. \emph{Journal of the American Statistical Association}, 109(505), 145-159.
 #' 
 #' 
-#' @examples 
-#' 
-#' N <- 10
-#' coords <- expand.grid(x=seq(1,N), y=seq(1,N))
-#' img <- apply(coords, 1, function(x) {
-#'   x1 <- 1 - pnorm(abs(x[1] - N/2), sd=8)
-#'   x2 <- 1 - pnorm(abs(x[2] - N/2), sd=8)
-#'   x1*x2
-#' })
-#' 
-#' mat <- matrix(img, N,N)
-#' mlist <- replicate(10, as.vector(mat + rnorm(length(mat))*.02), simplify=FALSE)
-#' X <- do.call(rbind, mlist)
-#' 
-#' ## spatial smoother
-#' S <- neighborweights:::spatial_smoother(coords, sigma=3, nnk=4)
-#' S <- cov(as.matrix(S))
-#' S <- S/eigen(S)$values[1]
-#' T <- neighborweights:::spatial_smoother(as.matrix(1:10), sigma=3, nnk=3)
-#' T <- cov(as.matrix(T))
-#' T <- T/(eigen(T)$values[1])
-#' gp1 <- genpca(X, A=S, ncomp=9)
-#' 
-#' gp1a <- genpca(X, A=S, M=T, ncomp=9)
-#' 
-#' Xs <- do.call(rbind, lapply(1:nrow(X), function(i) X[i,,drop=FALSE] %*% S))
-#' gp2 <- genpca(as.matrix(Xs), ncomp=2)
-#' 
-#' ## use an adjacency matrix to weight items sharing an index.
-#' 
-#' X <- matrix(rnorm(50*100), 50, 100)
-#' colind <- rep(1:10, 10)
-#' S <- neighborweights:::spatial_adjacency(as.matrix(colind), dthresh=4, sigma=1, nnk=27, normalized=TRUE, include_diagonal=TRUE, weight_mode="heat")
-#' diag(S) <- 1
-#' S <- S/RSpectra::svds(S,k=1)$d
-#' gp1 <- genpca(X, A=S, ncomp=2)
+#' @examples
+#' X <- matrix(rnorm(20*10), 20, 10)
+#' res <- genpca(X, ncomp=5, preproc=center())
+#' scores(res)
 genpca <- function(X, A=NULL, M=NULL, ncomp=min(dim(X)), 
                    preproc=center(), deflation=FALSE, svd_init=TRUE, threshold=1e-06, 
                    use_cpp=TRUE, maxeig=800) {
@@ -359,7 +329,7 @@ gmdLA <- function(X, Q, R, k=min(n,p), n, p, maxeig=800) {
 #' X <- matrix(rnorm(100*100), 100,100)
 #' res <- genpca(X)
 reconstruct.genpca <- function(x, newdata=NULL,
-                               comp=1:x$ncomp, 
+                               comp=1:x$ncomp, ...,
                                colind=NULL, rowind=NULL, reverse_pre_process=TRUE) {
   
   ## X = FV
@@ -384,7 +354,7 @@ reconstruct.genpca <- function(x, newdata=NULL,
   if (is.null(rowind)) {
     rowind <- 1:nrow(newdata)
   } else {
-    assert_that(all(rowind > 0) && max(rowind) < nrow(newdata))
+    assert_that(all(rowind > 0) && max(rowind) <= nrow(newdata))
   }
   
   if (is.null(colind)) {
@@ -472,21 +442,10 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
   }
   
   #browser()
-  print("qnorm")
-  
-  #if (p > n) {
-  #  qrnorm = trace(X * R * X.t() * Q);
-  #} else {
-  #  qrnorm = trace(X.t() * Q * X * R);
-  #}
-  
-  
   qrnorm = sum(Matrix::diag(Matrix::crossprod(X,Q) %*% X %*% R))
   cumv = rep(0,k)
  
-  print("begin loop")
   for(i in 1:k){
-    print(i)
     err <- 1
     #browser()
     if (svd_init && i > 1) {
@@ -508,10 +467,8 @@ gmd_deflationR <- function(X, Q, R, k, thr = 1e-6, svd_init=TRUE) {
       v <- vhat / as.double(sqrt(Matrix::crossprod(vhat, R) %*% vhat))
       err = as.numeric(t(oldu - u) %*% (oldu - u) + t(oldv -v ) %*% (oldv - v))
       
-      print(paste("err: ", err))
       if (is.na(err)) {
-        print(paste("t(oldu - u) %*% (oldu - u)", t(oldu - u) %*% (oldu - u)))
-        print(paste("t(oldv -v ) %*% (oldv - v)", t(oldv -v ) %*% (oldv - v)))
+        stop("gmd_deflation: NaN error, check input matrices")
       }
     }
     

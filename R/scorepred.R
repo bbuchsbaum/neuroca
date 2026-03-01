@@ -9,13 +9,12 @@
 #' @param colind the subset of column indices in the fitted model to use.
 #' @param knn the number of nearest neighbors when classifying a new point. 
 #' @export
-classifier.projector <- function(x, labels, newdata=NULL, colind=NULL, knn=1) {
+classifier.projector <- function(x, labels, newdata=NULL, colind=NULL, knn=1, ...) {
 
-  
   if (is.null(newdata)) {
     newdata <- scores(x)
   } else {
-    newdata <- project(x, newdata, colind=colind, ...)
+    newdata <- project(x, newdata, colind=colind)
   }
   
   assert_that(length(labels) == nrow(newdata))

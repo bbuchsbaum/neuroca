@@ -42,8 +42,8 @@ correlations <- function(x,...) UseMethod("correlations")
 
 
 #' cross_validate a model
-#' 
-#' @param the model fit
+#'
+#' @param x the model fit
 #' @param ... extra args
 #' @export
 cross_validate <- function(x, ...) UseMethod("cross_validate")
@@ -88,7 +88,7 @@ permutation <- function(x, ...) UseMethod("permutation")
 
 #' @export
 #' @param x the model fit object
-#' @param type the tpye of variance to account for.
+#' @param type the type of variance to account for.
 #' @param ncomp the number of components to include.
 vaf <- function(x, type, ncomp) UseMethod("vaf")
 
@@ -186,12 +186,6 @@ reproducibility <- function(x, folds, metric, ...) UseMethod("reproducibility")
 #' @export
 reconstruct <- function(x, newdata, comp,...) UseMethod("reconstruct")
 
-#' get the residuals of a model, after removing the first \code{ncomp} components
-#' 
-#' @param x the model fit
-#' @param ncomp the number of components
-#' @param ... extra arguments
-residuals <- function(x, ncomp, ...) UseMethod("residuals")
 
 
 #' project_cols
@@ -219,9 +213,9 @@ project <- function(x, newdata, ...) UseMethod("project")
 #' project a selected subset of indices onto the subspace
 #' 
 #' @inheritParams project
-#' @param the column indices to select in the projection matrix
+#' @param colind the column indices to select in the projection matrix
 #' @export
-partial_project <- function(x, newdata, colind) UseMetod("partial_project")
+partial_project <- function(x, newdata, colind) UseMethod("partial_project")
 
 
 #' project a single 'block' of data onto the subspace

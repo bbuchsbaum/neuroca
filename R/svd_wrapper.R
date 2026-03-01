@@ -15,11 +15,11 @@ svd_wrapper <- function(X, ncomp=min(dim(X)),
 
   res <- switch(method,
                 base=svd(X,...),
-                fast=corpcor:::fast.svd(X,...),
+                fast=corpcor::fast.svd(X,...),
                 rsvd=rsvd::rsvd(X, k=ncomp, q=2, ...),
                 svds=RSpectra::svds(X,k=ncomp),
                 propack=svd::propack.svd(X, neig=ncomp,...),
-                irlba=irlba:::irlba(X, nu=min(ncomp, min(dim(X)) -3), nv=min(ncomp, min(dim(X)) -3)), ...)
+                irlba=irlba::irlba(X, nu=min(ncomp, min(dim(X)) -3), nv=min(ncomp, min(dim(X)) -3)), ...)
   
  
   keep <- which(res$d^2 > tol)

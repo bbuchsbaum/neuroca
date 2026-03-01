@@ -91,13 +91,11 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
   normalization <- match.arg(normalization)
   
   assert_that(inherits(Xlist, "list"))
-
   assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x) || inherits(x, "Matrix"))))
   
   ## compute barycenters
   mu_prep <- prep_multiblock_da(Y, Xlist)
   
-  block_indices <- block_indices(Xlist)
   
   ## run MFA on the condition means
   fit <- mfa(mu_prep$Xr, ncomp=ncomp, preproc=preproc, normalization=normalization, A=A, M=M)
@@ -122,7 +120,8 @@ mubada <- function(Y, Xlist, ncomp=2, preproc=center(),
 }
 
 #' @export
-print.mubada <- function(object) {
+print.mubada <- function(x, ...) {
+  object <- x
   cat(class(object)[1], "\n")
   cat("  number of tables: ", object$ntables, "\n")
   cat("  number of conditions: ", object$ncond, "\n")
@@ -154,16 +153,16 @@ contributions.multiblock_da <- function(x, type=c("table", "column", "row")) {
 
 #' @export
 permute_refit.multiblock_da <- function(x, ncomp) {
-  nreps <- sapply(lapply(x$Yl, table), min)
-  
+  nreps <- sapply(lapply(x$Y, table), min)
+
   if (any(nreps == 1)) {
     ## permute data
     .Xlist <- lapply(x$Xlist, function(x) x[sample(1:nrow(x)),])
     refit(x, x$Y, .Xlist, ncomp)
   } else {
       ## permute labels
-    YPerm <- lapply(x$Yl, function(y) y[sample(1:length(y))])
-    refit(x, YPerm, x$Xlist, .ncomp)
+    YPerm <- lapply(x$Y, function(y) y[sample(1:length(y))])
+    refit(x, YPerm, x$Xlist, ncomp)
   }
 }
 
@@ -245,7 +244,7 @@ reprocess.multiblock_da <- function(x, newdat, colind=NULL) {
 
 
 #' @export
-reconstruct.multiblock_da <- function(x, comp=1:x$ncomp) {
+reconstruct.multiblock_da <- function(x, newdata=NULL, comp=1:x$ncomp, ...) {
   reconstruct(x$fit, comp=comp)
 }
 

@@ -8,10 +8,12 @@ hpca(
   X,
   hclus,
   cuts,
-  est_method = c("fixed", "gcv", "shrink"),
-  ncomp = rep(1, length(cuts) + 1),
-  center = TRUE,
-  scale = FALSE,
+  est_method = c("fixed", "shrink", "smooth"),
+  comp_method = c("fixed", "unit", "log"),
+  ncomp = rep(1, length(cuts)),
+  spat_smooth = rep(0, length(cuts) + 1),
+  cds = NULL,
+  preproc = center(),
   shrink_method = "GSURE"
 )
 }
@@ -28,15 +30,17 @@ hpca(
 A type of pca that uses a hierarchical clustering to define a set of nested regions for pca compression.
 }
 \examples{
-
+\dontrun{
 grid <- expand.grid(1:10, 1:10)
+
+## 100 images each with 50 features
 X <- matrix(rnorm(100*50), 100, 50)
 cuts <- c(4, 8, 16)
-hclus <- hclust(dist(grid))
+hclus <- dclust::dclust(grid, nstart=10)
 hres1 <- hpca(X, hclus, cuts, est_method="fixed", ncomp=c(4,1,1,1))
 ncomp(hres1) == (sum(cuts) +4)
 
 hres2 <- hpca(X, hclus, cuts, est_method="shrink")
 hres3 <- hpca(X, hclus, cuts, est_method="gcv")
-
+}
 }

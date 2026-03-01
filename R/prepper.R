@@ -1,6 +1,6 @@
 #' get a fresh pre-processing node cleared of any cached data
 #' @param x the processing pipeline
-#' 
+#' @param ... extra args
 #' 
 fresh <- function(x,...) UseMethod("fresh")
 
@@ -43,7 +43,6 @@ add_node.prepper <- function(preproc, step) {
 }
 
 
-#' @importFrom purrr compose
 #' @export
 prep.prepper <- function(x, X) {
   #ff=do.call(purrr::compose, lapply(x$steps, "[[", "forward"))
@@ -201,8 +200,6 @@ colscale <- function(preproc = prepper(),
            weights = NULL) {
     type <- match.arg(type)
     
-    print(preproc)
-    
     if (type != "weights" && !is.null(weights)) {
       warning("colscale: weights ignored because type != 'weights'")
     }
@@ -256,6 +253,7 @@ colscale <- function(preproc = prepper(),
   }
 
 #' dimension reduction as a pre-processing stage
+#' 
 #' @param preproc the pipeline
 #' @param method the dimension reduction method (e.g. pca)
 #' @param ... args to be passed to the dimension reduction method
@@ -355,4 +353,10 @@ standardize <- function(preproc = prepper(), cmeans=NULL, sds=NULL) {
   }
   prep_node(preproc, "standardize", create)
 }
+
+
+
+## TODO given a list of pre-processors, create a new pre-processor that is a 
+## concatenation of pre_processors for multi-block prepping
+
 

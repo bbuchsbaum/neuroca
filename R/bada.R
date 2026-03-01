@@ -200,8 +200,6 @@ reprocess.bada <- function(x,
   
   ns <- length(unique(x$S))
   
-  
-  
   Xp <- if (ns > 1 && is.null(stratum)) {
     ## we have multiple strata
     avg_preproc(newdata, colind)
@@ -226,8 +224,8 @@ permute.bada <- function(x) {
 }
 
 #' @export
-reconstruct.bada <- function(x, ncomp=x$ncomp) {
-  recon <- reconstruct(x$fit,comp=1:ncomp)
+reconstruct.bada <- function(x, newdata=NULL, comp=1:x$ncomp, ...) {
+  recon <- reconstruct(x$fit, comp=comp)
   row.names(recon) <- levels(x$Y)
   do.call(rbind, lapply(levels(x$S), function(s) {
     p <- x$procres[[s]]
@@ -241,9 +239,9 @@ reconstruct.bada <- function(x, ncomp=x$ncomp) {
 }
 
 #' @export
-residuals.bada <- function(x, ncomp=x$ncomp) {
-  recon <- reconstruct(x,ncomp)
-  recon - x$X
+residuals.bada <- function(object, ncomp=object$ncomp, ...) {
+  recon <- reconstruct(object, ncomp)
+  recon - object$X
 }
 
 
@@ -257,7 +255,8 @@ refit.bada <- function(x, Y, Xlist, S = x$S, ncomp=x$ncomp,...) {
 
 
 #' @export
-print.bada <- function(object) {
+print.bada <- function(x, ...) {
+  object <- x
   showk <- 1:min(object$ncomp, 5)
 
   cat("barycentric discriminant analysis (BADA) decomposition", "\n")

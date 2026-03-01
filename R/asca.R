@@ -105,8 +105,6 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
   assert_that(inherits(Xlist, "list"))
   assertthat::assert_that(all(sapply(Xlist, function(x) is.matrix(x))))
   
-  block_indices <- block_indices(Xlist)
-  
   tform <- terms(formula)
   facs <- attr(tform, "factors")
   
@@ -267,7 +265,7 @@ muasca <- function(formula, Xlist, ncomp=2, design, scale=FALSE, A=NULL) {
 
 #' @export
 loadings.musu_asca <- function(x) {
-  do.call(cbind, lapply(res, function(x) loadings(x$bada_result)))
+  do.call(cbind, lapply(x$results, function(r) loadings(r$bada_result)))
 }
 
 #' @export
@@ -276,7 +274,7 @@ scores.musu_asca <- function(x) {
 }
 
 #' @export
-bootstrap.musu_asca <- function(x, niter=100, term=res$terms[1], ncomp=x$ncomp[1]) {
+bootstrap.musu_asca <- function(x, niter=100, term=x$terms[1], ncomp=x$ncomp[1]) {
   bootstrap(x$results[[term]]$bada_result, niter=niter, ncomp=ncomp)
 }
 

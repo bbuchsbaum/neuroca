@@ -4,7 +4,7 @@ super_block_matrix <- function(bxlist) {
   assertthat::assert_that(all(sapply(bxlist, is.block_matrix)))
   assertthat::assert_that(all(sapply(bxlist, nrow) == nrow(bxlist[[1]])))
   
-  blockInd <- block_indices(bxlist)
+  blockInd <- get_block_indices(bxlist)
   P <- sum(sapply(bxlist, ncol))
   
   if (is.null(bxlist)) {
@@ -76,7 +76,8 @@ as.matrix.super_block_matrix <- function(x) {
   do.call(cbind, lapply(x, as.matrix))
 }
 
-print.super_block_matrix <- function(object) {
+print.super_block_matrix <- function(x, ...) {
+  object <- x
   bind <- attr(object, "block_indices")
   
   cat("super_block_matrix", "\n")
@@ -105,9 +106,6 @@ block_apply.super_block_matrix <- function(x, f, descend=FALSE) {
   super_block_matrix(ret)
   
 }
-
-#' @export
-names.block_matrix <- function(x) attr(x, "block_names")
 
 
 

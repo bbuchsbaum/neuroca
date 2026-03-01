@@ -10,8 +10,7 @@ block_pca(
   ncomp = 2,
   min_k = 1,
   max_k = 3,
-  center = TRUE,
-  scale = FALSE,
+  preproc = center(),
   shrink_method = "GSURE",
   ...
 )

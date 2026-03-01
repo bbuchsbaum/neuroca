@@ -119,14 +119,16 @@ shrink.pca <- function(x, method=c("GSURE", "QUT", "SURE"), sigma, lambda=NULL, 
 #' @param X
 #' @param center
 #' @param scale
-#' @importFrom denoiseR adashrink
 #' @export
 shrink_pca <- function(X, preproc=center(), method = c("GSURE", "QUT", "SURE"), ...) {
+  if (!requireNamespace("denoiseR", quietly = TRUE)) {
+    stop("Package 'denoiseR' is required for shrink_pca. Install it with install.packages('denoiseR').")
+  }
   assert_that(is.matrix(X) || inherits(X, "Matrix"))
-  
+
   procres <- prep(preproc, X)
   Xp <- procres$init(X)
-  
+
   res <- denoiseR::adashrink(Xp, method=method, center=FALSE, ...)
   
   keep <- res$singval > 1e-06

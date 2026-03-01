@@ -32,10 +32,10 @@ block_projector <- function(Xs) {
   Xproj <- lapply(Xs, project)
   
   ## the projected blocks
-  proj_ind <- block_indices(Xproj)
-  
+  proj_ind <- get_block_indices(Xproj)
+
   ## the original blocks
-  block_ind <- block_indices(Xs)
+  block_ind <- get_block_indices(Xs)
   
   P <- sum(sapply(Xs, ncol))
   projP <- sum(sapply(Xproj, ncol))
@@ -54,7 +54,7 @@ block_projector <- function(Xs) {
 
 #' @export
 scores.block_projector <- function(x) {
-  att(x, "block_data")
+  attr(x, "block_data")
 }
 
 
@@ -133,7 +133,8 @@ project.block_projector <- function(x, newdata=NULL, block_index=NULL, ...) {
 
 
 #' @export
-print.block_projector <- function(object) {
+print.block_projector <- function(x, ...) {
+  object <- x
   bind <- attr(object, "block_indices")
   
   cat("block_projector", "\n")
@@ -183,7 +184,7 @@ compose.block_projector <- function(x, y) {
       projector_list=projector_list),
     class=c("composed_block_projector", "block_projector", "projector"))
     
-    attr(ret, "block_indices") <- block_indices(x)
+    attr(ret, "block_indices") <- attr(x, "block_indices")
     ret
 }
   

@@ -7,9 +7,9 @@
 cross_validate(x, ...)
 }
 \arguments{
-\item{...}{extra args}
+\item{x}{the model fit}
 
-\item{the}{model fit}
+\item{...}{extra args}
 }
 \description{
 cross_validate a model

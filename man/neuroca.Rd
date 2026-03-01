@@ -2,8 +2,12 @@
 % Please edit documentation in R/neuroca.R
 \docType{package}
 \name{neuroca}
+\alias{neuroca-package}
 \alias{neuroca}
 \title{neuroca - multivariate component analysis methods for neuroimaging data}
+\description{
+neuroca contains methods for multivariate analysis of neuroimaging data
+}
 \author{
 Bradley Buchsbaum <brad.buchsbaum@gmail.com>
 }

@@ -2,9 +2,14 @@
 
 
 #' @keywords internal
-get_block_indices <- function(Xlist) {
-  ncols <- sapply(Xlist, ncol)
-  csum <- cumsum(ncols)
+get_block_indices <- function(Xlist, byrow=FALSE) {
+  lens <- if (byrow) {
+    sapply(Xlist, nrow)
+  } else {
+    sapply(Xlist, ncol)
+  }
+  
+  csum <- cumsum(lens)
   csum1 <- c(0, csum[-length(csum)])
   m <- as.matrix(cbind(csum1+1, csum))
   colnames(m) <- c("start", "end")
@@ -16,16 +21,16 @@ get_block_indices <- function(Xlist) {
 
 #' block_matrix_list
 #' 
-#' @param Xs a list of k matrices each with with N_k rows and M_k columns 
+#' @param Xs a list of k matrices each with with n rows and M_k columns 
 #' @export
 #' @importFrom assertthat assert_that
 block_matrix_list <- function(Xs) {
   assertthat::assert_that(all(sapply(Xs, is.matrix)))
   assertthat::assert_that(all(sapply(Xs, nrow) == nrow(Xs[[1]])))
   
-  blockInd <- block_indices(Xs)
+  blockInd <- get_block_indices(Xs)
   P <- sum(sapply(Xs, ncol))
-  
+
   attr(Xs, "block_indices") <- blockInd
   attr(Xs, "nblock") <- length(Xs)
   attr(Xs, "nrow") <- nrow(Xs[[1]])
@@ -123,8 +128,6 @@ block_index_list.block_matrix <- function(object) {
   bind <- attr(object, "block_indices")
   lapply(1:nrow(bind), function(i) seq(bind[i,1], bind[i,2]))
 }
-
-
 
 
 #' @export
