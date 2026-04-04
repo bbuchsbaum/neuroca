@@ -15,7 +15,7 @@ Imports:
     Metrics,
     MatrixCorrelation,
     multiway,
-    neighborweights,
+    adjoin,
     furrr,
     purrr,
     dendextend,
